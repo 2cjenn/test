@@ -1,0 +1,146 @@
+---
+title: "Meeting Update 07/02/2020"
+author: "Jennifer Collister"
+date: "28/01/2020"
+output: 
+  html_document:
+      reference_docx: "K:/TEU/APOE on Dementia/RMarkdownStyle.docx"
+      out_width: "40%"
+      out_height: "40%"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE)
+library(survival)
+library(survminer)
+library(lmtest)
+library(kableExtra)
+library(knitr)
+library(timereg)
+library(epitools)
+library(tab)
+library(popEpi)
+source("K:/TEU/APOE on Dementia/Statistical Analysis/JCfunctions.R")
+
+# printcoxresults <- function(modeloutput){
+#   results <- summary(modeloutput)$coefficients[,c(1:3,5)]
+#   colnames(results) <- c("Log HR", "Hazard Ratio", "SE(logHR)", "p-value")
+#   return(results)
+# }
+
+```
+
+```{r loaddata, include=FALSE, echo=FALSE}
+data <- readRDS(file="K:\\TEU\\APOE on Dementia\\Data Management\\R_Dataframes_TLA\\38358\\Organised\\apoe_excl.rds")
+# Exclude individuals below the age of 50
+data <- data[data$age>=50,]
+# Create a couple of factor variables
+data$selfrephyp <- data$prevHBP==TRUE | data$VIhyp==TRUE
+data$control <- !(data$SBP>=140 | data$DBP>=90)
+
+# Center age on the minimum
+data$c_age <- data$age - 50
+
+# Make the key dichotomous variables into factors to improve readability of outputs
+data$selfrephyp <- factor(as.numeric(data$selfrephyp), levels=c(0,1), labels=c("Did not report a diagnosis", "Self-reported hypertensive"))
+data$measuredhyp <- factor(as.numeric(data$measuredhyp), levels=c(0,1), labels=c("Not hypertensive at baseline", "Measured hypertensive at baseline"))
+data$HBPmeds <- factor(as.numeric(data$HBPmeds), levels=c(0,1), labels=c("Did not report any medication", "Self-reported BP medication"))
+data$control <- factor(as.numeric(data$control), levels=c(0,1), labels=c("Inadequately controlled", "Successfully controlled"))
+
+table(data$selfrephyp, useNA='ifany')
+table(data$HBPmeds[data$selfrephyp=="Self-reported hypertensive"], useNA='ifany')
+table(data$control[data$selfrephyp=="Self-reported hypertensive" & data$HBPmeds=="Self-reported BP medication"], useNA='ifany')
+table(data$measuredhyp[data$selfrephyp=="Did not report a diagnosis"], useNA='ifany')
+```
+
+
+# Categorisation tree for population 
+
+(UKB participants age [50,70) with complete BP measurements at baseline assessment and no history of dementia)
+![Categorisation of patients based on hypertensive status, medication status and BP control (modelled after Neo's Botswana study)](controlTreeN.png)
+
+Recall that many of the individuals who did not have a previous diagnosis of hypertension had hypertensive BP measurements at baseline assessment - in this classification tree that information is shown in pale blue. It will be excluded from the diagram henceforth for ease of use.
+
+Note also that some individuals (n=6848) who did not report a previous diagnosis of hypertension did report that they were taking blood pressure medication. For simplicity this information has not been depicted on this diagram, but be aware.
+
+
+```{r coxL1, include=FALSE, echo=FALSE, out.width="40%", out.height="40%"}
+model1 <- coxph(Surv(time_to_dementia, dementia_status) ~ age + gender + selfrephyp, data=data)
+kable(printcoxresults(model1), caption="Cox regression of self-reported hypertensive status against time to dementia, n=343,624")
+knitr::include_graphics('./controlTree_L1.png')
+
+model1 <- coxph(Surv(time_to_dementia, dementia_status) ~ age + gender + HBPmeds, 
+                data=data[data$selfrephyp=="Self-reported hypertensive",])
+kable(printcoxresults(model1), caption="Cox regression of self-reported BP medication status against time to dementia, among those who reported a previous diagnosis of hypertension, n=108,888")
+knitr::include_graphics('./controlTree_L2.png')
+
+model1 <- coxph(Surv(time_to_dementia, dementia_status) ~ age + gender + control, 
+                data=data[data$selfrephyp=="Self-reported hypertensive" & data$HBPmeds=="Self-reported BP medication",])
+kable(printcoxresults(model1), caption="Cox regression of BP control against time to dementia, among those who reported a previous diagnosis of hypertension and said they are taking BP medication, n=79,967")
+knitr::include_graphics('./controlTree_L3.png')
+
+```
+
+## Restrict to only those individuals most likely to develop dementia - consider the 10 year age range [60,70)
+
+```{r age65-70, include=TRUE, echo=FALSE}
+data$agegrp <- cut(data$age, breaks=seq(50,70,by=2), right=FALSE)
+tab <- table(data$agegrp, data$dementia_status)
+colnames(tab) <- c("Healthy", "Dementia")
+kable(tab, caption="Dementia cases by age, in 2-year age brackets")
+
+subset <- data[data$age< 70 & data$age>=60,]
+
+```
+
+### 1. Previous diagnosis?
+```{r L1, include=TRUE, echo=FALSE}
+
+knitr::include_graphics('./controlTree_L1.png')
+tab <- table(subset$selfrephyp, subset$dementia_status)
+colnames(tab) <- c("Healthy", "Dementia")
+kable(propped(tab), caption="Dementia status by self-reported hypertensive status among individuals aged 60-70")
+
+model1 <- coxph(Surv(time_to_dementia, dementia_status) ~ age + gender + selfrephyp, data=subset)
+kable(printcoxresults(model1), caption="Cox regression of self-reported hypertensive status against time to dementia")
+```
+
+### 2. Taking medication?
+
+```{r L2, include=TRUE, echo=FALSE}
+
+knitr::include_graphics('./controlTree_L2.png')
+tab <- table(subset$HBPmeds[subset$selfrephyp=="Self-reported hypertensive" & !is.na(subset$selfrephyp)], subset$dementia_status[subset$selfrephyp=="Self-reported hypertensive" & !is.na(subset$selfrephyp)])
+colnames(tab) <- c("Healthy", "Dementia")
+kable(propped(tab), caption="Dementia status by self-reported BP medication status among individuals aged 60-70 who self-reported a diagnosis of hypertension")
+
+model1 <- coxph(Surv(time_to_dementia, dementia_status) ~ age + gender + HBPmeds, 
+                data=subset[subset$selfrephyp=="Self-reported hypertensive" & !is.na(subset$selfrephyp),])
+kable(printcoxresults(model1), caption="Cox regression of self-reported BP medication status against time to dementia, among individuals aged 60-70 who reported a previous diagnosis of hypertension")
+
+```
+
+### 3. Measured BP?
+
+```{r L3, include=TRUE, echo=FALSE}
+
+knitr::include_graphics('./controlTree_L3.png')
+tab <- table(subset$control[subset$selfrephyp=="Self-reported hypertensive"  & !is.na(subset$selfrephyp) & subset$HBPmeds=="Self-reported BP medication" & !is.na(subset$HBPmeds)], subset$dementia_status[subset$selfrephyp=="Self-reported hypertensive"  & !is.na(subset$selfrephyp) & subset$HBPmeds=="Self-reported BP medication"  & !is.na(subset$HBPmeds)])
+colnames(tab) <- c("Healthy", "Dementia")
+kable(propped(tab), caption="Dementia status by BP control status among individuals aged 60-70 who self-reported a diagnosis of hypertension and self-reported BP medication")
+
+model1 <- coxph(Surv(time_to_dementia, dementia_status) ~ age + gender + control, 
+                data=subset[subset$selfrephyp=="Self-reported hypertensive" & !is.na(subset$selfrephyp) & subset$HBPmeds=="Self-reported BP medication" & !is.na(subset$HBPmeds),])
+kable(printcoxresults(model1), caption="Cox regression of BP control against time to dementia, among individuals aged 60-70 who reported a previous diagnosis of hypertension and said they are taking BP medication")
+```
+
+## Don't forget the undiagnosed hypertensives
+
+Remember that these three tiered models exclude the individuals who did not report a prior diagnosis of hypertension, even though some of them were measured hypertensive at baseline. For context, the number of these individuals with dementia diagnoses are presented here.
+
+```{r also, include=TRUE, echo=FALSE}
+
+tab <- table(subset$measuredhyp[subset$selfrephyp=="Did not report a diagnosis"], subset$dementia_status[subset$selfrephyp=="Did not report a diagnosis"])
+colnames(tab) <- c("Healthy", "Dementia")
+kable(propped(tab), caption="Dementia status by measured BP status among individuals aged 60-70 who did not report a hypertension diagnosis")
+```

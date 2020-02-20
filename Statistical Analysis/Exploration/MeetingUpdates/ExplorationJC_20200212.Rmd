@@ -1,0 +1,261 @@
+---
+title: "Stratified analyses by ApoE carrier status"
+author: "Jennifer Collister"
+date: "14/02/2020"
+output: 
+  word_document:
+      reference_docx: "K:/TEU/APOE on Dementia/RMarkdownStyle.docx"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE)
+
+library(survival)
+library(survminer)
+library(lmtest)
+library(kableExtra)
+library(knitr)
+library(timereg)
+library(epitools)
+library(tab)
+library(popEpi)
+
+source("K:/TEU/APOE on Dementia/Statistical Analysis/JCfunctions.R")
+```
+
+```{r loaddata, include=FALSE, echo=FALSE}
+data <- readRDS(file="K:\\TEU\\APOE on Dementia\\Data Management\\R_Dataframes_TLA\\38358\\Organised\\apoe_excl.rds")
+# Exclude individuals below the age of 50
+data <- data[data$age>=60,]
+# Create a couple of factor variables
+data$selfrephyp <- data$prevHBP==TRUE | data$VIhyp==TRUE
+data$aware <- data$selfrephyp==TRUE | data$HBPmeds==TRUE
+data$control <- !(data$SBP>=140 | data$DBP>=90)
+
+# Center age on the minimum
+data$c_age <- data$age - 50
+
+# Make the key dichotomous variables into factors to improve readability of outputs
+data$evidenceHTN <- data$definedhypertension
+data$evidenceHTN_ <- factor(as.numeric(data$evidenceHTN), levels=c(0,1), labels=c("No evidence of hypertension", "Evidence of hypertension"))
+data$selfrephyp_ <- factor(as.numeric(data$selfrephyp), levels=c(0,1), labels=c("Did not report prior HTN diagnosis", "Self-reported prior HTN diagnosis"))
+data$treated <- data$HBPmeds
+data$treated_ <- factor(as.numeric(data$treated), levels=c(0,1), labels=c("Did not report any medication", "Self-reported BP medication"))
+data$aware_ <- factor(as.numeric(data$aware), levels=c(0,1), labels=c("Unaware of hypertension", "Aware of hypertension"))
+data$measuredHTN <- data$measuredhyp
+data$measuredHTN_ <- factor(as.numeric(data$measuredHTN), levels=c(0,1), labels=c("BP < 140/90 at baseline", "BP >= 140/90 at baseline"))
+data$control_ <- factor(as.numeric(data$control), levels=c(0,1), labels=c("Inadequately controlled", "Successfully controlled"))
+
+```
+
+# 
+
+![Categorisation of patients based on hypertensive status, hypertension awareness, medication status and BP control (modelled after Neo's Botswana study)](Tree.png)
+
+Our population: Individuals in UKB aged between **[60,70)**, of White ethnicity, with complete BP measurement data at baseline, complete ApoE allele data, and no history of dementia.
+
+Our variables:
+
+* **evidenceHTN**: In the general population, if the participant self-reported a prior diagnosis of hypertension, self-reported taking BP medication or had measured BP >= 140/90 at baseline then we consider there to be some evidence of hypertension
+* **aware**: Among those with evidence of hypertension, if the participant self-reported a prior diagnosis of hypertension or self-reported taking BP medication then we consider them to be aware that they are hypertensive
+* **treated**: Among those who are aware that they are hypertensive, if the participant self-reported taking BP medication then we consider them to be treated. (Note: ultimately we will be able to use the new treatment categorisation Neo and I are defining)
+* **control**: Among those who are receiving treatment for hypertension, if the participant's average measured blood pressure at baseline assessment was < 140/90 then we consider them to be successfully controlled
+
+# Stratify the population based on whether or not they are ApoE e4 carriers
+
+```{r APOEtab, include=TRUE, echo=FALSE}
+
+data$e4carrier_ <- factor(as.numeric(data$e4carrier), levels=c(0,1), labels=c("Non-carrier", "ApoE e4 carrier"))
+
+kable(propped(table(data$evidenceHTN_, data$e4carrier_, useNA='ifany'), margin=2), caption="Evidence of hypertension by ApoE e4 carrier status")
+
+kable(propped(table(data$aware_[data$evidenceHTN==TRUE & !is.na(data$evidenceHTN)], 
+                    data$e4carrier_[data$evidenceHTN==TRUE & !is.na(data$evidenceHTN)], 
+                    useNA='ifany'), 
+              margin=2), 
+      caption="Awareness of hypertension by ApoE e4 carrier status among individuals with evidence of hypertension")
+
+kable(propped(table(data$treated_[data$aware==TRUE & !is.na(data$aware)], 
+                    data$e4carrier_[data$aware==TRUE & !is.na(data$aware)],
+                    useNA='ifany'), 
+              margin=2), 
+      caption="Treatment of hypertension by ApoE e4 carrier status among individuals who are aware of their hypertension")
+
+kable(propped(table(data$control_[data$treated==TRUE & !is.na(data$treated)], 
+                    data$e4carrier_[data$treated==TRUE & !is.na(data$treated)],
+                    useNA='ifany'), 
+              margin=2), 
+      caption="Control of hypertension by ApoE e4 carrier status among individuals who are taking medication for their hypertension")
+
+```
+
+# Age-standardised incidence rates of dementia per 100,000 person-years in each category
+
+```{r incidencerates, include=TRUE, echo=FALSE, results='asis'}
+# Define categorical age groups
+data$agegrp <- cut(data$age, c(60, 62, 64, 66, 68, 70), right=FALSE)
+# Number of individuals in each age group
+agepop <- table(data$agegrp)
+# Number of person-years in each age group
+pyears <- aggregate(data$time_to_dementia_yrs, by=list(data$agegrp), FUN=sum)
+
+
+# Crude incidence rate per age group in the whole population
+# Number of individuals in each age group by dementia status
+agedement <- table(data$agegrp, data$dementia_status)
+# Divide dementia cases by person-years in each age group
+wholepop <- agedement[,2]/(pyears[,2]/100000)
+
+dflist <- list(data, 
+                data[data$evidenceHTN==TRUE & !is.na(data$evidenceHTN),],
+                data[data$aware==TRUE & !is.na(data$aware),],
+                data[data$treated==TRUE & !is.na(data$treated),])
+varlist <- list("evidenceHTN", "aware", "treated", "control")
+caplist <- list("Incidence rate [95% CI] of dementia by ApoE e4 carrier status and evidence of hypertension",
+                "Incidence rate [95% CI] of dementia among those with evidence of hypertension, by ApoE e4 carrier status and awareness of hypertension", 
+                "Incidence rate [95% CI] of dementia among those aware they have hypertension, by ApoE e4 carrier status and self-reported BP medication", 
+                "Incidence rate [95% CI] of dementia among those who self-reported BP medication, by ApoE e4 carrier status and control of hypertension at baseline assessment")
+rowlist <- list(levels(data$evidenceHTN_), levels(data$aware_), levels(data$treated_), levels(data$control_))
+
+for (i in 1:length(dflist)) {
+  df <- dflist[[i]]
+  categoryvar <- varlist[[i]]
+  
+  # Pair-wise groups
+  incrates <- c(wholepop)
+  adjrates <- c()
+  
+  for (ctdf in list(df[df[["e4carrier"]]==FALSE & df[[categoryvar]]==FALSE, ],
+                    df[df[["e4carrier"]]==FALSE & df[[categoryvar]]==TRUE, ],
+                    df[df[["e4carrier"]]==TRUE & df[[categoryvar]]==FALSE, ],
+                    df[df[["e4carrier"]]==TRUE & df[[categoryvar]]==TRUE, ])) {
+    agedement <- table(ctdf$agegrp, ctdf$dementia_status)
+    pyears <-
+      aggregate(ctdf$time_to_dementia_yrs,
+                by = list(ctdf$agegrp),
+                FUN = sum)
+    
+    # Crude incidence rates
+    incrate <- round(agedement[, 2] / (pyears[, 2] / 100000), 2)
+    incrates <- cbind(incrates, incrate)
+    
+    # Age-standardised incidence rates
+    adjrate <-
+      ageadjust.direct(count = agedement[, 2],
+                       pop = pyears[, 2],
+                       stdpop = agepop)
+    adjrate <- round(100000 * adjrate, 2)
+    adjrates <- rbind(adjrates, adjrate)
+  }
+  
+  tab <- matrix(adjrates[,2], ncol=2, byrow=TRUE)
+  tab_l <- matrix(adjrates[,3], ncol=2, byrow=TRUE)
+  tab_u <- matrix(adjrates[,4], ncol=2, byrow=TRUE)
+  colnames(tab) <- c("No e4 alleles", "e4 carrier")
+  rownames(tab) <- rowlist[[i]]
+  tab <- as.table(tab)
+  for (x in 1:2){
+    for (y in 1:2){
+      tab[x,y] <- paste0(tab[x,y], " [", tab_l[x,y], ", ", tab_u[x,y], "]")
+    }
+  }
+  print(kable(tab, caption=caplist[[i]]))
+  cat("\n")
+
+}
+
+```
+
+```{r APOErisk, include=FALSE, echo=FALSE}
+
+data$e4carrier_ <- factor(as.numeric(data$e4carrier), levels=c(0,1), labels=c("Non-carrier", "ApoE e4 carrier"))
+
+kable(round(1000*
+              table(data$evidenceHTN_[data$dementia_status==TRUE], data$e4carrier_[data$dementia_status==TRUE])/
+              table(data$evidenceHTN_, data$e4carrier_), 
+            2), 
+      caption="Dementia cases per 1000 participants, split by evidence of hypertension and ApoE e4 carrier status")
+
+kable(round(1000*
+              table(data$aware_[data$evidenceHTN==TRUE & !is.na(data$evidenceHTN) & data$dementia_status==TRUE], 
+                    data$e4carrier_[data$evidenceHTN==TRUE & !is.na(data$evidenceHTN) & data$dementia_status==TRUE])/
+              table(data$aware_[data$evidenceHTN==TRUE & !is.na(data$evidenceHTN)], 
+                    data$e4carrier_[data$evidenceHTN==TRUE & !is.na(data$evidenceHTN)]),
+            2),
+      caption="Dementia cases per 1000 participants, split by awareness of hypertension and ApoE e4 carrier status among individuals with evidence of hypertension")
+
+kable(round(1000*
+              table(data$treated_[data$aware==TRUE & !is.na(data$aware) & data$dementia_status==TRUE], 
+                    data$e4carrier_[data$aware==TRUE & !is.na(data$aware) & data$dementia_status==TRUE])/
+              table(data$treated_[data$aware==TRUE & !is.na(data$aware)], 
+                    data$e4carrier_[data$aware==TRUE & !is.na(data$aware)]),
+            2), 
+      caption="Dementia cases per 1000 participants, split by treatment of hypertension and ApoE e4 carrier status among individuals who are aware of their hypertension")
+
+kable(round(1000*
+              table(data$control_[data$treated==TRUE & !is.na(data$treated) & data$dementia_status==TRUE], 
+                    data$e4carrier_[data$treated==TRUE & !is.na(data$treated) & data$dementia_status==TRUE])/
+              table(data$control_[data$treated==TRUE & !is.na(data$treated)], 
+                    data$e4carrier_[data$treated==TRUE & !is.na(data$treated)]),
+            2), 
+      caption="Dementia cases per 1000 participants, split by control of hypertension and ApoE e4 carrier status among individuals who are taking medication for their hypertension")
+
+```
+
+# First run a Cox model at each level among carriers of the ApoE e4 allele
+
+All models are Cox regression of successive indicators of hypertensive category against time to dementia within different population subgroups according to the categorisation tree, controlled for age and gender.
+
+```{r APOEstrat, include=TRUE, echo=FALSE}
+carriers <- data[data$apoe4!=0,]
+
+model1 <- coxph(Surv(time_to_dementia, dementia_status) ~ age + gender + evidenceHTN_, 
+                data=carriers)
+kable(printcoxresults(model1), 
+      caption=paste0("Evidence of hypertension among ApoE e4 carriers in UKB, n=", model1$n))
+
+model1 <- coxph(Surv(time_to_dementia, dementia_status) ~ age + gender + aware_, 
+                data=carriers[carriers$evidenceHTN==TRUE & !is.na(carriers$evidenceHTN),])
+kable(printcoxresults(model1), 
+      caption=paste0("Awareness of hypertension among ApoE e4 carriers with evidence of hypertension, n=", model1$n))
+
+model1 <- coxph(Surv(time_to_dementia, dementia_status) ~ age + gender + treated_, 
+                data=carriers[carriers$aware==TRUE & !is.na(carriers$aware),])
+kable(printcoxresults(model1), 
+      caption=paste0("Treatment for hypertension among ApoE e4 carriers who are aware that they have hypertension, n=", model1$n))
+
+model1 <- coxph(Surv(time_to_dementia, dementia_status) ~ age + gender + control_, 
+                data=carriers[carriers$treated==TRUE & !is.na(carriers$treated),])
+kable(printcoxresults(model1), 
+      caption=paste0("Control of hypertension among ApoE e4 carriers who are taking medication for their hypertension, n=", model1$n))
+
+```
+
+# Compare to Cox models run at each level among individuals who are not carriers of the ApoE e4 allele
+
+Again all models are Cox regression of successive indicators of hypertensive category against time to dementia within different population subgroups according to the categorisation tree, controlled for age and gender.
+
+```{r noAPOEstrat, include=TRUE, echo=FALSE}
+noncarriers <- data[data$apoe4==0,]
+
+model1 <- coxph(Surv(time_to_dementia, dementia_status) ~ age + gender + evidenceHTN_, 
+                data=noncarriers)
+kable(printcoxresults(model1), 
+      caption=paste0("Evidence of hypertension among non-carriers in UKB, n=", model1$n))
+
+model1 <- coxph(Surv(time_to_dementia, dementia_status) ~ age + gender + aware_, 
+                data=noncarriers[noncarriers$evidenceHTN==TRUE & !is.na(noncarriers$evidenceHTN),])
+kable(printcoxresults(model1), 
+      caption=paste0("Awareness of hypertension among non-carriers with evidence of hypertension, n=", model1$n))
+
+model1 <- coxph(Surv(time_to_dementia, dementia_status) ~ age + gender + treated_, 
+                data=noncarriers[noncarriers$aware==TRUE & !is.na(noncarriers$aware),])
+kable(printcoxresults(model1), 
+      caption=paste0("Treatment for hypertension among non-carriers who are aware that they have hypertension, n=", model1$n))
+
+model1 <- coxph(Surv(time_to_dementia, dementia_status) ~ age + gender + control_, 
+                data=noncarriers[noncarriers$treated==TRUE & !is.na(noncarriers$treated),])
+kable(printcoxresults(model1), 
+      caption=paste0("Control of hypertension among non-carriers who are taking medication for their hypertension, n=", model1$n))
+
+```

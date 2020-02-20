@@ -1,0 +1,281 @@
+---
+title: "APOE"
+author: "Jennifer Collister"
+date: "06/01/2020"
+output: 
+  html_document:
+    number_sections: true
+
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE)
+library(survival)
+library(survminer)
+library(lmtest)
+library(kableExtra)
+library(knitr)
+library(timereg)
+library(epitools)
+library(tab)
+library(popEpi)
+source("K:/TEU/APOE on Dementia/Statistical Analysis/JCfunctions.R")
+
+```
+
+Individuals below the age of 50 are excluded.
+Blood pressure categories have been tweaked to include/exclude endpoints as specified.
+
+```{r risk, include=TRUE, echo=FALSE}
+data <- readRDS(file="K:\\TEU\\APOE on Dementia\\Data Management\\R_Dataframes_TLA\\38358\\Organised\\apoe_excl.rds")
+data$selfrephyp <- data$prevHBP==TRUE | data$VIhyp==TRUE
+data$controlled <- !(data$SBP>=140 | data$DBP>=90)
+data$age <- data$age - 50
+
+# Make the key dichotomous variables into factors to improve readability of outputs
+data$selfrephyp <- factor(as.numeric(data$selfrephyp), levels=c(0,1), labels=c("Self-reported normotensive", "Self-reported hypertensive"))
+data$measuredhyp <- factor(as.numeric(data$measuredhyp), levels=c(0,1), labels=c("Not hypertensive at baseline", "Measured hypertensive at baseline"))
+data$HBPmeds <- factor(as.numeric(data$HBPmeds), levels=c(0,1), labels=c("Self-reported no medication", "Self-reported BP medication"))
+data$controlled <- factor(as.numeric(data$controlled), levels=c(0,1), labels=c("Inadequately controlled", "Succesfully controlled"))
+
+# Risk of dementia in each category
+case <- table(data$definedhypertension[data$dementia_status==TRUE], data$e4carrier[data$dementia_status==TRUE])
+pop <- table(data$definedhypertension, data$e4carrier)
+inc <- round(100*case/pop,2)
+names(dimnames(inc)) <- c("Hypertension (our definition)", "APOE e4 carrier")
+inc
+
+```
+
+# Incidence rates
+
+```{r incidencerates, include=TRUE, echo=FALSE}
+# Define categorical age groups
+data$agegrp <- cut(data$age + 50, c(50, 55, 60, 65, 70), right=FALSE)
+# Number of individuals in each age group
+agepop <- table(data$agegrp)
+# Number of person-years in each age group
+pyears <- aggregate(data$time_to_dementia_yrs, by=list(data$agegrp), FUN=sum)
+
+
+# Crude incidence rate per age group in the whole population
+# Number of individuals in each age group by dementia status
+agedement <- table(data$agegrp, data$dementia_status)
+# Divide dementia cases by person-years in each age group
+wholepop <- agedement[,2]/(pyears[,2]/100000)
+
+# Pair-wise groups
+incrates <- c(wholepop)
+adjrates <- c()
+for (df in list(data[data$e4carrier==FALSE & data$definedhypertension==FALSE,], 
+                data[data$e4carrier==TRUE & data$definedhypertension==FALSE,],
+                data[data$e4carrier==FALSE & data$definedhypertension==TRUE,],
+                data[data$e4carrier==TRUE & data$definedhypertension==TRUE,])
+     ) {
+  agedement <- table(df$agegrp, df$dementia_status)
+  pyears <- aggregate(df$time_to_dementia_yrs, by=list(df$agegrp), FUN=sum)
+  
+  # Crude incidence rates
+  incrate <- round(agedement[,2]/(pyears[,2]/100000),2)
+  incrates <- cbind(incrates, incrate)
+  
+  # Age-standardised incidence rates
+  adjrate <- ageadjust.direct(count=agedement[,2], pop=pyears[,2], stdpop=agepop)
+  adjrate <- round(100000*adjrate,2)
+  adjrates <- rbind(adjrates, adjrate)
+}
+colnames(incrates) <- c("Whole population", "No e4 alleles, not hypertensive", "e4 carrier, not hypertensive", "No e4 alleles, hypertensive", "e4 carrier, hypertensive")
+kable(incrates, caption="Comparing crude incidence rates per 100,000 person-years in different groups")
+
+rownames(adjrates) <- c("No e4 alleles, not hypertensive", "e4 carrier, not hypertensive", "No e4 alleles, hypertensive", "e4 carrier, hypertensive")
+kable(adjrates, caption="Comparing age-standardised incidence rates per 100,000 person years in different groups")
+
+```
+
+## Rate differences and ratios from baseline (no e4 alleles, not hypertensive)
+```{r ratediff, include=TRUE, echo=FALSE}
+
+ratediff <- adjrates[,2] - adjrates[1,2]
+kable(ratediff, caption="Age-standardised rate differences from baseline")
+rateratio <- round(adjrates[,2]/adjrates[1,2],2)
+kable(rateratio, caption="Age-standardised rate ratios")
+
+```
+
+# Consideration of blood pressure variables - continuous or categorical
+
+## Exploration
+
+### Tabulation of number of individuals in each blood pressure category
+```{r BPtables, include=TRUE, echo=FALSE}
+
+tab1 <- table(data$SBPcat, data$DBPcat)
+tab1sums <- addmargins(tab1)
+kable(tab1sums, caption="Number of individuals in diastolic vs systolic BP categories")
+```
+
+### 2x2 tables of our various hypertension criteria
+```{r 2x2tables, include=TRUE, echo=FALSE}
+
+propped <- function(table) {
+  prop <- round(100*prop.table(table),2)
+  tabsums <- addmargins(table)
+  for(i in c(1:dim(table)[1])) {
+    for(j in c(1:dim(table)[2])) {
+      tabsums[i,j] <- paste0(table[i,j], " (", prop[i,j], "%)")
+    }
+  }
+  return(tabsums)
+}
+
+
+tab2 <- table(data$measuredhyp, data$selfrephyp, useNA='ifany')
+kable(propped(tab2), caption="Self-reported diagnosed hypertensive vs measured hypertensive at baseline")
+
+tab3 <- table(data$HBPmeds, data$selfrephyp, useNA='ifany')
+kable(propped(tab3), caption="Self-reported diagnosed hypertensive vs self-reported BP medication")
+
+tab4 <- table(data$measuredhyp, data$HBPmeds, useNA='ifany')
+kable(propped(tab4), caption="Self-reported BP medication vs measured hypertensive at baseline")
+
+```
+
+
+
+### Correlation of different hypertension components
+
+```{r correlation, include=TRUE, echo=FALSE}
+print("Continuous systolic and diastolic blood pressures")
+cor.test(data$SBP, data$DBP, method="pearson")
+
+print("Measured hypertension at baseline assessment and self-reported hypertension diagnosis")
+cor.test(as.numeric(data$measuredhyp), as.numeric(data$selfrephyp))
+
+print("Measured hypertension at baseline assessment and self-reported hypertensive medication")
+cor.test(as.numeric(data$measuredhyp), as.numeric(data$HBPmeds))
+
+print("Self-reported hypertensive medication and self-reported hypertension diagnosis")
+cor.test(as.numeric(data$HBPmeds), as.numeric(data$selfrephyp))
+```
+
+### Conditional probability density plots
+
+Hadn't come across these before, thought they were pretty cool!
+They show how the conditional distribution of the continuous variable changes over different values of a categorical variable.
+I've used them here to show how the measured values of SBP and DBP vary over whether individuals have self-reported a previous diagnosis of hypertension, or hypertensive medication.
+
+```{r cpd_plot, include=TRUE, echo=FALSE}
+par(mfrow=c(1, 2))
+cdplot(data$SBP, as.factor(data$selfrephyp), xlab="Systolic BP, mmHg", ylab="Self-reported diagnosis of hypertension", main="Self-reported diagnosis vs SBP")
+cdplot(data$DBP, as.factor(data$selfrephyp), xlab="Diastolic BP, mmHg", ylab="Self-reported diagnosis of hypertension", main="Self-reported diagnosis vs DBP")
+
+cdplot(data$SBP, as.factor(data$HBPmeds), xlab="Systolic BP, mmHg", ylab="Self-reported hypertensive medication", main="Medication vs SBP")
+cdplot(data$DBP, as.factor(data$HBPmeds), xlab="Diastolic BP, mmHg", ylab="Self-reported hypertensive medication", main="Medication vs DBP")
+par(mfrow=c(1,1))
+```
+
+From what I can tell, the appropriate way to interpret this is that the probability of an individual with SBP=100 self-reporting a diagnosis of hypertension is about 10%.
+
+If we ignore the extremes, where data is sparse and the plot is likely to be unreliable, these broadly indicate that those with higher blood pressure are more likely to self-report as diagnosed hypertensives and taking blood pressure medication.
+
+### Tabulation to investigate control of hypertension
+```{r controltables, include=TRUE, echo=FALSE}
+
+tab1 <- table(data$HBPmeds[data$selfrephyp=="Self-reported hypertensive"])
+kable(tab1, caption="Have self-reported hypertensives been treated?")
+
+tab2 <- table(data$controlled[data$selfrephyp=="Self-reported hypertensive"])
+kable(tab2, caption="Have self-reported hypertensives successfully controlled their BP (BP < 140/90)?")
+
+tab3 <- table(data$SBPcat[data$selfrephyp=="Self-reported hypertensive"], data$DBPcat[data$selfrephyp=="Self-reported hypertensive"])
+kable(tab3, caption="And to what extent? (self-reported hypertensives)")
+
+tab4 <- table(data$controlled[data$HBPmeds=="Self-reported BP medication"])
+kable(tab4, caption="Have those on hypertensive medication successfully controlled their BP (BP < 140/90)?")
+
+tab5 <- table(data$SBPcat[data$HBPmeds=="Self-reported BP medication"], data$DBPcat[data$HBPmeds=="Self-reported BP medication"])
+kable(tab5, caption="And to what extent? (hypertensive medication)")
+
+```
+
+
+
+## Cox regression modelling
+
+### Cox models with different blood pressure variables, adjusted for age and gender
+```{r basemodel, include=TRUE, echo=FALSE}
+base <- coxph(Surv(time_to_dementia, dementia_status) ~ age + gender, data=data)
+
+print("Continuous SBP")
+SBPcont <- coxph(Surv(time_to_dementia, dementia_status) ~ age + gender + SBP, data=data)
+SBPcont
+
+print("Continuous DBP")
+DBPcont <- coxph(Surv(time_to_dementia, dementia_status) ~ age + gender + DBP, data=data)
+DBPcont
+
+print("Categorical SBP")
+SBPcat <- coxph(Surv(time_to_dementia, dementia_status) ~ age + gender + SBPcat, data=data)
+SBPcat
+anova(SBPcat, base)
+
+print("Categorical DBP")
+DBPcat <- coxph(Surv(time_to_dementia, dementia_status) ~ age + gender + DBPcat, data=data)
+DBPcat
+anova(DBPcat, base)
+
+```
+
+It appears that systolic blood pressure at baseline is not significantly associated with dementia. Diastolic blood pressure at baseline has a significant association, with what appears to be a slight protective effect (HR 0.989 per mmHg).
+
+When using categorical variables, again SBP is not statistically significant and DBP is.
+
+## Investigate how baseline hypertension differs from our definition of hypertension which incorporates self-reported diagnoses and medications
+
+### Cox model containing "measured hypertensive at baseline" as a covariate - regardless of previous diagnoses or medications
+```{r hyperbaseline, include=TRUE, echo=FALSE}
+# Hypertensive at baseline assessment
+coxph(Surv(time_to_dementia, dementia_status) ~ age + gender + measuredhyp, data=data)
+
+```
+
+As suggested by the separate SBP and DBP data, if we categorise individuals based on whether they were hypertensive at baseline assessment (SBP>=140 or DBP>=90), we see that this is associated with a slight reduction in dementia rates, but is not statistically significant.
+
+This is in contrast to the hypertension definition that includes self-reported diagnoses of hypertension or hypertensive medications, which we previously found to be significantly associated with a higher rate of dementia.
+
+### Cox model with our previous combined definition of hypertension
+
+Our previous combined definition classed individuals as hypertensive if
+* Their BP measurements at baseline assessment were hypertensive
+* They had self-reported a previous diagnosis of hypertension, either in the touchscreen questionnaire or in verbal interview
+* They had self-reported that they took medication for their blood pressure
+
+```{r hyperdef, include=TRUE, echo=FALSE}
+# Hypertensive at baseline assessment
+coxph(Surv(time_to_dementia, dementia_status) ~ age + gender + definedhypertension, data=data)
+
+```
+
+### Investigate the other factors contributing to our combined definition
+
+Considering those other contributing factors separately, we see that both self-reported diagnosis of hypertension and hypertensive medications are associated with increased dementia:
+
+```{r hyperother, include=TRUE, echo=FALSE}
+print("Self-reported hypertensive medication")
+coxph(Surv(time_to_dementia, dementia_status) ~ age + gender + HBPmeds, data=data)
+
+print("Self reported diagnosis of hypertension")
+coxph(Surv(time_to_dementia, dementia_status) ~ age + gender + selfrephyp, data=data)
+
+
+```
+
+#### Notes on missing data
+
+Notice there is some missing data here, as some individuals did not answer the touchscreen questions on previous diagnoses and medication. Some of these individuals subsequently gave information in the verbal interview - while we are currently using diagnosis data from the verbal interview to supplement the question on previous diagnoses, we are not yet using medication data. 
+
+Currently, individuals who do not have BP measurements at assessment are excluded. Once we have determined which information can be supplemented using data from the verbal interview, it may be appropriate to exclude those individuals who do not provide any information for these variables? Probably depends what we end up using as our definition of hypertension.
+
+### Thoughts
+* Modelling age + gender + hypertension medication + continuous DBP or SBP the blood pressure still appears to be associated with a reduction in dementia risk [model outputs excluded for brevity, available if of interest]
+* Model vascular dementia and alzheimers separately? Hope relationship with vascular dementia clearer?

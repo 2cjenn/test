@@ -1,0 +1,24 @@
+# Documents and outputs probably aren't worth tracking #
+########################################################
+**.docx
+**.pdf
+**.html
+**.pptx
+**.tex
+
+# But track the markdown style file, in case ever break it! #
+!RMarkdownStyle.docx
+
+# No longer using databases, so don't waste space tracking these #
+**.db
+
+# Note excel and csv could be important mapping tables, so worth tracking these! #
+
+
+# Some directories don't contain any code #
+###########################################
+Admin/
+Refs/
+Stats Email/
+Study Dissemination/
+Z Misc/

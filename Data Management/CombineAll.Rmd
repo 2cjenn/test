@@ -1,0 +1,577 @@
+---
+title: "PosterPrep"
+author: "Jennifer Collister"
+date: "17/12/2019"
+output: ioslides_presentation
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE)
+filepath <- "K:\\TEU\\APOE on Dementia\\Data Management\\R_Dataframes_TLA\\38358\\"
+library(dplyr)
+```
+
+```{r bloodpressure, include=FALSE}
+bp <- readRDS("K:\\TEU\\APOE on Dementia\\Data Management\\R_Dataframes_TLA\\38358\\BlP_base.rds")
+
+bp$SBP <- rowMeans(bp[,c("BlP_SBPAuto.0", "BlP_SBPAuto.1", "BlP_SBPMan.0", "BlP_SBPMan.1")], na.rm=TRUE)
+bp$DBP <- rowMeans(bp[,c("BlP_DBPAuto.0", "BlP_DBPAuto.1", "BlP_DBPMan.0", "BlP_DBPMan.1")], na.rm=TRUE)
+bp$PulseRate <- rowMeans(bp[,c("BlP_PulseRateAuto.0", "BlP_PulseRateAuto.1", "BlP_PulseRate.0", "BlP_PulseRate.1")], na.rm=TRUE)
+# bp$SBPcat <- cut(bp$SBP, breaks=c(0, 120, 140, 160, 1000), right=FALSE, labels=c("<120", "120-140", "140-160", ">160"))
+# bp$DBPcat <- cut(bp$DBP, breaks=c(0, 80, 90, 100, 1000), right=FALSE, labels=c("<80", "80-90", "90-100", ">100"))
+bp$SBPcat <- ifelse(bp$SBP<=120, "SBP<=120", 
+                     ifelse(bp$SBP>120 & bp$SBP<140, "120<SBP<140", 
+                            ifelse(bp$SBP>=140 & bp$SBP<160, "140<=SBP<160", 
+                                   ifelse(bp$SBP>=160, "SBP>=160", "Error"
+                                          )
+                                   )
+                            )
+                     )
+bp$SBPcat <- factor(bp$SBPcat, levels=c("SBP<=120", "120<SBP<140", "140<=SBP<160", "SBP>=160"))
+bp$DBPcat <- ifelse(bp$DBP<=80, "DBP<=80", 
+                     ifelse(bp$DBP>80 & bp$DBP<90, "80<DBP<90", 
+                            ifelse(bp$DBP>=90 & bp$DBP<100, "90<=DBP<100", 
+                                   ifelse(bp$DBP>=100, "DBP>=100", "Error"
+                                          )
+                                   )
+                            )
+                     )
+bp$DBPcat <- factor(bp$DBPcat, levels=c("DBP<=80", "80<DBP<90", "90<=DBP<100", "DBP>=100"))
+# Indicator variable for hypertensive status at baseline assessment
+bp$measuredhyp <- ifelse(bp$SBP>=140 | bp$DBP>=90, TRUE, FALSE)
+bp$controlled <- !(bp$SBP>=140 | bp$DBP>=90)
+
+saveRDS(bp[,c("ID", "SBP", "DBP", "PulseRate", "SBPcat", "DBPcat", "measuredhyp", "controlled")],
+        file="K:\\TEU\\APOE on Dementia\\Data Management\\R_Dataframes_TLA\\38358\\Organised\\bp.rds")
+
+``` 
+
+```{r medicalhistory, include=FALSE}
+medhist <- readRDS("K:\\TEU\\APOE on Dementia\\Data Management\\R_Dataframes_TLA\\38358\\HMH_base.rds")
+
+#--------------------------------------------------------------------------------------------------------------
+# Medications
+#--------------------------------------------------------------------------------------------------------------
+# Combine medications across male and females
+medhist$medf <- coalesce(medhist$HMH_MedCholBPDiabHorm.0, medhist$HMH_MedCholBPDiabHorm.1, medhist$HMH_MedCholBPDiabHorm.2, medhist$HMH_MedCholBPDiabHorm.3)
+medhist$medm <- coalesce(medhist$HMH_MedCholBPDiab.0, medhist$HMH_MedCholBPDiab.1, medhist$HMH_MedCholBPDiab.2)
+medhist$medcombine <- coalesce(medhist$medf, medhist$medm)
+# Create a new medication variable: yes/no/do not know/prefer not to answer/NA
+medlist <- c("Cholesterol lowering medication", "Blood pressure medication", "Oral contraceptive pill or minipill", "Hormone replacement therapy", "Insulin")
+medhist$medication <- ifelse(medhist$medcombine %in% medlist, "Yes", NA)
+medhist$medication[medhist$medcombine=="None of the above"] <- "No"
+medhist$medication[medhist$medcombine=="Do not know"] <- "Do not know"
+medhist$medication[medhist$medcombine=="Prefer not to answer"] <- "Prefer not to answer"
+medhist$medication[is.na(medhist$medcombine)] <- NA
+medhist$medication <- factor(medhist$medication)
+
+# Indicator variables for self-reported hypertension, stroke, and whether they take medicine for blood pressure
+medhist$HBPmeds <- apply(medhist[,grep("HMH_Med", colnames(medhist), fixed=TRUE)], 1, function(x) any(x %in% "Blood pressure medication"))
+medhist$diabmeds <- apply(medhist[,grep("HMH_Med", colnames(medhist), fixed=TRUE)], 1, function(x) any(x %in% "Insulin"))
+medhist$cholmeds <- apply(medhist[,grep("HMH_Med", colnames(medhist), fixed=TRUE)], 1, function(x) any(x %in% "Cholesterol lowering medication"))
+medhist$contraceptive <- apply(medhist[,grep("HMH_Med", colnames(medhist), fixed=TRUE)], 1, function(x) any(x %in% "Oral contraceptive pill or minipill"))
+medhist$HRT <- apply(medhist[,grep("HMH_Med", colnames(medhist), fixed=TRUE)], 1, function(x) any(x %in% "Hormone replacement therapy"))
+for(col in c("HBPmeds", "diabmeds", "cholmeds", "contraceptive", "HRT")){
+  medhist[[col]][medhist$medication %in% c("Do not know", "Prefer not to answer") | is.na(medhist$medication)] <- NA
+}
+
+#--------------------------------------------------------------------------------------------------------------
+# Vascular conditions
+#--------------------------------------------------------------------------------------------------------------
+medhist$vcon <- coalesce(medhist$HMH_HeartProbs.0, medhist$HMH_HeartProbs.1, medhist$HMH_HeartProbs.2, medhist$HMH_HeartProbs.3)
+# Create a new vascular condition variable: yes/no/prefer not to answer/NA
+condlist <- c("High blood pressure", "Stroke", "Angina", "Heart attack")
+medhist$vasc_cond <- ifelse(medhist$vcon %in% condlist, "Yes", NA)
+medhist$vasc_cond[medhist$vcon=="None of the above"] <- "No"
+medhist$vasc_cond[medhist$vcon=="Prefer not to answer"] <- "Prefer not to answer"
+medhist$vasc_cond[is.na(medhist$vcon)] <- NA
+medhist$vasc_cond <- factor(medhist$vasc_cond)
+
+# Indicator variables for various vascular conditions
+medhist$prevHBP <- apply(medhist[,grep("HMH_HeartProbs", colnames(medhist), fixed=TRUE)], 1, function(x) any(x %in% "High blood pressure"))
+medhist$prevstroke <- apply(medhist[,grep("HMH_HeartProbs", colnames(medhist), fixed=TRUE)], 1, function(x) any(x %in% "Stroke"))
+medhist$prevCVD <- apply(medhist[,grep("HMH_HeartProbs", colnames(medhist), fixed=TRUE)], 1, function(x) any(x %in% c("Angina", "Heart attack")))
+for(col in c("prevHBP", "prevstroke", "prevCVD")){
+  medhist[[col]][medhist$vasc_cond %in% c("Do not know", "Prefer not to answer") | is.na(medhist$vasc_cond)] <- NA
+}
+
+#--------------------------------------------------------------------------------------------------------------
+# Rename the variables for illness/disabilities and diabetes
+#--------------------------------------------------------------------------------------------------------------
+names(medhist)[names(medhist)=="HMH_IllDisab"] <- "illdisab"
+names(medhist)[names(medhist)=="HMH_Diabetes"] <- "diabetes"
+names(medhist)[names(medhist)=="HMH_HBPAge.0"] <- "HBPAge"
+
+
+saveRDS(medhist[,c("ID", "medication", "HBPmeds", "diabmeds", "cholmeds", "contraceptive", "HRT", 
+                   "vasc_cond", "prevHBP", "prevstroke", "prevCVD", "illdisab", "diabetes", "HBPAge")],
+        file="K:\\TEU\\APOE on Dementia\\Data Management\\R_Dataframes_TLA\\38358\\Organised\\tq_medhist.rds")
+```
+
+
+```{r keydates, include=FALSE}
+base <- readRDS("K:\\TEU\\APOE on Dementia\\Data Management\\R_Dataframes_TLA\\38358\\BaC.rds")
+rec <- readRDS("K:\\TEU\\APOE on Dementia\\Data Management\\R_Dataframes_TLA\\38358\\Rec_base.rds")
+
+basechar <- merge(base, rec, by="ID", all=TRUE)
+
+# Convert dates to date format
+basechar$recdate <- as.Date(basechar$Rec_DateAssess, origin=as.Date("1970-01-01"))
+basechar$lfudate <- as.Date(basechar$BaC_DateLostFU, origin=as.Date("1970-01-01"))
+# Estimate date of birth as the 15th of the month of birth
+basechar$dob <- as.Date(paste0("15",basechar$BaC_BirthMonth, basechar$BaC_BirthYear), "%d%B%Y")
+# Calculate age at recruitment
+basechar$age <- as.numeric(round(difftime(basechar$recdate, basechar$dob, unit="days")/365.25,2))
+
+# I don't think gender should be ordered
+basechar$gender <- factor(basechar$BaC_Sex, ordered=FALSE)
+
+names(basechar)[names(basechar)=="BaC_RsnLostFU"] <- "lfureason"
+names(basechar)[names(basechar)=="BaC_DeprivInd"] <- "townsend_depind"
+
+saveRDS(basechar[,c("ID", "dob", "age", "gender", "recdate", "lfudate", "lfureason", "townsend_depind")], 
+        file="K:\\TEU\\APOE on Dementia\\Data Management\\R_Dataframes_TLA\\38358\\Organised\\basechar.rds")
+```
+
+```{r ethnicity, include=FALSE}
+ethnicity <- readRDS("K:\\TEU\\APOE on Dementia\\Data Management\\R_Dataframes_TLA\\38358\\Eth_base.rds")
+
+# Reorder the factor levels to make more sense
+ethnicity$Eth_Ethnicity <- factor(ethnicity$Eth_Ethnicity, levels=c("White", "British", "Irish", "Any other white background",
+                                                                    "Mixed", "White and Black Caribbean", "White and Black African", 
+                                                                    "White and Asian", "Any other mixed background",
+                                                                    "Asian or Asian British", "Indian", "Pakistani", "Bangladeshi", 
+                                                                    "Any other Asian background",
+                                                                    "Black or Black British", "Caribbean", "African", "Any other Black background",
+                                                                    "Chinese", "Other ethnic group", "Do not know", "Prefer not to answer"))
+
+# Individuals that didn't answer the subgroup question get moved to the relevant "other" for their group
+ethnicity$eth_group <- ethnicity$Eth_Ethnicity
+ethnicity$eth_group[ethnicity$Eth_Ethnicity %in% c("White", "British", "Irish", "Any other white background")] <- "White"
+ethnicity$eth_group[ethnicity$Eth_Ethnicity %in% c("Mixed", "White and Black Caribbean", "White and Black African", "White and Asian", "Any other mixed background")] <- "Mixed"
+ethnicity$eth_group[ethnicity$Eth_Ethnicity %in% c("Asian or Asian British", "Indian", "Pakistani", "Bangladeshi", "Any other Asian background")] <- "Asian or Asian British"
+ethnicity$eth_group[ethnicity$Eth_Ethnicity %in% c("Black or Black British", "Caribbean", "African", "Any other Black background")] <- "Black or Black British"
+ethnicity$eth_group[is.na(ethnicity$Eth_Ethnicity)] <- "Prefer not to answer"
+ethnicity$eth_group <- factor(ethnicity$eth_group)
+
+# Top level categorisation
+ethnicity$eth_exact <- ethnicity$Eth_Ethnicity
+ethnicity$eth_exact[ethnicity$eth_exact == "White"] <- "Any other white background"
+ethnicity$eth_exact[ethnicity$eth_exact == "Mixed"] <- "Any other mixed background"
+ethnicity$eth_exact[ethnicity$eth_exact == "Asian or Asian British"] <- "Any other Asian background"
+ethnicity$eth_exact[ethnicity$eth_exact == "Black or Black British"] <- "Any other Black background"
+ethnicity$eth_exact[is.na(ethnicity$eth_exact)] <- "Prefer not to answer"
+ethnicity$eth_exact <- factor(ethnicity$eth_exact)
+
+saveRDS(ethnicity[,c("ID", "Eth_Ethnicity", "eth_group", "eth_exact")], 
+        file="K:\\TEU\\APOE on Dementia\\Data Management\\R_Dataframes_TLA\\38358\\Organised\\ethnicity.rds")
+```
+
+```{r HESdementia, include=FALSE}
+HES <- readRDS("K:\\TEU\\APOE on Dementia\\Data Management\\R_Dataframes_TLA\\38358\\HES.rds")
+source("K:/TEU/APOE on Dementia/Statistical Analysis/JCfunctions.R")
+
+# ICD 10 codes for dementia
+alz_ICD10 <- c("F00")
+vasc_ICD10 <- c("F01")
+other_ICD10 <- c("F02", "F03")
+dement_ICD10 <- c(alz_ICD10, vasc_ICD10, other_ICD10)
+# ICD 9 codes for dementia
+alz_ICD9 <- c("3310")
+vasc_ICD9 <- c("2904")
+other_ICD9 <- c("2900", "2901", "2902", "2903", "2941", "2942", "3311")
+dement_ICD9 <- c(alz_ICD9, vasc_ICD9, other_ICD9)
+
+# Filter out dementia diagnoses and dates only
+ICD10Diag <- HES[,c(1,grep("HES_ICD10Diag", colnames(HES), fixed=TRUE),grep("HES_ICD10DateFirst", colnames(HES), fixed=TRUE))]
+ICD10DiagS <- code_filter(df=ICD10Diag, diagcolname="HES_ICD10Diag", datecolname="HES_ICD10DateFirst", ncols=212, codelist=dement_ICD10, separator=".m", first=FALSE)
+# Keep only the first dementia diagnosis (of any kind) per person
+ICD10DiagFirst <- do.call(rbind, by(ICD10DiagS, ICD10DiagS[,c("ID")], function(x) x[which.min(x$Date),]))
+# Classify the dementia diagnoses by type of dementia
+ICD10DiagFirst$type <- ifelse(substr(ICD10DiagFirst$Code, 1, 3) %in% alz_ICD10, "Alzheimers",
+                              ifelse(substr(ICD10DiagFirst$Code, 1, 3) %in% vasc_ICD10, "Vascular", "Other"))
+
+# Repeat for ICD9 diagnoses
+ICD9Diag <- HES[,c(1,grep("HES_ICD9Diag", colnames(HES), fixed=TRUE),grep("HES_ICD9DateFirst", colnames(HES), fixed=TRUE))]
+ICD9Diag <- code_filter(df=ICD9Diag, diagcolname="HES_ICD9Diag", datecolname="HES_ICD9DateFirst", ncols=46, codelist=dement_ICD9, separator=".m", first=FALSE)
+ICD9DiagFirst <- do.call(rbind, by(ICD9Diag, ICD9Diag[,c("ID")], function(x) x[which.min(x$Date),]))
+ICD9DiagFirst$type <- ifelse(substr(ICD9DiagFirst$Code, 1, 3) %in% alz_ICD9, "Alzheimers",
+                             ifelse(substr(ICD9DiagFirst$Code, 1, 3) %in% vasc_ICD9, "Vascular", "Other"))
+
+
+
+# Combine the ICD10 and ICD9 diagnoses into one dementia diagnosis dataset
+dementia <- rbind(ICD10DiagFirst, ICD9DiagFirst)
+# And again keep only the first dementia per person
+dementia <- do.call(rbind, by(dementia, dementia[,c("ID")], function(x) x[which.min(x$Date),]))
+
+names(dementia)[names(dementia)=="Date"] <- "dement_date"
+names(dementia)[names(dementia)=="Code"] <- "dement_code"
+names(dementia)[names(dementia)=="type"] <- "dement_type"
+
+saveRDS(dementia, file="K:\\TEU\\APOE on Dementia\\Data Management\\R_Dataframes_TLA\\38358\\Organised\\dementia.rds")
+```
+
+
+```{r HESstroke, include=FALSE}
+# https://www.ahajournals.org/doi/full/10.1161/01.STR.0000174293.17959.a1
+HES <- readRDS("K:\\TEU\\APOE on Dementia\\Data Management\\R_Dataframes_TLA\\38358\\HES.rds")
+source("K:/TEU/APOE on Dementia/Statistical Analysis/JCfunctions.R")
+
+# ICD 10 codes for stroke
+haem_ICD10 <- c("I60", "I61")
+infarct_ICD10 <- c("I63")
+other_ICD10 <- c("I64")
+stroke_ICD10 <- c(haem_ICD10, infarct_ICD10, other_ICD10)
+# ICD 9 codes for stroke
+haem_ICD9 <- c("430", "431")
+infarct_ICD9 <- c("433")
+other_ICD9 <- c("434","436")
+stroke_ICD9 <- c(haem_ICD9, infarct_ICD9, other_ICD9)
+
+# Filter out dementia diagnoses and dates only
+ICD10Diag <- HES[,c(1,grep("HES_ICD10Diag", colnames(HES), fixed=TRUE),grep("HES_ICD10DateFirst", colnames(HES), fixed=TRUE))]
+ICD10DiagS <- code_filter(df=ICD10Diag, diagcolname="HES_ICD10Diag", datecolname="HES_ICD10DateFirst", ncols=212, codelist=stroke_ICD10, separator=".m", first=FALSE)
+# Keep only the first dementia diagnosis (of any kind) per person
+ICD10DiagFirst <- do.call(rbind, by(ICD10DiagS, ICD10DiagS[,c("ID")], function(x) x[which.min(x$Date),]))
+# Classify the dementia diagnoses by type of dementia
+ICD10DiagFirst$type <- ifelse(substr(ICD10DiagFirst$Code, 1, 3) %in% haem_ICD10, "Haemorrhagic",
+                              ifelse(substr(ICD10DiagFirst$Code, 1, 3) %in% infarct_ICD10, "Ischaemic", "Other"))
+
+# Repeat for ICD9 diagnoses
+ICD9Diag <- HES[,c(1,grep("HES_ICD9Diag", colnames(HES), fixed=TRUE),grep("HES_ICD9DateFirst", colnames(HES), fixed=TRUE))]
+ICD9Diag <- code_filter(df=ICD9Diag, diagcolname="HES_ICD9Diag", datecolname="HES_ICD9DateFirst", ncols=46, codelist=stroke_ICD9, separator=".m", first=FALSE)
+ICD9DiagFirst <- do.call(rbind, by(ICD9Diag, ICD9Diag[,c("ID")], function(x) x[which.min(x$Date),]))
+ICD9DiagFirst$type <- ifelse(substr(ICD9DiagFirst$Code, 1, 3) %in% haem_ICD9, "Haemorrhagic",
+                             ifelse(substr(ICD9DiagFirst$Code, 1, 3) %in% infarct_ICD9, "Ischaemic", "Other"))
+
+
+
+# Combine the ICD10 and ICD9 diagnoses into one dementia diagnosis dataset
+stroke <- rbind(ICD10DiagFirst, ICD9DiagFirst)
+# And again keep only the first dementia per person
+stroke <- do.call(rbind, by(stroke, stroke[,c("ID")], function(x) x[which.min(x$Date),]))
+
+names(stroke)[names(stroke)=="Date"] <- "stroke_date"
+names(stroke)[names(stroke)=="Code"] <- "stroke_code"
+names(stroke)[names(stroke)=="type"] <- "stroke_type"
+
+saveRDS(stroke, file="K:\\TEU\\APOE on Dementia\\Data Management\\R_Dataframes_TLA\\38358\\Organised\\stroke.rds")
+```
+
+```{r verbmedhist, include=FALSE}
+veint <- readRDS("K:\\TEU\\APOE on Dementia\\Data Management\\R_Dataframes_TLA\\38358\\VeI_base.rds")
+veint <- veint[,c(1, grep("VeI_NonCancerCode.", colnames(veint), fixed=TRUE))]
+
+coding6 <- read.table("K:/TEU/CancerPRS/Data_Dictionary/Mappings/coding6.tsv", sep="\t", header=TRUE, quote="", comment.char="$", fill=FALSE)
+
+# Indicator variables for many health conditions of interest
+
+strcodes <- coding6[grep("stroke|ischaemic stroke|subdural haemorrhage|subarachnoid haemorrhage|brain haemorrhage", coding6$meaning),]
+veint$VIstroke <- apply(veint[,grep("VeI_NonCancerCode", colnames(veint), fixed=TRUE)], 1, function(x) any(x %in% strcodes$coding))
+
+bpcodes <- coding6[grep("hypertension|essential hypertension", coding6$meaning),]
+veint$VIhyp <- apply(veint[,grep("VeI_NonCancerCode", colnames(veint), fixed=TRUE)], 1, function(x) any(x %in% bpcodes$coding))
+
+asthcodes <- coding6[grep("asthma", coding6$meaning),]
+veint$VIasth <- apply(veint[,grep("VeI_NonCancerCode", colnames(veint), fixed=TRUE)], 1, function(x) any(x %in% asthcodes$coding))
+
+copdcodes <- coding6[grep("copd", coding6$meaning),]
+veint$VIcopd <- apply(veint[,grep("VeI_NonCancerCode", colnames(veint), fixed=TRUE)], 1, function(x) any(x %in% copdcodes$coding))
+
+dementiacodes <-coding6[grep("dementia", coding6$meaning),]
+veint$VIdementia <- apply(veint[,grep("VeI_NonCancerCode", colnames(veint), fixed=TRUE)], 1, function(x) any(x %in% dementiacodes$coding))
+
+# Here it seems likely that NA doesn't mean not answered, but rather not applicable
+# for(col in c("VIstroke", "VIhyp", "VIasth", "VIcopd", "VIdementia")){
+#   veint[[col]][is.na(veint$VeI_NonCancerCode.0)] <- NA
+# }
+
+veint_medhist <- veint[,c("ID", "VIstroke", "VIhyp", "VIdementia", "VIasth", "VIcopd")]
+saveRDS(veint_medhist, file="K:\\TEU\\APOE on Dementia\\Data Management\\R_Dataframes_TLA\\38358\\Organised\\veint_medhist.rds")
+
+# Additionally, prepare a list of all participants and their diagnosis codes 
+# this can later be joined to mappings from codes to specific conditions of interest
+# Get the data into long format
+veint_long <- gather(veint, medno, coding, VeI_NonCancerCode.0:VeI_NonCancerCode.33, factor_key=TRUE)
+# Drop rows where individuals do not have any illness recorded
+veint_long <- veint_long[!is.na(veint_long$coding),]
+# And remove rows where individuals have the same illness recorded twice - 
+# two subtly different conditions that fit in the same UKB category?
+veint_long <- unique(veint_long[,c("ID", "coding")])
+# Save this ready to be joined to any diagnosis mapping
+saveRDS(veint_long, "K:\\TEU\\APOE on Dementia\\Data Management\\R_Dataframes_TLA\\38358\\Organised\\VIDiagnosisCodes_long.rds")
+
+```
+
+```{r deaths, include=FALSE}
+deaths <- readRDS("K:\\TEU\\APOE on Dementia\\Data Management\\R_Dataframes_TLA\\38358\\Dth.rds")
+
+deaths$deathdate <- pmin(deaths$Dth_Date.m0.i0, deaths$Dth_Date.m0.i1, na.rm=TRUE)
+deaths$demdeath <- apply(deaths[,grep("Dth_ICD10", colnames(deaths), fixed=TRUE)], 1, function(x) any(substr(x, 1, 3) %in% dement_ICD10))
+deaths$strdeath <- apply(deaths[,grep("Dth_ICD10", colnames(deaths), fixed=TRUE)], 1, function(x) any(substr(x, 1, 3) %in% stroke_ICD10))
+  
+saveRDS(deaths[,c("ID", "deathdate", "demdeath", "strdeath", "Dth_Cause.m0.i0")], 
+        file="K:\\TEU\\APOE on Dementia\\Data Management\\R_Dataframes_TLA\\38358\\Organised\\deathdate.rds")
+```
+
+```{r covars, include=FALSE}
+smoking <- readRDS(paste0(filepath, "Smo_base", ".rds"))
+smoking$Smo_Status = factor(smoking$Smo_Status, ordered=FALSE)
+
+alcohol <- readRDS(paste0(filepath, "Alc_base", ".rds"))
+alcohol$Alc_Status = factor(alcohol$Alc_Status, ordered=FALSE)
+covars <- merge(smoking[,c("ID", "Smo_Status", "Smo_TobaccoCurr", "Smo_TobaccoPast")], 
+                alcohol[,c("ID", "Alc_Status", "Alc_Freq")], by="ID", all=TRUE)
+
+household <- readRDS(paste0(filepath, "HoH_base", ".rds"))
+household$income <- household$HoH_PreTaxInc.0
+household$income[is.na(household$income)] <- household$HoH_PreTaxInc_P.0[is.na(household$income)]
+covars <- merge(covars, household[,c("ID", "income", "HoH_HouseholdSize.0")], by="ID", all=TRUE)
+
+sleep <- readRDS(paste0(filepath, "Sle_base", ".rds"))
+covars <- merge(covars, sleep, by="ID", all=TRUE)
+
+body <- readRDS(paste0(filepath, "BSM_base", ".rds"))
+covars <- merge(covars, body[,c("ID", "BSM_HeightStand", "BSM_Weight", "BSM_BMI")], by="ID", all=TRUE)
+
+
+education <- readRDS(paste0(filepath, "Edu_base", ".rds"))
+education$uni <- apply(education[,grep("Edu_Qualif", colnames(education), fixed=TRUE)], 1, function(x) any(x == "College or University degree" & !is.na(x)))
+education$eduNA <- apply(education[,grep("Edu_Qualif", colnames(education), fixed=TRUE)], 1, function(x) any(x == "Prefer not to answer" & !is.na(x)))
+
+education$edu_highest <- NA
+for(qual in c("Other professional qualifications eg: nursing, teaching",
+              "College or University degree",
+              "NVQ or HND or HNC or equivalent",
+              "A levels/AS levels or equivalent",
+              "O levels/GCSEs or equivalent",
+              "CSEs or equivalent",
+              "None of the above",
+              "Prefer not to answer")) {
+  education$edu_highest[is.na(education$edu_highest)] <- ifelse(
+    apply(education[is.na(education$edu_highest),grep("Edu_Qualif", colnames(education), fixed=TRUE)], 1, 
+          function(x) any(x == qual & !is.na(x))), 
+    qual, NA
+    )
+}
+education$edu_highest <- factor(education$edu_highest, levels=c("Other professional qualifications eg: nursing, teaching", "College or University degree", "NVQ or HND or HNC or equivalent", "A levels/AS levels or equivalent", "O levels/GCSEs or equivalent", "CSEs or equivalent", "None of the above", "Prefer not to answer"))
+
+covars <- merge(covars, education[,c("ID", "uni", "eduNA", "edu_highest", "Edu_Age.0")], by="ID", all=TRUE)
+
+saveRDS(covars, file="K:\\TEU\\APOE on Dementia\\Data Management\\R_Dataframes_TLA\\38358\\Organised\\covars.rds")
+```
+
+```{r combinedata, include=FALSE}
+bp <- readRDS("K:\\TEU\\APOE on Dementia\\Data Management\\R_Dataframes_TLA\\38358\\Organised\\bp.rds")
+ethnicity <- readRDS("K:\\TEU\\APOE on Dementia\\Data Management\\R_Dataframes_TLA\\38358\\Organised\\ethnicity.rds")
+basechar <- readRDS("K:\\TEU\\APOE on Dementia\\Data Management\\R_Dataframes_TLA\\38358\\Organised\\basechar.rds")
+dementia <- readRDS("K:\\TEU\\APOE on Dementia\\Data Management\\R_Dataframes_TLA\\38358\\Organised\\dementia.rds")
+VImedhist <- readRDS("K:\\TEU\\APOE on Dementia\\Data Management\\R_Dataframes_TLA\\38358\\Organised\\veint_medhist.rds")
+TQmedhist <- readRDS("K:\\TEU\\APOE on Dementia\\Data Management\\R_Dataframes_TLA\\38358\\Organised\\tq_medhist.rds")
+deathdate <- readRDS("K:\\TEU\\APOE on Dementia\\Data Management\\R_Dataframes_TLA\\38358\\Organised\\deathdate.rds")
+covars <- readRDS("K:\\TEU\\APOE on Dementia\\Data Management\\R_Dataframes_TLA\\38358\\Organised\\covars.rds")
+
+
+# Combine the baseline characteristics with the ethnicities
+data <- merge(basechar, ethnicity, by="ID", all=TRUE)
+# And with the dates of death
+data <- merge(data, deathdate, by="ID", all=TRUE)
+# And with the blood pressure data
+data <- merge(data, bp, by="ID", all=TRUE)
+# And the medical history data from the touchscreen assessment
+data <- merge(data, TQmedhist, by="ID", all=TRUE)
+# And the medical history data from the verbal interview
+data <- merge(data, VImedhist, by="ID", all=TRUE)
+# And with the dementia diagnoses from HES data over the course of the study
+data <- merge(data, dementia, by="ID", all=TRUE)
+# And with all other selected covariates
+data <- merge(data, covars, by="ID", all=TRUE)
+
+# Single variable for self-reported hypertension
+# If reported in either touchscreen questionnaire or verbal interview
+data$selfrephyp <- data$prevHBP==TRUE | data$VIhyp==TRUE
+
+# Indicator variable for hypertension awareness - 
+# did they say they had hypertension or say that they were taking BP meds
+data$aware <- data$selfrephyp==TRUE | data$HBPmeds==TRUE
+
+# Indicator variable for hypertension treatment status
+# Return to this after finalising incorporation of VI medication data
+data$treated <- data$HBPmeds
+
+# Indicator variable for "some evidence of hypertension" vs "no evidence of hypertension"
+data$evidenceHTN <- (data$selfrephyp==TRUE | data$HBPmeds==TRUE | data$measuredhyp==TRUE)
+unique(data$evidenceHTN)
+
+# Center age on the minimum
+data$c_age <- data$age - 50
+
+# Make the key dichotomous variables into factors to improve readability of outputs
+data$prevHBP_ <- factor(as.numeric(data$prevHBP), levels=c(0,1), labels=c("Did not report prior HTN diagnosis (touchscreen)", "Self-reported prior HTN diagnosis in touchscreen questionnaire"))
+data$VIhyp_ <- factor(as.numeric(data$VIhyp), levels=c(0,1), labels=c("Did not report prior HTN diagnosis (VI)", "Self-reported prior HTN diagnosis in verbal interview"))
+data$selfrephyp_ <- factor(as.numeric(data$selfrephyp), levels=c(0,1), labels=c("Did not report prior HTN diagnosis", "Self-reported prior HTN diagnosis"))
+
+data$measuredhyp_ <- factor(as.numeric(data$measuredhyp), levels=c(0,1), labels=c("Measured BP < 140/90 at baseline", "Measured BP >= 140/90 at baseline"))
+
+data$controlled_ <- factor(as.numeric(data$controlled), levels=c(0,1), labels=c("Inadequately controlled", "Successfully controlled"))
+
+data$aware_ <- factor(as.numeric(data$aware), levels=c(0,1), labels=c("Unaware of hypertension", "Aware of hypertension"))
+
+data$treated_ <- factor(as.numeric(data$treated), levels=c(0,1), labels=c("Did not report BP medication", "Self-reported BP medication"))
+
+data$evidenceHTN_ <- factor(as.numeric(data$evidenceHTN), levels=c(0,1), labels=c("No evidence of hypertension", "Evidence of hypertension"))
+
+
+
+
+saveRDS(data, file="K:\\TEU\\APOE on Dementia\\Data Management\\R_Dataframes_TLA\\38358\\Organised\\Hypertension\\HTN_raw.rds")
+
+```
+
+
+```{r mergeAPOE, include=FALSE}
+# Combine the apoe data with all the other UKB data
+apoe <- readRDS("K:\\TEU\\UKB Genetic Data\\SNP Extraction\\APOE_20191018\\extracted_files\\R\\gen_apoe.rds")
+data <- readRDS("K:\\TEU\\APOE on Dementia\\Data Management\\R_Dataframes_TLA\\38358\\Organised\\Hypertension\\HTN_raw.rds")
+
+names(apoe)[names(apoe)=="IID"] <- "ID"
+length(unique(apoe$ID))
+
+apoe <- merge(apoe, data, by="ID")
+
+saveRDS(apoe, file="K:\\TEU\\APOE on Dementia\\Data Management\\R_Dataframes_TLA\\38358\\Organised\\Hypertension\\APOE\\apoe_raw.rds")
+```
+
+
+```{r timetoevent, include=FALSE}
+apoe <- readRDS("K:\\TEU\\APOE on Dementia\\Data Management\\R_Dataframes_TLA\\38358\\Organised\\Hypertension\\APOE\\apoe_raw.rds")
+
+# Individuals with dementia as a cause of death should be included as having dementia
+apoe$eventdate <- apoe$dement_date
+apoe$eventdate[apoe$demdeath==TRUE] <- pmin(apoe$dement_date[apoe$demdeath==TRUE], apoe$deathdate[apoe$demdeath==TRUE], na.rm=TRUE)
+
+
+# Calculate time in days to different end points
+# Time to HES-recorded diagnosis of dementia
+apoe$demtime <- as.numeric(difftime(apoe$eventdate, apoe$recdate, unit='days'))
+
+# Time to death
+apoe$deathtime <- as.numeric(difftime(apoe$deathdate, apoe$recdate, unit='days'))
+
+# Time until lost to follow-up
+apoe$lfutime <- as.numeric(difftime(apoe$lfudate, apoe$recdate, unit='days'))
+
+# Administrative censoring:
+# England 31/03/2017, Scotland 31/10/2016, Wales 29/02/2016
+# Majority of data is from England therefore use that date
+apoe$actime <- as.numeric(difftime(as.Date("31Mar2017", "%d%B%Y"), apoe$recdate, units="days"))
+
+# For the survival analysis, we want the time until the first of these end points
+apoe$time_to_dementia <- pmin(apoe$demtime, apoe$deathtime, apoe$lfutime, apoe$actime, na.rm=TRUE)
+apoe$time_to_dementia_yrs <- apoe$time_to_dementia/365.25
+# The status is whether they received a dementia diagnosis by the end point
+apoe$dementia_status <- (!is.na(apoe$demtime) & apoe$demtime == apoe$time_to_dementia)
+
+# At the moment, the censoring date from HES data is before the latest death registry data
+# So we have 45 individuals who have dementia listed on their death certificate, but who died after the current administrative follow-up point
+# Alas for wasted data
+hmm <- apoe[apoe$dementia_status==0 & apoe$demdeath==TRUE,]
+
+saveRDS(apoe, file="K:\\TEU\\APOE on Dementia\\Data Management\\R_Dataframes_TLA\\38358\\Organised\\Hypertension\\APOE\\apoe_surv.rds")
+```
+
+```{r APOEexclusions, include=FALSE}
+# Read in the dataset
+# n = 514,776
+apoe <- readRDS("K:\\TEU\\APOE on Dementia\\Data Management\\R_Dataframes_TLA\\38358\\Organised\\Hypertension\\APOE\\apoe_surv.rds")
+
+apoe$e4carrier <- apoe$apoe4>0
+apoe$apoe4 <- factor(apoe$apoe4)
+apoe$number_of_apoe4_alleles <- apoe$apoe4
+
+apoe$alcdaily <- apoe$Alc_Freq=="Daily or almost daily"
+apoe$diab <- apoe$diabetes=="Yes"
+
+
+## Remove individuals who have withdrawn from UKB
+withdrawn <- read.csv("K:\\TEU\\APOE on Dementia\\Data Management\\WithdrawnIDs.csv", header=FALSE)
+apoe <- apoe[!apoe$ID %in% withdrawn$V1,]
+
+## Genetic exclusions
+
+# Exclude individuals with APOE e1 because it's rare and don't know much about it
+# Exclude individuals with genotype e2/e4 because they cancel out?
+# Also can't be definitively sure if genotype is e1/e3 or e2/e4
+# n = 11,493
+apoe <- apoe[apoe$apoe1==0 & !is.na(apoe$apoe1),]
+
+# Exclude individuals with genetic/reported sex mismatch
+# n=337
+apoe$Sex <- factor(apoe$Sex, ordered=FALSE)
+apoe <- apoe[apoe$Sex == apoe$gender,]
+
+## Other important exclusions
+
+# Exclude individuals with missing BP data
+# n = 432
+apoe <- apoe[!is.na(apoe$SBP) & !is.na(apoe$DBP),]
+apoe <- apoe[!is.na(apoe$evidenceHTN),]
+
+# Restrict to self-report "white"
+apoe$cauc <- apoe$eth_group=="White"
+apoe <- apoe[apoe$cauc==TRUE,]
+
+
+# Exclude individuals with prevalent dementia
+# n = 155
+apoe <- apoe[!apoe$VIdementia,]
+apoe <- apoe[is.na(apoe$dement_date) | (apoe$dement_date>apoe$recdate & !is.na(apoe$dement_date)),]
+
+
+# Exclude individuals with no age data
+# n = 0
+apoe <- apoe[!is.na(apoe$age),]
+# Exclude those outside the 40-70 age range
+# n = 2247
+apoe <- apoe[apoe$age >= 40 & apoe$age < 70,]
+
+# Remaining n = 474,343
+saveRDS(apoe, file="K:\\TEU\\APOE on Dementia\\Data Management\\R_Dataframes_TLA\\38358\\Organised\\Hypertension\\APOE\\apoe_excl.rds")
+
+```
+
+```{r HTNexclusions, include=FALSE}
+data <- readRDS("K:\\TEU\\APOE on Dementia\\Data Management\\R_Dataframes_TLA\\38358\\Organised\\Hypertension\\HTN_raw.rds")
+
+# Exclude individuals who have withdrawn from the study
+withdrawn <- read.csv("K:\\TEU\\APOE on Dementia\\Data Management\\WithdrawnIDs.csv", header=FALSE)
+data <- data[!data$ID %in% withdrawn$V1,]
+
+# Exclude individuals with missing BP data
+# or missing answers to BP questions on touchscreen questionnaire
+# n = 502506 - 492235 = 10271
+data <- data[!is.na(data$SBP) & !is.na(data$DBP),]
+data <- data[!is.na(data$selfrephyp),]
+data <- data[!is.na(data$HBPmeds),]
+# Return to this to incorporate interview meds list responses
+
+# Exclude individuals with no age data
+# n = 0
+data <- data[!is.na(data$age),]
+# Exclude those outside the 40-70 age range
+# n = 492235 - 489780 = 2455
+data <- data[data$age >= 40 & data$age < 70,]
+
+# Exclude those with no gender data
+# n = 0
+data <- data[!is.na(data$gender),]
+
+# Exclude those with no highest level of education provided
+# n = 489780 - 484785 = 4995
+data <- data[data$eduNA==FALSE,]
+
+saveRDS(data, file="K:\\TEU\\APOE on Dementia\\Data Management\\R_Dataframes_TLA\\38358\\Organised\\Hypertension\\Neo\\HTN_excl.rds")
+
+```
+

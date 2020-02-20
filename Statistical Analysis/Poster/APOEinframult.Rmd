@@ -1,0 +1,216 @@
+---
+title: "APOE - investigating the interaction"
+author: "Jennifer Collister"
+date: "06/01/2020"
+output: html_document
+
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE)
+library(survival)
+library(survminer)
+library(lmtest)
+library(kableExtra)
+library(knitr)
+library(timereg)
+library(epitools)
+library(popEpi)
+source("K:/TEU/APOE on Dementia/Statistical Analysis/JCfunctions.R")
+
+```
+
+```{r exclusions, include=FALSE}
+# Read in the dataset
+# n = 514,776
+apoe <- readRDS("K:\\TEU\\APOE on Dementia\\Data Management\\R_Dataframes_TLA\\38358\\Organised\\apoe_surv.rds")
+
+apoe$e4carrier <- apoe$apoe4>0
+apoe$apoe4 <- factor(apoe$apoe4)
+apoe$number_of_apoe4_alleles <- apoe$apoe4
+
+apoe$alcdaily <- apoe$Alc_Freq=="Daily or almost daily"
+apoe$diab <- apoe$diabetes=="Yes"
+
+apoe$ytime <- apoe$stime/365.25
+
+## Genetic exclusions
+
+# Exclude individuals with APOE e1 because it's rare and don't know much about it
+# Exclude individuals with genotype e2/e4 because they cancel out?
+# Also can't be definitively sure if genotype is e1/e3 or e2/e4
+# n = 11,493
+apoe <- apoe[apoe$apoe1==0 & !is.na(apoe$apoe1),]
+
+# Exclude individuals with genetic/reported sex mismatch
+# n=337
+apoe$Sex <- factor(apoe$Sex, ordered=FALSE)
+apoe <- apoe[apoe$Sex == apoe$gender,]
+
+
+
+## Other important exclusions
+
+# Exclude individuals with missing BP data
+# n = 432
+apoe <- apoe[!is.na(apoe$SBP) & !is.na(apoe$DBP),]
+apoe <- apoe[!is.na(apoe$hypertension),]
+
+# Restrict to self-report "white"
+apoe$cauc <- apoe$group=="White"
+apoe <- apoe[apoe$cauc==TRUE,]
+
+
+# Exclude individuals with prevalent dementia
+# n = 155
+apoe <- apoe[!apoe$VIdementia,]
+apoe <- apoe[is.na(apoe$dement_date) | (apoe$dement_date>apoe$recdate & !is.na(apoe$dement_date)),]
+
+
+
+
+# Exclude individuals with no age data
+# n = 0
+apoe <- apoe[!is.na(apoe$age),]
+# Exclude those outside the 40-70 age range
+# n = 2247
+apoe <- apoe[apoe$age >= 50 & apoe$age < 70,]
+
+# # Exclusions for covariates
+# # Exclude those who didn't answer smoking or alcohol status
+# apoe <- apoe[!is.na(apoe$Smo_Status) & apoe$Smo_Status!="Prefer not to answer" ,]
+# apoe$Smo_Status <- factor(apoe$Smo_Status)
+# # apoe <- apoe[!is.na(apoe$Alc_Status) & apoe$Alc_Status!="Prefer not to answer" ,]
+# # apoe$Alc_Status <- factor(apoe$Alc_Status)
+# apoe <- apoe[!is.na(apoe$Alc_Freq) & apoe$Alc_Freq!="Prefer not to answer" ,]
+# apoe$Alc_Freq <- factor(apoe$Alc_Freq)
+# # apoe <- apoe[!is.na(apoe$Sle_Duration) & apoe$Sle_Duration!="Prefer not to answer" ,]
+# # apoe$Sle_Duration <- factor(apoe$Sle_Duration)
+# apoe <- apoe[!is.na(apoe$HMH_Diabetes) & apoe$HMH_Diabetes!="Prefer not to answer" & apoe$HMH_Diabetes!="Do not know" ,]
+# apoe$HMH_Diabetes <- factor(apoe$HMH_Diabetes)
+# # apoe <- apoe[!is.na(apoe$income) & apoe$income!="Prefer not to answer" & apoe$income!="Do not know" ,]
+# # apoe$income <- factor(apoe$income)
+# apoe <- apoe[!is.na(apoe$BSM_BMI) ,]
+# apoe <- apoe[!is.na(apoe$townsend_depind) ,]
+
+# Remaining n = 474,343
+saveRDS(apoe, file="K:\\TEU\\APOE on Dementia\\Data Management\\R_Dataframes_TLA\\38358\\Organised\\apoe_excl.rds")
+
+```
+
+
+In the Kaplan-Meier curves we see that APOE e4 carriers have a higher dementia rate than those with no e4 alleles, and individuals with hypertension have a higher dementia rate than those without.
+
+```{r km, include=TRUE, echo=FALSE}
+# Survival analysis: time to dementia
+surv <- Surv(apoe$ytime, apoe$status)
+
+ggsurvplot(survfit(surv~e4carrier, data=apoe), data=apoe, ylim=c(0.95,1), risk.table=TRUE, ylab="Proportion without dementia", title="Kaplan-Meier plot of time to dementia diagnosis \nby APOE e4 carrier status", xlab="Time, years", censor=FALSE)
+
+ggsurvplot(survfit(surv~hypertension, data=apoe), data=apoe, ylim=c(0.95,1), risk.table=TRUE, ylab="Proportion without dementia", title="Kaplan-Meier plot of time to dementia diagnosis \nby hypertension status", xlab="Time, years", censor=FALSE)
+```
+
+## Incidence rates
+
+Incidence rates for dementia among individuals with hypertension and/or APOE e4 carrier status.
+
+```{r incidencerates, include=TRUE, echo=FALSE}
+# table(apoe$hypertension[apoe$status==TRUE], apoe$apoe4[apoe$status==TRUE])
+# table(apoe$hypertension, apoe$apoe4)
+
+case <- table(apoe$hypertension[apoe$status==TRUE], apoe$e4carrier[apoe$status==TRUE])
+pop <- table(apoe$hypertension, apoe$e4carrier)
+inc <- round(100*case/pop,2)
+names(dimnames(inc)) <- c("Hypertension", "APOE e4 carrier")
+inc
+
+# Dementia rate per 1000 person years in the whole population
+apoe$agegrp <- cut(apoe$age, c(50, 55, 60, 65, 70), right=FALSE)
+
+agepop <- table(apoe$agegrp)
+agedement <- table(apoe$agegrp, apoe$status)
+pyears <- aggregate(apoe$ytime, by=list(apoe$agegrp), FUN=sum)
+
+# kable(agepop, caption="Study population by age group")
+# kable(agedement, caption="Dementia status by age group")
+# kable(pyears, caption="Person-years of time in study by age group")
+
+wholepop <- agedement[,2]/(pyears[,2]/100000)
+
+agedement_e4t <- table(apoe[apoe$e4carrier==TRUE,]$agegrp, apoe[apoe$e4carrier==TRUE,]$status)
+pyears_e4t <- aggregate(apoe[apoe$e4carrier==TRUE,]$ytime, by=list(apoe[apoe$e4carrier==TRUE,]$agegrp), FUN=sum)
+e4t <- agedement_e4t[,2]/(pyears_e4t[,2]/100000)
+
+agedement_e4f <- table(apoe[apoe$e4carrier==FALSE,]$agegrp, apoe[apoe$e4carrier==FALSE,]$status)
+pyears_e4f <- aggregate(apoe[apoe$e4carrier==FALSE,]$ytime, by=list(apoe[apoe$e4carrier==FALSE,]$agegrp), FUN=sum)
+e4f <- agedement_e4f[,2]/(pyears_e4f[,2]/100000)
+
+agedement_hypt <- table(apoe[apoe$hypertension==TRUE,]$agegrp, apoe[apoe$hypertension==TRUE,]$status)
+pyears_hypt <- aggregate(apoe[apoe$hypertension==TRUE,]$ytime, by=list(apoe[apoe$hypertension==TRUE,]$agegrp), FUN=sum)
+hypt <- agedement_hypt[,2]/(pyears_hypt[,2]/100000)
+
+agedement_hypf <- table(apoe[apoe$hypertension==FALSE,]$agegrp, apoe[apoe$hypertension==FALSE,]$status)
+pyears_hypf <- aggregate(apoe[apoe$hypertension==FALSE,]$ytime, by=list(apoe[apoe$hypertension==FALSE,]$agegrp), FUN=sum)
+hypf <- agedement_hypf[,2]/(pyears_hypf[,2]/100000)
+
+incrates <- cbind(wholepop, e4t, e4f, hypt, hypf)
+colnames(incrates) <- c("Whole population", "e4 carriers", "no e4 alleles", "hypertensives", "not hypertensives")
+kable(incrates, caption="Comparing crude incidence rates per 100,000 person-years in different groups")
+
+
+# Age-adjusted
+adjrates <- c()
+for (group in c("e4t", "e4f", "hypt", "hypf")) {
+  adjrate <- ageadjust.direct(count=get(paste0("agedement", "_", group))[,2], 
+                              pop=get(paste0("pyears", "_", group))[,2], 
+                              stdpop=agepop)
+  adjrate <- round(100000*adjrate,2)
+  adjrates <- rbind(adjrates, adjrate)
+
+}
+rownames(adjrates) <- c("e4 carriers", "no e4 alleles", "hypertensives", "not hypertensives")
+kable(adjrates, caption="Comapring age-adjusted incidence rates per 100,000 person years in different groups")
+
+```
+
+## Cox model without interaction
+```{r basemodel, include=TRUE, echo=FALSE}
+
+# Interaction between hypertension and APOE e4
+base <- coxph(Surv(stime, status) ~ age + gender + hypertension + e4carrier, data=apoe)
+base
+```
+
+## Cox model with interaction
+```{r interactmodel, include=TRUE, echo=FALSE}
+
+# Interaction between hypertension and APOE e4
+interact <- coxph(Surv(stime, status) ~ age + gender + hypertension * e4carrier, data=apoe)
+interact
+```
+
+#### Likelihood ratio test to determine whether the inclusion of the interaction significantly improves model fit
+```{r lrtest, include=TRUE, echo=FALSE}
+anova(base, interact)
+
+```
+
+## Stratified analysis
+```{r strat, include=TRUE, echo=TRUE}
+# Stratified analysis
+# Among APOE e4 carriers
+coxph(Surv(stime, status) ~ age + gender + hypertension, data=apoe[apoe$e4carrier==TRUE,])
+# Among hypertensives
+coxph(Surv(stime, status) ~ age + gender + e4carrier, data=apoe[apoe$hypertension==TRUE,])
+```
+
+## Joint effects analysis
+```{r joint, include=TRUE, echo=FALSE}
+# Joint effects analysis
+apoe$joint <- interaction(as.numeric(apoe$e4carrier), as.numeric(apoe$hypertension))
+apoe$joint <- factor(as.numeric(apoe$joint)-1, labels=c("not a carrier, no hypertension", "e4 carrier, no hypertension", "not a carrier, hypertensive", "e4 carrier, hypertensive"))
+coxph(Surv(stime, status) ~ age + gender + joint, data=apoe)
+```
+
+Based on the joint-effect results, and assuming additivity, we would expect the hazards ratio of hypertensive e4 carriers to be 3.02 + 1.43 - 1 = 3.45, and we can see that this deviates from the observed hazard ratio of 4.22.
+

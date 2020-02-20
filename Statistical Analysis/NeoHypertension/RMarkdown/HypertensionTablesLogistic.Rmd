@@ -1,0 +1,238 @@
+---
+title: "Hypertension Tabulations"
+author: "Jennifer Collister"
+date: "15/01/2020"
+output: 
+  word_document:
+      reference_docx: "C:/Users/jenniferco/Documents/RMarkdownStyle.docx"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE)
+library(survival)
+library(survminer)
+library(lmtest)
+library(kableExtra)
+library(knitr)
+library(timereg)
+library(epitools)
+library(tab)
+library(popEpi)
+library(sjPlot)
+library(sjmisc)
+library(sjlabelled)
+library(pixiedust)
+source("K:/TEU/APOE on Dementia/Statistical Analysis/JCfunctions.R")
+
+```
+
+Individuals below the age of 50 are excluded.
+
+```{r risk, include=TRUE, echo=FALSE}
+data <- readRDS(file="K:\\TEU\\APOE on Dementia\\Data Management\\R_Dataframes_TLA\\38358\\Organised\\apoe_excl.rds")
+data$selfrephyp <- data$prevHBP==TRUE | data$VIhyp==TRUE
+data$controlled <- !(data$SBP>=140 | data$DBP>=90)
+data$age <- data$age - 50
+
+# Make the key dichotomous variables into factors to improve readability of outputs
+data$selfrephyp <- factor(as.numeric(data$selfrephyp), levels=c(0,1), labels=c("Self-reported normotensive", "Self-reported hypertensive"))
+data$prevHBP <- factor(as.numeric(data$prevHBP), levels=c(0,1), labels=c("Self-reported normotensive in touchscreen questionnaire", "Self-reported hypertensive in touchscreen questionnaire"))
+data$VIhyp <- factor(as.numeric(data$VIhyp), levels=c(0,1), labels=c("Self-reported normotensive in verbal interview", "Self-reported hypertensive in verbal interview"))
+data$measuredhyp <- factor(as.numeric(data$measuredhyp), levels=c(0,1), labels=c("Not hypertensive at baseline", "Measured hypertensive at baseline"))
+data$HBPmeds <- factor(as.numeric(data$HBPmeds), levels=c(0,1), labels=c("Self-reported no medication", "Self-reported BP medication"))
+data$controlled <- factor(as.numeric(data$controlled), levels=c(0,1), labels=c("Inadequately controlled", "Succesfully controlled"))
+
+data$SBPbin <- data$SBP >= 140
+data$DBPbin <- data$DBP >= 90
+data$SBPbin <- factor(as.numeric(data$SBPbin), levels=c(0,1), labels=c("SBP<140", "SBP>=140"))
+data$DBPbin <- factor(as.numeric(data$DBPbin), levels=c(0,1), labels=c("DBP<90", "DBP>=90"))
+
+
+propped <- function(table) {
+  prop <- round(100*prop.table(table, margin=2),2)
+  tabsums <- addmargins(table)
+  for(i in c(1:dim(table)[1])) {
+    for(j in c(1:dim(table)[2])) {
+      tabsums[i,j] <- paste0(table[i,j], " (", prop[i,j], "%)")
+    }
+  }
+  return(tabsums)
+}
+
+```
+
+## Tables and cross tabs separating out self-reported previous diagnosis of hypertension gathered through touchscreen questionnaire vs verbal interview.
+
+From the UKB documentation:
+
+> On the interview’s screen will be a box that tells them if the participant has responded in the touchscreen questionnaire (or if they were not sure) that they had been told by a doctor that they have one or more of the following illnesses: ... high blood pressure.... These will already be selected in the illness tree.
+> If data is required, the interviewer asks:
+> “In the touch screen you selected that you have been told by a doctor that you have other serious illnesses or disabilities, could you now tell me what they are?”
+> If no data is required, the interviewer checks with the participant that this is the case.
+> If during the interview it appears [any illnesses] have been incorrectly selected, the responses can be removed by clicking on the illness. 
+
+There are therefore a couple of factors to consider in interpretation:
+
+* The data from the touchscreen questionnaire is multiple choice - participants can
+  * select "High blood pressure"
+  * select other medical conditions (eg stroke, angina) but not high blood pressure (implying that they do not have hypertension)
+  * select "Do not know" - I believe this triggers investigation in the verbal interview
+  * select "Prefer not to answer" - I don't know if this is probed further in the verbal interview
+  * not answer the question
+* The data from the verbal interview is a list of illness codes - if a code for hypertension is recorded for a patient then they are considered to have self-reported a diagnosis of hypertension in the verbal interview. If a code for hypertension is not recorded, there is no way of knowing whether this means they said they did not have hypertension or refused to answer.
+* When the interviewer removes a response, is it removed from the touchscreen questionnaire data?
+
+```{r tables, include=TRUE, echo=FALSE}
+
+tab2 <- table(data$VIhyp, data$prevHBP, useNA='ifany')
+kable(propped(tab2), caption="Self-reported hypertension status in touchscreen questionnaire vs verbal interview")
+
+```
+
+We see that there is high agreement between those who self-reported a diagnosis of hypertension in the touchscreen questionnaire and during the verbal interview.
+
+It seems likely where an individual did not self-report as hypertensive in the touchscreen questionnaire, but was recorded as hypertensive in the verbal interview, that in these cases the interviewer was able to determine that the patient had received a diagnosis of hypertension.
+
+The cases where individuals reported a diagnosis of hypertension in the touchscreen questionnaire but were not recorded as such in the verbal interview could either mean that they had made an error in the questionnaire and the interviewer determined that they were not hypertensive, or that the question was not asked at verbal interview?
+
+```{r moretables, include=TRUE, echo=FALSE}
+
+tab2 <- table(data$measuredhyp, data$prevHBP, useNA='ifany')
+kable(propped(tab2), caption="Touchscreen self-reported diagnosed hypertensive vs measured hypertensive at baseline")
+
+tab2 <- table(data$measuredhyp, data$VIhyp, useNA='ifany')
+kable(propped(tab2), caption="Verbal interview self-reported diagnosed hypertensive vs measured hypertensive at baseline")
+
+tab3 <- table(data$HBPmeds, data$prevHBP, useNA='ifany')
+kable(propped(tab3), caption="Touchscreen self-reported diagnosed hypertensive vs self-reported BP medication")
+
+tab3 <- table(data$HBPmeds, data$VIhyp, useNA='ifany')
+kable(propped(tab3), caption="Verbal interview self-reported diagnosed hypertensive vs self-reported BP medication")
+```
+
+## The number of cases of dementia 
+```{r dementiastat, include=TRUE, echo=FALSE}
+tab2 <- table(data$measuredhyp[data$HBPmeds=="Self-reported no medication"],data$dementia_status[data$HBPmeds=="Self-reported no medication"])
+kable(propped(tab2), caption="Measured hypertension at baseline vs dementia status among those not on hypertensive medication")
+
+tab2 <- table(data$measuredhyp[data$HBPmeds=="Self-reported BP medication"],data$dementia_status[data$HBPmeds=="Self-reported BP medication"])
+kable(propped(tab2), caption="Measured hypertension at baseline vs dementia status among those taking hypertensive medication")
+
+```
+
+## Logistic regressions
+
+```{r logisticregression, include=TRUE, echo=FALSE}
+printlogresults <- function(modeloutput){
+  results <- cbind(exp(modeloutput$coefficients), summary(modeloutput)$coefficients[,4])
+  colnames(results) <- c("Odds Ratio", "p-value")
+  return(results)
+}
+overall <- glm(dementia_status ~ DBP, data=data, family=binomial(link='logit'))
+kable(printlogresults(overall), caption="Logistic regression of Diastolic BP against dementia status")
+
+overall <- glm(dementia_status ~ DBP + age + gender, data=data, family=binomial(link='logit'))
+kable(printlogresults(overall), caption="Logistic regression of Diastolic BP against dementia status, adjusted for age and gender")
+
+nomeds <- glm(dementia_status ~ DBP, data=data[data$HBPmeds=="Self-reported no medication",], family=binomial(link='logit'))
+kable(printlogresults(nomeds), caption="Logistic regression of Diastolic BP against dementia status among those who did not say they were taking BP medication")
+
+meds <- glm(dementia_status ~ DBP, data=data[data$HBPmeds=="Self-reported BP medication",], family=binomial(link='logit'))
+kable(printlogresults(meds), caption="Logistic regression of Diastolic BP against dementia status among those who said they were taking BP medication")
+
+nomeds <- glm(dementia_status ~ DBP + age + gender, data=data[data$HBPmeds=="Self-reported no medication",], family=binomial(link='logit'))
+kable(printlogresults(nomeds), caption="Logistic regression of Diastolic BP against dementia status, adjusted for age and gender, among those who did not say they were taking BP medication")
+
+meds <- glm(dementia_status ~ DBP + age + gender, data=data[data$HBPmeds=="Self-reported BP medication",], family=binomial(link='logit'))
+kable(printlogresults(meds), caption="Logistic regression of Diastolic BP against dementia status, adjusted for age and gender, among those who said they were taking BP medication")
+
+overall <- glm(dementia_status ~ DBPbin, data=data, family=binomial(link='logit'))
+kable(printlogresults(overall), caption="Logistic regression of Diastolic BP against dementia status")
+
+overall <- glm(dementia_status ~ DBPbin + age + gender, data=data, family=binomial(link='logit'))
+kable(printlogresults(overall), caption="Logistic regression of Diastolic BP against dementia status, adjusted for age and gender")
+
+nomeds <- glm(dementia_status ~ DBPbin, data=data[data$HBPmeds=="Self-reported no medication",], family=binomial(link='logit'))
+kable(printlogresults(nomeds), caption="Logistic regression of Diastolic BP against dementia status among those who did not say they were taking BP medication")
+
+meds <- glm(dementia_status ~ DBPbin, data=data[data$HBPmeds=="Self-reported BP medication",], family=binomial(link='logit'))
+kable(printlogresults(meds), caption="Logistic regression of Diastolic BP against dementia status among those who said they were taking BP medication")
+
+nomeds <- glm(dementia_status ~ DBPbin + age + gender, data=data[data$HBPmeds=="Self-reported no medication",], family=binomial(link='logit'))
+kable(printlogresults(nomeds), caption="Logistic regression of Diastolic BP against dementia status, adjusted for age and gender, among those who did not say they were taking BP medication")
+
+meds <- glm(dementia_status ~ DBPbin + age + gender, data=data[data$HBPmeds=="Self-reported BP medication",], family=binomial(link='logit'))
+kable(printlogresults(meds), caption="Logistic regression of Diastolic BP against dementia status, adjusted for age and gender, among those who said they were taking BP medication")
+
+overall <- glm(dementia_status ~ SBP, data=data, family=binomial(link='logit'))
+kable(printlogresults(overall), caption="Logistic regression of Systolic BP against dementia status")
+
+overall <- glm(dementia_status ~ SBP + age + gender, data=data, family=binomial(link='logit'))
+kable(printlogresults(overall), caption="Logistic regression of Systolic BP against dementia status, adjusted for age and gender")
+
+nomeds <- glm(dementia_status ~ SBP, data=data[data$HBPmeds=="Self-reported no medication",], family=binomial(link='logit'))
+kable(printlogresults(nomeds), caption="Logistic regression of Systolic BP against dementia status among those who did not say they were taking BP medication")
+
+meds <- glm(dementia_status ~ SBP, data=data[data$HBPmeds=="Self-reported BP medication",], family=binomial(link='logit'))
+kable(printlogresults(meds), caption="Logistic regression of Systolic BP against dementia status among those who said they were taking BP medication")
+
+nomeds <- glm(dementia_status ~ SBP + age + gender, data=data[data$HBPmeds=="Self-reported no medication",], family=binomial(link='logit'))
+kable(printlogresults(nomeds), caption="Logistic regression of Systolic BP against dementia status, adjusted for age and gender, among those who did not say they were taking BP medication")
+
+meds <- glm(dementia_status ~ SBP + age + gender, data=data[data$HBPmeds=="Self-reported BP medication",], family=binomial(link='logit'))
+kable(printlogresults(meds), caption="Logistic regression of Systolic BP against dementia status, adjusted for age and gender, among those who said they were taking BP medication")
+
+overall <- glm(dementia_status ~ SBPbin, data=data, family=binomial(link='logit'))
+kable(printlogresults(overall), caption="Logistic regression of Systolic BP against dementia status")
+
+overall <- glm(dementia_status ~ SBPbin + age + gender, data=data, family=binomial(link='logit'))
+kable(printlogresults(overall), caption="Logistic regression of Systolic BP against dementia status, adjusted for age and gender")
+
+nomeds <- glm(dementia_status ~ SBPbin, data=data[data$HBPmeds=="Self-reported no medication",], family=binomial(link='logit'))
+kable(printlogresults(nomeds), caption="Logistic regression of Systolic BP against dementia status among those who did not say they were taking BP medication")
+
+meds <- glm(dementia_status ~ SBPbin, data=data[data$HBPmeds=="Self-reported BP medication",], family=binomial(link='logit'))
+kable(printlogresults(meds), caption="Logistic regression of Systolic BP against dementia status among those who said they were taking BP medication")
+
+nomeds <- glm(dementia_status ~ SBPbin + age + gender, data=data[data$HBPmeds=="Self-reported no medication",], family=binomial(link='logit'))
+kable(printlogresults(nomeds), caption="Logistic regression of Systolic BP against dementia status, adjusted for age and gender, among those who did not say they were taking BP medication")
+
+meds <- glm(dementia_status ~ SBPbin + age + gender, data=data[data$HBPmeds=="Self-reported BP medication",], family=binomial(link='logit'))
+kable(printlogresults(meds), caption="Logistic regression of Systolic BP against dementia status, adjusted for age and gender, among those who said they were taking BP medication")
+
+```
+
+## Cox regressions
+
+```{r coxregression, include=TRUE, echo=FALSE}
+printcoxresults <- function(modeloutput){
+  results <- cbind(summary(modeloutput)$coefficients[,2], summary(modeloutput)$coefficients[,5])
+  colnames(results) <- c("Hazard Ratio", "p-value")
+  return(results)
+}
+
+overall <- coxph(Surv(time_to_dementia, dementia_status) ~ SBPbin, data=data)
+kable(printcoxresults(overall), caption="Cox regression of Systolic BP against time to dementia")
+
+overall <- coxph(Surv(time_to_dementia, dementia_status) ~ SBPbin + age + gender, data=data)
+kable(printcoxresults(overall), caption="Cox regression of Systolic BP against time to dementia, adjusted for age and gender")
+
+overall <- coxph(Surv(time_to_dementia, dementia_status) ~ SBP, data=data)
+kable(printcoxresults(overall), caption="Cox regression of Systolic BP against time to dementia")
+
+overall <- coxph(Surv(time_to_dementia, dementia_status) ~ SBP + age + gender, data=data)
+kable(printcoxresults(overall), caption="Cox regression of Systolic BP against time to dementia, adjusted for age and gender")
+
+overall <- coxph(Surv(time_to_dementia, dementia_status) ~ DBPbin, data=data)
+kable(printcoxresults(overall), caption="Cox regression of Diastolic BP against time to dementia")
+
+overall <- coxph(Surv(time_to_dementia, dementia_status) ~ DBPbin + age + gender, data=data)
+kable(printcoxresults(overall), caption="Cox regression of Diastolic BP against time to dementia, adjusted for age and gender")
+
+overall <- coxph(Surv(time_to_dementia, dementia_status) ~ DBP, data=data)
+kable(printcoxresults(overall), caption="Cox regression of Diastolic BP against time to dementia")
+
+overall <- coxph(Surv(time_to_dementia, dementia_status) ~ DBP + age + gender, data=data)
+kable(printcoxresults(overall), caption="Cox regression of Diastolic BP against time to dementia, adjusted for age and gender")
+
+```
