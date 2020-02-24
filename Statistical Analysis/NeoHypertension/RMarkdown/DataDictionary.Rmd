@@ -9,6 +9,7 @@ output: word_document
 knitr::opts_chunk$set(echo = TRUE)
 library(kableExtra)
 library(knitr)
+library(dataMeta)
 ```
 
 ```{r loaddata, include=FALSE}
@@ -35,6 +36,7 @@ data <- readRDS(file="K:\\TEU\\APOE on Dementia\\Data Management\\R_Dataframes_T
 * Gender
 * Education
 * BMI
+* Date of recruitment
 
 
 
@@ -131,20 +133,71 @@ coredf <- data.frame(do.call(rbind, core))
 ```{r tabulate_core, include=TRUE}
 
 # kable(coredf)
-
+thing <- c(table(data$aware_), 
+        table(data$treated_), 
+        table(data$controlled_), 
+        table(data$eth_group),
+        "age"=nrow(data[!is.na(data$age),]),
+        "recdate"=nrow(data[!is.na(data$recdate),]),
+        table(data$gender),
+        table(data$edu_highest),
+        "bmi"=nrow(data[!is.na(data$BSM_BMI),])
+        )
 kable(c(table(data$aware_), 
         table(data$treated_), 
         table(data$controlled_), 
         table(data$eth_group),
         "age"=nrow(data[!is.na(data$age),]),
+        "recdate"=nrow(data[!is.na(data$recdate),]),
         table(data$gender),
         table(data$edu_highest),
         "bmi"=nrow(data[!is.na(data$BSM_BMI),])
-        )
+        ),
+      row.names=
       )
  
 ```
 
+```{r loaddata, include=FALSE}
+
+data <- readRDS(file="K:\\TEU\\APOE on Dementia\\Data Management\\R_Dataframes_TLA\\38358\\Organised\\Hypertension\\Neo\\HTN_excl.rds")
+install_local("K:\\TEU\\Code Repository\\dataMetaFork")
+```
+
+```{r datameta}
+
+core <- data[,c("ID", "evidenceHTN_", "aware_", "treated_", "controlled_", "eth_group", "age", "recdate", "gender", "edu_highest", "bl_BMI")]
+
+var_desc <- c("Participant ID", 
+              "Evidence of hypertension", 
+              "Among participants with evidence of hypertension, if they self-reported a diagnosis of hypertension in the touchscreen questionnaire or verbal interview, or reported that they were taking BP medication then they were considered to be aware of their hypertension",
+              "Among participants who were aware of their hypertension, if they self-reported taking BP meds or the list of medication they provided in verbal interview was found to include a standard hypertensive treatment regimen then they were considered to be treated for hypertension",
+              "Among participants who were taking treatment for hypertension, if their mean measured BP at baseline assessment was < 140/90 then they were considered to be successfully controlling their BP",
+              "Broad ethnic category of participant",
+              "Age at baseline assessment, estimated from month and year of birth and date of attending recruitment centre",
+              "Date of attending recruitment centre",
+              "Self-reported gender",
+              "Highest reported educational qualification, derived from list of qualifications reported in touchscreen questionnaire",
+              "Body mass index at baseline assessment, derived by UKB from height and weight at baseline assessment")
+
+var_type <- c(0, 1, 1, 1, 1, 1, 0, 0, 1, 1, 0)
+
+
+core_linker <- build_linker(core, variable_description = var_desc, variable_type = var_type)
+
+core_dict <- build_dict(my.data=core, linker=core_linker, option_description=NULL, prompt_varopts=FALSE, na.rm=TRUE)
+# core_dict$n <- 
+
+kable(core_dict)
+
+data_desc = "The variables required for the core analysis"
+
+coredata <- incorporate_attr(my.data=core, data.dictionary=core_dict, main_string=data_desc)
+
+attributes(coredata)
+
+
+```
 
 
 # Expanded analysis
@@ -172,7 +225,7 @@ kable(c(table(data$aware_),
   * Employment shift type
   * Occupation type
 * Lifestyle behaviour
-  * Tobacco
+  * Tobacco 20116
   * Harmful alcohol use
   * Physical activity
     * Continuous METS

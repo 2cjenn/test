@@ -9,6 +9,7 @@ output: ioslides_presentation
 knitr::opts_chunk$set(echo = FALSE)
 filepath <- "K:\\TEU\\APOE on Dementia\\Data Management\\R_Dataframes_TLA\\38358\\"
 library(dplyr)
+library(tidyr)
 ```
 
 ```{r bloodpressure, include=FALSE}
@@ -333,7 +334,8 @@ sleep <- readRDS(paste0(filepath, "Sle_base", ".rds"))
 covars <- merge(covars, sleep, by="ID", all=TRUE)
 
 body <- readRDS(paste0(filepath, "BSM_base", ".rds"))
-covars <- merge(covars, body[,c("ID", "BSM_HeightStand", "BSM_Weight", "BSM_BMI")], by="ID", all=TRUE)
+body$bl_BMI <- body$BSM_BMI
+covars <- merge(covars, body[,c("ID", "BSM_HeightStand", "BSM_Weight", "bl_BMI")], by="ID", all=TRUE)
 
 
 education <- readRDS(paste0(filepath, "Edu_base", ".rds"))
@@ -355,7 +357,9 @@ for(qual in c("Other professional qualifications eg: nursing, teaching",
     qual, NA
     )
 }
-education$edu_highest <- factor(education$edu_highest, levels=c("Other professional qualifications eg: nursing, teaching", "College or University degree", "NVQ or HND or HNC or equivalent", "A levels/AS levels or equivalent", "O levels/GCSEs or equivalent", "CSEs or equivalent", "None of the above", "Prefer not to answer"))
+education$edu_highest <- factor(education$edu_highest, 
+                                levels=c("Other professional qualifications eg: nursing, teaching", "College or University degree", "NVQ or HND or HNC or equivalent", "A levels/AS levels or equivalent", "O levels/GCSEs or equivalent", "CSEs or equivalent", "None of the above", "Prefer not to answer"),
+                                ordered=TRUE)
 
 covars <- merge(covars, education[,c("ID", "uni", "eduNA", "edu_highest", "Edu_Age.0")], by="ID", all=TRUE)
 
