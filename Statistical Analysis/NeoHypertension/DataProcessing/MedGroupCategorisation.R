@@ -2,51 +2,105 @@
 # Code to combine the medication classifications with the actual data and categorise individuals by whether we think they are
 # definitely, probably or not taking medication for their BP
 
-data <- readRDS(file="K:\\TEU\\APOE on Dementia\\Data Management\\R_Dataframes_TLA\\38358\\Organised\\APOE\\apoe_excl.rds")
+altdiag <- readRDS(file="K:\\TEU\\APOE on Dementia\\Data Management\\R_Dataframes_TLA\\38358\\Organised\\Hypertension\\Neo\\VIhypAltDiagnoses.rds")
 load("K:\\TEU\\APOE on Dementia\\Data Management\\R_Dataframes_TLA\\38358\\Organised\\Hypertension\\VIhypmeds.RData")
+bac <- readRDS("K:\\TEU\\APOE on Dementia\\Data Management\\R_Dataframes_TLA\\38358\\Organised\\basechar.rds")
+eth <- readRDS("K:\\TEU\\APOE on Dementia\\Data Management\\R_Dataframes_TLA\\38358\\Organised\\ethnicity.rds")
 
+# Keep all individuals with medication data, we may not have diagnosis data for some of them
+VImeds <- merge(VImeds, altdiag[,-which(names(altdiag)=="other")], by="ID", all.x=TRUE)
+VImeds <- merge(VImeds, bac[,c("ID", "gender", "age")], by="ID", all.x=TRUE)
+VImeds <- merge(VImeds, eth[,c("ID", "eth_group")], by="ID", all.x=TRUE)
+
+#--------------------------------------------------------------------------------------------------------------
+# Define the groups of drugs
+#--------------------------------------------------------------------------------------------------------------
 # Line 1 drugs: Ace Inhibitors (ACEI), Angiotensin II receptor blockers (ARBs) and Calcium Channel Blockers (CCB)
 VImeds$line1 <- rowSums(VImeds[,c("ACEI", "ARBs", "CCB")], na.rm=TRUE)>0
 # Line 2 drugs: Beta blocker (BB), Alpha blocker (AB) or Spironolactone
 VImeds$line2 <- rowSums(VImeds[,c("AB", "BB", "Potassium-sparing diuretic")], na.rm=TRUE)>0
+# Only taking one medication - a flag to speed stuff up
 VImeds$onlyone <- rowSums(VImeds[,hypclasslist], na.rm=TRUE)==1
 
+#--------------------------------------------------------------------------------------------------------------
+# Standard treatment algorithms according to NICE guidelines
+#--------------------------------------------------------------------------------------------------------------
+# Step 1/2: Taking one or more of ACEI, ARB or CCB WITHOUT thiazide-like diuretic or BB
 VImeds$step12 <- VImeds$line1 & is.na(VImeds[["Thiazide"]]) & !VImeds$line2 & is.na(VImeds[["Other"]])
+# Step 3: Taking a step 1/2 drug AND a thiazide-like diuretic
 VImeds$step3 <- VImeds$line1 & !is.na(VImeds[["Thiazide"]]) & !VImeds$line2 & is.na(VImeds[["Other"]])
-VImeds$step4 <- VImeds$line1 & !is.na(VImeds[["Thiazide"]]) & VImeds$line2 & is.na(VImeds[["Other"]])
-VImeds$step5 <- VImeds$line1 & !is.na(VImeds[["Thiazide"]]) & VImeds$line2 & !is.na(VImeds[["Other"]])
-VImeds$thiaonly <- !is.na(VImeds[["Thiazide"]]) & VImeds$onlyone
-VImeds$BBonly <- !is.na(VImeds[["BB"]]) & VImeds$onlyone
-VImeds$weird1 <- VImeds$line1 & is.na(VImeds[["Thiazide"]]) & VImeds$line2 & is.na(VImeds[["Other"]])
-VImeds$weird2 <- !VImeds$line1 & !is.na(VImeds[["Thiazide"]]) & VImeds$line2 & is.na(VImeds[["Other"]])
+# Step 4: Taking a step 3 combination of drugs AND AB, BB or other diuretic
+# AND does not have diagnosis of heart failure
+VImeds$step4 <- VImeds$line1 & !is.na(VImeds[["Thiazide"]]) & VImeds$line2 & is.na(VImeds[["Other"]]) & is.na(VImeds$heart_failure)
+# Step 5 'resistant hypertension': Taking at least 3 meds from steps 1-4
+# AND any of hydralazine, minoxidil, clonidine
+# AND does not have diagnosis of heart failure
+VImeds$step5 <- VImeds$line1 & !is.na(VImeds[["Thiazide"]]) & VImeds$line2 & !is.na(VImeds[["Other"]]) & is.na(VImeds$heart_failure)
 
 
-VImeds$hypgrp <- ifelse(VImeds$step12==TRUE, "Step 1/2", 
+#--------------------------------------------------------------------------------------------------------------
+# Standard exceptions to treatment algorithms
+#--------------------------------------------------------------------------------------------------------------
+# Thiazides only: atypical step 1 if Black OR age < 55
+VImeds$step1_b55 <- !is.na(VImeds[["Thiazide"]]) & VImeds$onlyone & (VImeds$eth_group=="Black or Black British" | VImeds$age<55)
+# BB only: atypical step 1 if female age <45 (childbearing age) AND does not have diagnosis of heart failure
+VImeds$step1_f45 <- !is.na(VImeds[["BB"]]) & VImeds$onlyone & VImeds$gender=="Female" & VImeds$age<45 & is.na(VImeds$heart_failure)
+
+
+#--------------------------------------------------------------------------------------------------------------
+# Atypical treatment algorithm AND no alternative diagnosis
+#--------------------------------------------------------------------------------------------------------------
+# ACEI/ARB or BB or other diuretic AND does not have heart failure
+
+# Thiazide only AND does not have:
+# liver failure, kidney failure, pulmonary oedema, lymphoedema
+VImeds$thiaonly <- !is.na(VImeds[["Thiazide"]]) & VImeds$onlyone & is.na(VImeds$liver_failure) & is.na(VImeds$kidney_failure) & is.na(VImeds$heart_failure) & is.na(VImeds$lymphoedema)
+# ACEI/ARB AND does not have any of the following:
+# diabetes, heart failure, prior heart attack
+VImeds$ACEARBonly <- (!is.na(VImeds[["ACEI"]]) | !is.na(VImeds[["ARBs"]])) & VImeds$onlyone & is.na(VImeds$diabetes) & is.na(VImeds$heart_failure) & is.na(VImeds$heart_attack)
+# BB AND does not have any of the following:
+# heart arrhythmia, heart failure, angina
+VImeds$BBonly <- !is.na(VImeds[["BB"]]) & VImeds$onlyone & is.na(VImeds$heart_arrhythmia) & is.na(VImeds$heart_failure) & is.na(VImeds$angina)
+# VImeds$weird1 <- VImeds$line1 & is.na(VImeds[["Thiazide"]]) & VImeds$line2 & is.na(VImeds[["Other"]])
+# VImeds$weird2 <- !VImeds$line1 & !is.na(VImeds[["Thiazide"]]) & VImeds$line2 & is.na(VImeds[["Other"]])
+
+VImeds$HTN_txalg <- ifelse(VImeds$step12==TRUE, "Step 1/2", 
                         ifelse(VImeds$step3==TRUE, "Step 3", 
                                ifelse(VImeds$step4==TRUE, "Step 4", 
-                                      ifelse(VImeds$step5==TRUE, "Step 5", 
-                                             ifelse(VImeds$thiaonly==TRUE, "Thiazide only", 
-                                                    ifelse(VImeds$BBonly==TRUE, "BB only", 
-                                                           ifelse(VImeds$weird1==TRUE, "Step 4 without thiazide",
-                                                                  ifelse(VImeds$weird2==TRUE, "Step 4 without Step 1/2 drugs",
-                                                                         VImeds$hypmeds))))))))
+                                      ifelse(VImeds$step5==TRUE, "Step 5",
+                                             ifelse(VImeds$step1_b55==TRUE, "Step 1 for Black OR age<55",
+                                                    ifelse(VImeds$step1_f45==TRUE, "Step 1 for female of childbearing age",
+                                                           ifelse(VImeds$thiaonly==TRUE, "Thiazide only, no alternative diagnosis",
+                                                                  ifelse(VImeds$ACEARBonly==TRUE, "ACEI/ARB only, no alternative diagnosis",
+                                                                         ifelse(VImeds$BBonly==TRUE, "BB only, no alternative diagnosis",
+                                                                                VImeds$hypmeds)))))))))
 
 
-medsdata <- merge(data[,c("ID", "Sex", "measuredhyp", "selfrephyp", "HBPmeds", "medication", "VIhyp", "prevHBP",
-                          "measuredhyp_", "selfrephyp_", "HBPmeds_", "VIhyp_", "prevHBP_")], 
-                  VImeds,#[,c("ID", "grp1", "grp2", "grp1T", "grp2T", "hypgrp", "hypmeds")], 
-                  by="ID", all.x=TRUE)
+#--------------------------------------------------------------------------------------------------------------
+# Load the full hypertension study data set
+#--------------------------------------------------------------------------------------------------------------
+data <- readRDS(file="K:\\TEU\\APOE on Dementia\\Data Management\\R_Dataframes_TLA\\38358\\Organised\\Hypertension\\Neo\\HTN_excl.rds")
+
+# And merge
+medsdata <- merge(data, VImeds[,c("ID", "hypmeds", "hypmedsno", "HTN_txalg")], all.x=TRUE)
+
 # Joining the two datasets introduced a bunch of NAs because of people who aren't taking any medication, and therefore don't feature in the VImeds dataset
 medsdata$hypmeds[is.na(medsdata$hypmeds)] <- "Not taking any medication"
-medsdata$hypgrp[is.na(medsdata$hypgrp)] <- "Not taking any medication"
+medsdata$HTN_txalg[is.na(medsdata$HTN_txalg)] <- "Not taking any medication"
 
+#--------------------------------------------------------------------------------------------------------------
 # Once the potential BP medication has been categorised, any remaining are non-standard combinations
-medsdata$hypgrp[medsdata$hypgrp=="Taking potential BP medication"] <- "Other non-standard combination of potential BP medication"
+#--------------------------------------------------------------------------------------------------------------
+medsdata$HTN_txalg[medsdata$HTN_txalg=="Taking potential BP medication"] <- "Other uncategorised combination of potential BP medication"
 # Make the groups a factor, with appropriate ordering of levels
-medsdata$hypgrp <- factor(medsdata$hypgrp, levels=c("Step 1/2", "Step 3", "Step 4", "Step 5", 
-                                                    "Thiazide only", "BB only", 
-                                                    "Step 4 without thiazide", "Step 4 without Step 1/2 drugs", 
-                                                    "Other non-standard combination of potential BP medication", 
-                                                    "Taking non-BP medication", "Not taking any medication"))
+medsdata$HTN_txalg <- factor(medsdata$HTN_txalg, levels=c("Step 1/2", "Step 3", "Step 4", "Step 5",
+                                                          "Step 1 for Black OR age<55", "Step 1 for female of childbearing age",
+                                                          "Thiazide only, no alternative diagnosis", 
+                                                          "ACEI/ARB only, no alternative diagnosis", 
+                                                          "BB only, no alternative diagnosis", 
+                                                          "Other uncategorised combination of potential BP medication",
+                                                          "Taking non-BP medication", "Not taking any medication"))
 
-saveRDS(medsdata, file="K:\\TEU\\APOE on Dementia\\Data Management\\R_Dataframes_TLA\\38358\\Organised\\Hypertension\\Neo\\ClassifiedHypMedGroups.rds")
+table(medsdata$HTN_txalg)
+# saveRDS(medsdata, file="K:\\TEU\\APOE on Dementia\\Data Management\\R_Dataframes_TLA\\38358\\Organised\\Hypertension\\Neo\\ClassifiedHypMedGroups.rds")
+saveRDS(medsdata, file="K:\\TEU\\APOE on Dementia\\Data Management\\R_Dataframes_TLA\\38358\\Organised\\Hypertension\\Neo\\HTNMedsRubric.rds")

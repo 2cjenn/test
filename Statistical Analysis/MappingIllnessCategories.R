@@ -4,14 +4,15 @@
 #--------------------------------------------------------------------------------------------------------------
 
 
-noncancerillness_mapping <- function(mappath, outfile) {
+noncancerillness_mapping <- function(mappath, mapcol="Mapping", outfile) {
   require(reshape2)
+  require(readxl)
   # Load the long-format data of participant IDs and verbal interview diagnosis codes
   pts <- readRDS("K:\\TEU\\APOE on Dementia\\Data Management\\R_Dataframes_TLA\\38358\\Organised\\VIDiagnosisCodes_long.rds")
   
   # Load the mapped diagnoses data
   diagnoses <- read_excel(mappath)
-  diagnoses$Mapping <- gsub(" ", "_", diagnoses$Mapping)
+  diagnoses$Mapping <- gsub(" ", "_", diagnoses[[mapcol]])
   
   # Join them
   ptdiagnoses <- merge(pts, diagnoses[,c("coding", "Mapping")], by="coding")
@@ -28,13 +29,24 @@ noncancerillness_mapping <- function(mappath, outfile) {
   ptdiagnoses <- dcast(ptdiagnoses, ID ~ Mapping, value.var="coding")
   
   # Save the result
-  saveRDS(pts, file=outfile)
+  saveRDS(ptdiagnoses, file=outfile)
 }
 
+#--------------------------------------------------------------------------------------------------------------
 # Neo's hypertension study, parallel to Botswana study
+#--------------------------------------------------------------------------------------------------------------
+# Conditions of interest for hypertension study
 noncancerillness_mapping(mappath="K:\\TEU\\APOE on Dementia\\Data Management\\R_Dataframes_TLA\\38358\\Organised\\Hypertension\\Neo\\NonCancerIllness_HypertensionMapping.xlsx",
                          outfile="K:\\TEU\\APOE on Dementia\\Data Management\\R_Dataframes_TLA\\38358\\Organised\\Hypertension\\Neo\\VIhypIllnesses.rds")
 
+# Chronic co-morbidities of interest
+
+# Ischemic coronary disease
+
+# Alternate diagnoses for "probable" BP med rubric
+noncancerillness_mapping(mappath="K:\\TEU\\APOE on Dementia\\Data Management\\R_Dataframes_TLA\\38358\\Organised\\Hypertension\\Neo\\NonCancerIllness_HypertensionMapping.xlsx",
+                         mapcol="AlternateDiagnoses",
+                         outfile="K:\\TEU\\APOE on Dementia\\Data Management\\R_Dataframes_TLA\\38358\\Organised\\Hypertension\\Neo\\VIhypAltDiagnoses.rds")
 
 
 

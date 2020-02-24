@@ -396,17 +396,22 @@ data <- merge(data, covars, by="ID", all=TRUE)
 # If reported in either touchscreen questionnaire or verbal interview
 data$selfrephyp <- data$prevHBP==TRUE | data$VIhyp==TRUE
 
+# Indicator variable for "some evidence of hypertension" vs "no evidence of hypertension"
+data$evidenceHTN <- (data$selfrephyp==TRUE | data$HBPmeds==TRUE | data$measuredhyp==TRUE)
+unique(data$evidenceHTN)
+
 # Indicator variable for hypertension awareness - 
 # did they say they had hypertension or say that they were taking BP meds
 data$aware <- data$selfrephyp==TRUE | data$HBPmeds==TRUE
+data$aware[data$evidenceHTN==FALSE] <- NA
 
 # Indicator variable for hypertension treatment status
 # Return to this after finalising incorporation of VI medication data
 data$treated <- data$HBPmeds
+data$treated[data$aware==FALSE] <- NA
 
-# Indicator variable for "some evidence of hypertension" vs "no evidence of hypertension"
-data$evidenceHTN <- (data$selfrephyp==TRUE | data$HBPmeds==TRUE | data$measuredhyp==TRUE)
-unique(data$evidenceHTN)
+# Control
+data$controlled[data$treated==FALSE] <- NA
 
 # Center age on the minimum
 data$c_age <- data$age - 50
