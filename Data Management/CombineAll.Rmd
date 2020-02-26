@@ -403,15 +403,15 @@ unique(data$evidenceHTN)
 # Indicator variable for hypertension awareness - 
 # did they say they had hypertension or say that they were taking BP meds
 data$aware <- data$selfrephyp==TRUE | data$HBPmeds==TRUE
-data$aware[data$evidenceHTN==FALSE] <- NA
+data$aware[data$evidenceHTN==FALSE | is.na(data$evidenceHTN)] <- NA
 
 # Indicator variable for hypertension treatment status
 # Return to this after finalising incorporation of VI medication data
 data$treated <- data$HBPmeds
-data$treated[data$aware==FALSE] <- NA
+data$treated[data$aware==FALSE | is.na(data$aware)] <- NA
 
 # Control
-data$controlled[data$treated==FALSE] <- NA
+data$controlled[data$treated==FALSE | is.na(data$treated)] <- NA
 
 # Center age on the minimum
 data$c_age <- data$age - 50
@@ -557,9 +557,13 @@ data <- readRDS("K:\\TEU\\APOE on Dementia\\Data Management\\R_Dataframes_TLA\\3
 withdrawn <- read.csv("K:\\TEU\\APOE on Dementia\\Data Management\\WithdrawnIDs.csv", header=FALSE)
 data <- data[!data$ID %in% withdrawn$V1,]
 
+# Exclude those outside the 40-70 age range
+# n = 502506 - 500011 = 2495
+data <- data[data$age >= 40 & data$age < 70,]
+
 # Exclude individuals with missing BP data
 # or missing answers to BP questions on touchscreen questionnaire
-# n = 502506 - 492235 = 10271
+# n = 500011 - 490560 = 9451
 data <- data[!is.na(data$SBP) & !is.na(data$DBP),]
 data <- data[!is.na(data$selfrephyp),]
 data <- data[!is.na(data$HBPmeds),]
@@ -568,17 +572,38 @@ data <- data[!is.na(data$HBPmeds),]
 # Exclude individuals with no age data
 # n = 0
 data <- data[!is.na(data$age),]
-# Exclude those outside the 40-70 age range
-# n = 492235 - 489780 = 2455
-data <- data[data$age >= 40 & data$age < 70,]
 
 # Exclude those with no gender data
 # n = 0
 data <- data[!is.na(data$gender),]
 
+# Cancel this exclusion since we're using age of leaving full-time education instead
 # Exclude those with no highest level of education provided
 # n = 489780 - 484785 = 4995
-data <- data[data$eduNA==FALSE,]
+# data <- data[data$eduNA==FALSE,]
+
+
+# Collapse ethnic groups into broader categories
+data$ethnicity <- as.character(data$eth_group)
+data$ethnicity[data$ethnicity=="Chinese"] <- "Asian"
+data$ethnicity[data$ethnicity=="Asian or Asian British"] <- "Asian"
+data$ethnicity[data$ethnicity=="Black or Black British"] <- "Black"
+data$ethnicity[data$ethnicity=="Other ethnic group"] <- "Other"
+data$ethnicity[data$ethnicity=="Prefer not to answer"] <- "Other"
+data$ethnicity[data$ethnicity=="Do not know"] <- "Other"
+data$ethnicity[data$ethnicity=="Mixed"] <- "Other"
+data$ethnicity <- factor(data$ethnicity, levels=c("White", "Black", "Asian", "Other"))
+
+# Categorise age of leaving education into primary, secondary or tertiary education
+data$education[data$Edu_Age.0==-2 & !is.na(data$Edu_Age.0)] <- "None"
+data$education[data$Edu_Age.0 %in% c(5:12) & !is.na(data$Edu_Age.0)] <- "Primary"
+data$education[data$Edu_Age.0 %in% c(13:18) & !is.na(data$Edu_Age.0)] <- "Secondary"
+data$education[data$Edu_Age.0>18 & !is.na(data$Edu_Age.0)] <- "Tertiary or higher"
+data$education[data$Edu_Age.0==-1 | data$Edu_Age.0==-3 | is.na(data$Edu_Age.0)] <- "Unknown/unanswered"
+data$education <- factor(data$education, levels=c("None", "Primary", "Secondary", "Tertiary or higher", "Unknown/unanswered"))
+
+# Categorise age into 10-yr groups
+data$agegrp <- cut(data$age, breaks=c(40, 50, 60, 70), right=FALSE)
 
 saveRDS(data, file="K:\\TEU\\APOE on Dementia\\Data Management\\R_Dataframes_TLA\\38358\\Organised\\Hypertension\\Neo\\HTN_excl.rds")
 
