@@ -1,0 +1,103 @@
+---
+title: "Investigating gender HR"
+author: "Jennifer Collister"
+date: "25/02/2020"
+output: 
+  word_document:
+      reference_docx: "K:/TEU/APOE on Dementia/RMarkdownStyle.docx"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE)
+
+library(survival)
+library(survminer)
+library(lmtest)
+library(kableExtra)
+library(knitr)
+library(timereg)
+library(epitools)
+library(tab)
+library(popEpi)
+
+source("K:/TEU/APOE on Dementia/Statistical Analysis/JCfunctions.R")
+```
+
+```{r loaddata, include=FALSE, echo=FALSE}
+data <- readRDS(file="K:\\TEU\\APOE on Dementia\\Data Management\\R_Dataframes_TLA\\38358\\Organised\\Hypertension\\APOE\\apoe_excl.rds")
+# Exclude individuals below the age of 60
+data <- data[data$age>=60,]
+
+```
+
+
+
+```{r test, include=TRUE, echo=FALSE, results='asis'}
+for(carrier in c(TRUE, FALSE)){
+  tab1 <- table(data$controlled_[data$e4carrier==carrier], data$gender[data$e4carrier==carrier])
+
+  tab2 <- table(data$controlled_[data$e4carrier==carrier & data$dementia_status==TRUE], data$gender[data$e4carrier==carrier & data$dementia_status==TRUE])
+  
+  tabpct <- round(100*tab2/tab1,2)
+  
+  prettytab <- tab2
+  for(i in c(1:2)){
+    for(j in c(1:2)){
+      prettytab[i,j] <- paste0(tab2[i,j], "/", tab1[i,j], " (", tabpct[i,j], "%)")
+    }
+  }
+  print(kable(prettytab, caption=paste0("Among the treated population with e4 carrier = ", carrier, " the number of dementia cases out of total individuals in each category is:")))
+  
+}
+
+
+```
+
+# Combine carriers and non-carriers, regress e4 carrier status, control status and interaction term
+
+```{r genderHR, include=TRUE, echo=FALSE}
+
+model1 <- coxph(Surv(time_to_dementia, dementia_status) ~ age + gender + e4carrier + controlled_, 
+                data=data[data$treated==TRUE,])
+kable(printcoxresults(model1), 
+      caption=paste0("Cox regression of age, gender, e4 carrier status and control status among participants who are taking BP medication, n=", model1$n))
+
+model1 <- coxph(Surv(time_to_dementia, dementia_status) ~ age + gender + e4carrier * controlled_, 
+                data=data[data$treated==TRUE,])
+kable(printcoxresults(model1), 
+      caption=paste0("Cox regression of age, gender, e4 carrier status and control status among participants who are taking BP medication, with interaction term, n=", model1$n))
+
+
+
+```
+
+
+# Combine carriers and non-carriers, regress e4 carrier status, control status and interaction term, stratified by sex
+
+```{r stratifygender, include=TRUE, echo=FALSE}
+
+model1 <- coxph(Surv(time_to_dementia, dementia_status) ~ age + e4carrier + controlled_, 
+                data=data[data$treated==TRUE & data$gender=="Female",])
+kable(printcoxresults(model1), 
+      caption=paste0("Cox regression of age, e4 carrier status and control status among females who are taking BP medication, n=", model1$n))
+
+model1 <- coxph(Surv(time_to_dementia, dementia_status) ~ age + e4carrier * controlled_, 
+                data=data[data$treated==TRUE & data$gender=="Female",])
+kable(printcoxresults(model1), 
+      caption=paste0("Cox regression of age, e4 carrier status and control status among females who are taking BP medication, with interaction term, n=", model1$n))
+
+model1 <- coxph(Surv(time_to_dementia, dementia_status) ~ age + e4carrier + controlled_, 
+                data=data[data$treated==TRUE & data$gender=="Male",])
+kable(printcoxresults(model1), 
+      caption=paste0("Cox regression of age, e4 carrier status and control status among males who are taking BP medication, n=", model1$n))
+
+model1 <- coxph(Surv(time_to_dementia, dementia_status) ~ age + e4carrier * controlled_, 
+                data=data[data$treated==TRUE & data$gender=="Male",])
+kable(printcoxresults(model1), 
+      caption=paste0("Cox regression of age, e4 carrier status and control status among males who are taking BP medication, with interaction term, n=", model1$n))
+
+
+```
+
+
+

@@ -1,0 +1,62 @@
+---
+title: "HTNtabulation"
+author: "Jennifer Collister"
+date: "25/02/2020"
+output: 
+  word_document:
+      reference_docx: "K:/TEU/APOE on Dementia/RMarkdownStyle.docx"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE)
+library(kableExtra)
+library(knitr)
+
+source("K:/TEU/APOE on Dementia/Statistical Analysis/JCfunctions.R")
+
+data <- readRDS(file="K:\\TEU\\APOE on Dementia\\Data Management\\R_Dataframes_TLA\\38358\\Organised\\Hypertension\\Neo\\HTN_excl.rds")
+```
+
+
+```{r fig2, include=FALSE, echo=FALSE, results='asis'}
+
+for(eth in c("All", "White", "Black", "Asian", "Other")){
+  print(paste0("Ethnicity = ", eth))
+  if (eth=="All"){
+    df <- data
+  } else {
+    df <- data[data$ethnicity==eth,]  
+  }
+  for(variable in c("evidenceHTN", "aware", "treated", "controlled")){
+    var <- paste0(variable, "_")
+    tab <- table(df[[var]])
+    print(kable(tab))
+    print(kable(round(100*prop.table(tab),2)))
+  }
+}
+
+```
+
+```{r table1, include=TRUE, echo=FALSE}
+
+
+for(var in c("gender", "agegrp", "age", "ethnicity", "education", "SBP", "DBP")){
+  if(is.factor(data[[var]])){
+    n <- table(data[[var]], useNA='ifany')
+    pct <- round(100*prop.table(n),2)
+    variable <- rep(var, dim(n))
+  } else {
+    med <- median(data[[var]])
+    IQR <- round(quantile(data[[var]]),1)
+    n <- med
+    pct <- paste0("(", IQR[4], "-", IQR[2], ")")
+    variable <- var
+  }
+  do.call("<-",list(var, cbind(n, pct)))
+  # df <- data.frame(variable, as.numeric(n), as.numeric(pct))
+}
+kable(rbind(gender, agegrp, age, ethnicity, education, SBP, DBP))
+# kable(df) %>% collapse_rows(columns=1)
+
+```
+

@@ -56,9 +56,9 @@ Our population: Individuals in UKB aged between **[60,70)**, of White ethnicity,
 
 Our variables:
 
-* **evidenceHTN**: In the general population, if the participant self-reported a prior diagnosis of hypertension, self-reported taking BP medication or had measured BP >= 140/90 at baseline then we consider there to be some evidence of hypertension
-* **aware**: Among those with evidence of hypertension, if the participant self-reported a prior diagnosis of hypertension or self-reported taking BP medication then we consider them to be aware that they are hypertensive
-* **treated**: Among those who are aware that they are hypertensive, if the participant self-reported taking BP medication then we consider them to be treated. (Note: ultimately we will be able to use the new treatment categorisation Neo and I are defining)
+* **evidenceHTN**: In the general population, if the participant self-reported a prior diagnosis of hypertension (in TQ or VI), self-reported taking BP medication (in TQ) or had measured BP >= 140/90 at baseline then we consider there to be some evidence of hypertension
+* **aware**: Among those with evidence of hypertension, if the participant self-reported a prior diagnosis of hypertension (in TQ or VI) or self-reported taking BP medication (in TQ) then we consider them to be aware that they are hypertensive
+* **treated**: Among those who are aware that they are hypertensive, if the participant self-reported taking BP medication (in TQ) then we consider them to be treated. (Note: ultimately we will be able to use the new treatment categorisation Neo and I are defining)
 * **control**: Among those who are receiving treatment for hypertension, if the participant's average measured blood pressure at baseline assessment was < 140/90 then we consider them to be successfully controlled
 
 # Stratify the population based on whether or not they are ApoE e4 carriers
@@ -230,6 +230,8 @@ kable(printcoxresults(model1),
       caption=paste0("Control of hypertension among ApoE e4 carriers who are taking medication for their hypertension, n=", model1$n))
 
 ```
+
+
 
 # Compare to Cox models run at each level among individuals who are not carriers of the ApoE e4 allele
 
