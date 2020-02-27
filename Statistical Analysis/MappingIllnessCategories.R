@@ -36,15 +36,18 @@ noncancerillness_mapping <- function(mappath, mapcol="Mapping", outfile) {
 # Neo's hypertension study, parallel to Botswana study
 #--------------------------------------------------------------------------------------------------------------
 # Conditions of interest for hypertension study
-noncancerillness_mapping(mappath="K:\\TEU\\APOE on Dementia\\Data Management\\R_Dataframes_TLA\\38358\\Organised\\Hypertension\\Neo\\NonCancerIllness_HypertensionMapping.xlsx",
+noncancerillness_mapping(mappath="K:\\TEU\\APOE on Dementia\\Data Management\\R_Dataframes_TLA\\38358\\Organised\\Hypertension\\Neo\\UKBHtn_NonCancerIllness_Mapping",
                          outfile="K:\\TEU\\APOE on Dementia\\Data Management\\R_Dataframes_TLA\\38358\\Organised\\Hypertension\\Neo\\VIhypIllnesses.rds")
 
 # Chronic co-morbidities of interest
+noncancerillness_mapping(mappath="K:\\TEU\\APOE on Dementia\\Data Management\\R_Dataframes_TLA\\38358\\Organised\\Hypertension\\Neo\\UKBHtn_NonCancerIllness_Mapping",
+                         mapcol="ComorbidityCategory"
+                         outfile="K:\\TEU\\APOE on Dementia\\Data Management\\R_Dataframes_TLA\\38358\\Organised\\Hypertension\\Neo\\VI_ComorbidityCategories.rds")
 
 # Ischemic coronary disease
 
 # Alternate diagnoses for "probable" BP med rubric
-noncancerillness_mapping(mappath="K:\\TEU\\APOE on Dementia\\Data Management\\R_Dataframes_TLA\\38358\\Organised\\Hypertension\\Neo\\NonCancerIllness_HypertensionMapping.xlsx",
+noncancerillness_mapping(mappath="K:\\TEU\\APOE on Dementia\\Data Management\\R_Dataframes_TLA\\38358\\Organised\\Hypertension\\Neo\\UKBHtn_NonCancerIllness_Mapping",
                          mapcol="AlternateDiagnoses",
                          outfile="K:\\TEU\\APOE on Dementia\\Data Management\\R_Dataframes_TLA\\38358\\Organised\\Hypertension\\Neo\\VIhypAltDiagnoses.rds")
 
