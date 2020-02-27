@@ -109,6 +109,19 @@ saveRDS(medhist[,c("ID", "medication", "HBPmeds", "diabmeds", "cholmeds", "contr
         file="K:\\TEU\\APOE on Dementia\\Data Management\\R_Dataframes_TLA\\38358\\Organised\\tq_medhist.rds")
 ```
 
+```{r familyhistory, include=FALSE}
+fam <- readRDS("K:\\TEU\\APOE on Dementia\\Data Management\\R_Dataframes_TLA\\38358\\FaH_base.rds")
+
+fam$FaH_CVD <- apply(fam[,c(grep("FaH_FatherIll.", colnames(fam), fixed=TRUE),
+                            grep("FaH_MotherIll.", colnames(fam), fixed=TRUE),
+                            grep("FaH_SibIll.", colnames(fam), fixed=TRUE)
+                            )
+                         ], 1, function(x) any(x %in% c("Heart disease", "Stroke")))
+
+saveRDS(fam[,c("ID", "FaH_CVD")],
+        file="K:\\TEU\\APOE on Dementia\\Data Management\\R_Dataframes_TLA\\38358\\Organised\\familyhistory.rds")
+```
+
 
 ```{r keydates, include=FALSE}
 base <- readRDS("K:\\TEU\\APOE on Dementia\\Data Management\\R_Dataframes_TLA\\38358\\BaC.rds")
@@ -373,6 +386,7 @@ basechar <- readRDS("K:\\TEU\\APOE on Dementia\\Data Management\\R_Dataframes_TL
 dementia <- readRDS("K:\\TEU\\APOE on Dementia\\Data Management\\R_Dataframes_TLA\\38358\\Organised\\dementia.rds")
 VImedhist <- readRDS("K:\\TEU\\APOE on Dementia\\Data Management\\R_Dataframes_TLA\\38358\\Organised\\veint_medhist.rds")
 TQmedhist <- readRDS("K:\\TEU\\APOE on Dementia\\Data Management\\R_Dataframes_TLA\\38358\\Organised\\tq_medhist.rds")
+famhist <- readRDS("K:\\TEU\\APOE on Dementia\\Data Management\\R_Dataframes_TLA\\38358\\Organised\\familyhistory.rds")
 deathdate <- readRDS("K:\\TEU\\APOE on Dementia\\Data Management\\R_Dataframes_TLA\\38358\\Organised\\deathdate.rds")
 covars <- readRDS("K:\\TEU\\APOE on Dementia\\Data Management\\R_Dataframes_TLA\\38358\\Organised\\covars.rds")
 
@@ -383,10 +397,12 @@ data <- merge(basechar, ethnicity, by="ID", all=TRUE)
 data <- merge(data, deathdate, by="ID", all=TRUE)
 # And with the blood pressure data
 data <- merge(data, bp, by="ID", all=TRUE)
-# And the medical history data from the touchscreen assessment
+# And the medical history data from the touchscreen questionnaire
 data <- merge(data, TQmedhist, by="ID", all=TRUE)
 # And the medical history data from the verbal interview
 data <- merge(data, VImedhist, by="ID", all=TRUE)
+# And the family history data from the touchscreen questionnaire
+data <- merge(data, famhist, by="ID", all=TRUE)
 # And with the dementia diagnoses from HES data over the course of the study
 data <- merge(data, dementia, by="ID", all=TRUE)
 # And with all other selected covariates
