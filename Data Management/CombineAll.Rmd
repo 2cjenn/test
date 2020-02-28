@@ -73,7 +73,8 @@ medhist$cholmeds <- apply(medhist[,grep("HMH_Med", colnames(medhist), fixed=TRUE
 medhist$contraceptive <- apply(medhist[,grep("HMH_Med", colnames(medhist), fixed=TRUE)], 1, function(x) any(x %in% "Oral contraceptive pill or minipill"))
 medhist$HRT <- apply(medhist[,grep("HMH_Med", colnames(medhist), fixed=TRUE)], 1, function(x) any(x %in% "Hormone replacement therapy"))
 for(col in c("HBPmeds", "diabmeds", "cholmeds", "contraceptive", "HRT")){
-  medhist[[col]][medhist$medication %in% c("Do not know", "Prefer not to answer") | is.na(medhist$medication)] <- NA
+  medhist[[col]][medhist$medication %in% c("Prefer not to answer") | is.na(medhist$medication)] <- NA
+  medhist[[col]][medhist$medication %in% c("Do not know") | is.na(medhist$medication)] <- "Do not know"
 }
 
 #--------------------------------------------------------------------------------------------------------------
@@ -275,46 +276,59 @@ saveRDS(stroke, file="K:\\TEU\\APOE on Dementia\\Data Management\\R_Dataframes_T
 
 ```{r verbmedhist, include=FALSE}
 veint <- readRDS("K:\\TEU\\APOE on Dementia\\Data Management\\R_Dataframes_TLA\\38358\\VeI_base.rds")
-veint <- veint[,c(1, grep("VeI_NonCancerCode.", colnames(veint), fixed=TRUE))]
+VI_diag <- veint[,c(1, grep("VeI_NonCancerCode.", colnames(veint), fixed=TRUE))]
+VI_diagdur <- veint[,c(1, grep("VeI_NonCancerYear.", colnames(veint), fixed=TRUE))]
+VI_cancerdur <- veint[,c(1, grep("VeI_CancerYr.", colnames(veint), fixed=TRUE))]
+
 
 coding6 <- read.table("K:/TEU/CancerPRS/Data_Dictionary/Mappings/coding6.tsv", sep="\t", header=TRUE, quote="", comment.char="$", fill=FALSE)
 
 # Indicator variables for many health conditions of interest
+veint_HTNhist <- VI_diag
 
 strcodes <- coding6[grep("stroke|ischaemic stroke|subdural haemorrhage|subarachnoid haemorrhage|brain haemorrhage", coding6$meaning),]
-veint$VIstroke <- apply(veint[,grep("VeI_NonCancerCode", colnames(veint), fixed=TRUE)], 1, function(x) any(x %in% strcodes$coding))
+veint_HTNhist$VIstroke <- apply(veint_HTNhist[,grep("VeI_NonCancerCode", colnames(veint_HTNhist), fixed=TRUE)], 1, function(x) any(x %in% strcodes$coding))
 
 bpcodes <- coding6[grep("hypertension|essential hypertension", coding6$meaning),]
-veint$VIhyp <- apply(veint[,grep("VeI_NonCancerCode", colnames(veint), fixed=TRUE)], 1, function(x) any(x %in% bpcodes$coding))
+veint_HTNhist$VIhyp <- apply(veint_HTNhist[,grep("VeI_NonCancerCode", colnames(veint_HTNhist), fixed=TRUE)], 1, function(x) any(x %in% bpcodes$coding))
 
-asthcodes <- coding6[grep("asthma", coding6$meaning),]
-veint$VIasth <- apply(veint[,grep("VeI_NonCancerCode", colnames(veint), fixed=TRUE)], 1, function(x) any(x %in% asthcodes$coding))
 
-copdcodes <- coding6[grep("copd", coding6$meaning),]
-veint$VIcopd <- apply(veint[,grep("VeI_NonCancerCode", colnames(veint), fixed=TRUE)], 1, function(x) any(x %in% copdcodes$coding))
-
-dementiacodes <-coding6[grep("dementia", coding6$meaning),]
-veint$VIdementia <- apply(veint[,grep("VeI_NonCancerCode", colnames(veint), fixed=TRUE)], 1, function(x) any(x %in% dementiacodes$coding))
+# asthcodes <- coding6[grep("asthma", coding6$meaning),]
+# VI_diag$VIasth <- apply(VI_diag[,grep("VeI_NonCancerCode", colnames(VI_diag), fixed=TRUE)], 1, function(x) any(x %in% asthcodes$coding))
+# 
+# copdcodes <- coding6[grep("copd", coding6$meaning),]
+# VI_diag$VIcopd <- apply(VI_diag[,grep("VeI_NonCancerCode", colnames(VI_diag), fixed=TRUE)], 1, function(x) any(x %in% copdcodes$coding))
+# 
+# dementiacodes <-coding6[grep("dementia", coding6$meaning),]
+# VI_diag$VIdementia <- apply(VI_diag[,grep("VeI_NonCancerCode", colnames(VI_diag), fixed=TRUE)], 1, function(x) any(x %in% dementiacodes$coding))
 
 # Here it seems likely that NA doesn't mean not answered, but rather not applicable
 # for(col in c("VIstroke", "VIhyp", "VIasth", "VIcopd", "VIdementia")){
 #   veint[[col]][is.na(veint$VeI_NonCancerCode.0)] <- NA
 # }
 
-veint_medhist <- veint[,c("ID", "VIstroke", "VIhyp", "VIdementia", "VIasth", "VIcopd")]
-saveRDS(veint_medhist, file="K:\\TEU\\APOE on Dementia\\Data Management\\R_Dataframes_TLA\\38358\\Organised\\veint_medhist.rds")
+saveRDS(veint_HTNhist[,c("ID", "VIstroke", "VIhyp")], 
+        file="K:\\TEU\\APOE on Dementia\\Data Management\\R_Dataframes_TLA\\38358\\Organised\\veint_HTNhist.rds")
 
 # Additionally, prepare a list of all participants and their diagnosis codes 
 # this can later be joined to mappings from codes to specific conditions of interest
 # Get the data into long format
-veint_long <- gather(veint, medno, coding, VeI_NonCancerCode.0:VeI_NonCancerCode.33, factor_key=TRUE)
-# Drop rows where individuals do not have any illness recorded
-veint_long <- veint_long[!is.na(veint_long$coding),]
+# And drop rows where individuals do not have any illness recorded
+# Diagnosis codes
+VI_diaglong <- gather(data=VI_diag, key=medno, value=coding, VeI_NonCancerCode.0:VeI_NonCancerCode.33, factor_key=FALSE)
+VI_diaglong <- VI_diaglong[!is.na(VI_diaglong$coding),]
+VI_diaglong <- VI_diaglong %>% tidyr::separate(medno, into=c("VeI", "NonCancerCode", "instance"))
+# And durations
+VI_durlong <- gather(data=VI_diagdur, key=medno, value=year, VeI_NonCancerYear.0:VeI_NonCancerYear.33, factor_key=FALSE)
+VI_durlong <- VI_durlong[!is.na(VI_durlong$year),]
+VI_durlong <- VI_durlong %>% tidyr::separate(medno, into=c("VeI", "NonCancerYear", "instance"))
+# Merge the diagnosis codes with the corresponding durations
+VI_diaglong <- merge(VI_diaglong[,c("ID", "instance", "coding")], VI_durlong[,c("ID", "instance", "year")], all.x=TRUE)
 # And remove rows where individuals have the same illness recorded twice - 
 # two subtly different conditions that fit in the same UKB category?
-veint_long <- unique(veint_long[,c("ID", "coding")])
+VI_diaglong <- unique(VI_diaglong[,c("ID", "coding", "year")])
 # Save this ready to be joined to any diagnosis mapping
-saveRDS(veint_long, "K:\\TEU\\APOE on Dementia\\Data Management\\R_Dataframes_TLA\\38358\\Organised\\VIDiagnosisCodes_long.rds")
+saveRDS(VI_diaglong, "K:\\TEU\\APOE on Dementia\\Data Management\\R_Dataframes_TLA\\38358\\Organised\\VIDiagnosisCodes_long.rds")
 
 ```
 
@@ -356,9 +370,9 @@ education$uni <- apply(education[,grep("Edu_Qualif", colnames(education), fixed=
 education$eduNA <- apply(education[,grep("Edu_Qualif", colnames(education), fixed=TRUE)], 1, function(x) any(x == "Prefer not to answer" & !is.na(x)))
 
 education$edu_highest <- NA
-for(qual in c("Other professional qualifications eg: nursing, teaching",
-              "College or University degree",
+for(qual in c("College or University degree",
               "NVQ or HND or HNC or equivalent",
+              "Other professional qualifications eg: nursing, teaching",
               "A levels/AS levels or equivalent",
               "O levels/GCSEs or equivalent",
               "CSEs or equivalent",
@@ -371,8 +385,9 @@ for(qual in c("Other professional qualifications eg: nursing, teaching",
     )
 }
 education$edu_highest <- factor(education$edu_highest, 
-                                levels=c("Other professional qualifications eg: nursing, teaching", "College or University degree", "NVQ or HND or HNC or equivalent", "A levels/AS levels or equivalent", "O levels/GCSEs or equivalent", "CSEs or equivalent", "None of the above", "Prefer not to answer"),
+                                levels=c("College or University degree", "NVQ or HND or HNC or equivalent", "Other professional qualifications eg: nursing, teaching", "A levels/AS levels or equivalent", "O levels/GCSEs or equivalent", "CSEs or equivalent", "None of the above", "Prefer not to answer"),
                                 ordered=TRUE)
+ 
 
 covars <- merge(covars, education[,c("ID", "uni", "eduNA", "edu_highest", "Edu_Age.0")], by="ID", all=TRUE)
 
@@ -384,7 +399,7 @@ bp <- readRDS("K:\\TEU\\APOE on Dementia\\Data Management\\R_Dataframes_TLA\\383
 ethnicity <- readRDS("K:\\TEU\\APOE on Dementia\\Data Management\\R_Dataframes_TLA\\38358\\Organised\\ethnicity.rds")
 basechar <- readRDS("K:\\TEU\\APOE on Dementia\\Data Management\\R_Dataframes_TLA\\38358\\Organised\\basechar.rds")
 dementia <- readRDS("K:\\TEU\\APOE on Dementia\\Data Management\\R_Dataframes_TLA\\38358\\Organised\\dementia.rds")
-VImedhist <- readRDS("K:\\TEU\\APOE on Dementia\\Data Management\\R_Dataframes_TLA\\38358\\Organised\\veint_medhist.rds")
+VImedhist <- readRDS("K:\\TEU\\APOE on Dementia\\Data Management\\R_Dataframes_TLA\\38358\\Organised\\veint_HTNhist.rds")
 TQmedhist <- readRDS("K:\\TEU\\APOE on Dementia\\Data Management\\R_Dataframes_TLA\\38358\\Organised\\tq_medhist.rds")
 famhist <- readRDS("K:\\TEU\\APOE on Dementia\\Data Management\\R_Dataframes_TLA\\38358\\Organised\\familyhistory.rds")
 deathdate <- readRDS("K:\\TEU\\APOE on Dementia\\Data Management\\R_Dataframes_TLA\\38358\\Organised\\deathdate.rds")
@@ -618,8 +633,28 @@ data$education[data$Edu_Age.0>18 & !is.na(data$Edu_Age.0)] <- "Tertiary or highe
 data$education[data$Edu_Age.0==-1 | data$Edu_Age.0==-3 | is.na(data$Edu_Age.0)] <- "Unknown/unanswered"
 data$education <- factor(data$education, levels=c("None", "Primary", "Secondary", "Tertiary or higher", "Unknown/unanswered"))
 
+# Convert UKB qualification categories into ISCED education categories
+data$ISCED <- ifelse(data$edu_highest=="College or University degree", "ISCED 5: First stage of tertiary education",
+                 ifelse(data$edu_highest=="NVQ or HND or HNC or equivalent", "ISCED 5: First stage of tertiary education",
+                    ifelse(data$edu_highest=="Other professional qualifications eg: nursing, teaching", "ISCED 4: Post-secondary non-tertiary education",
+                       ifelse(data$edu_highest=="A levels/AS levels or equivalent", "ISCED 3: Upper secondary education",
+                          ifelse(data$edu_highest=="O levels/GCSEs or equivalent", "ISCED 2: Lower secondary education",
+                             ifelse(data$edu_highest=="CSEs or equivalent", "ISCED 2: Lower secondary education",
+                                ifelse(data$edu_highest=="None of the above", "ISCED 1: Primary education",
+                                   ifelse(data$edu_highest=="Prefer not to answer", NA, NA))))))))
+
+data$ISCED <- factor(data$ISCED, 
+                     levels=c("ISCED 5: First stage of tertiary education", "ISCED 4: Post-secondary non-tertiary education", 
+                     "ISCED 3: Upper secondary education", "ISCED 2: Lower secondary education",
+                     "ISCED 1: Primary education"))
+
 # Categorise age into 10-yr groups
 data$agegrp <- cut(data$age, breaks=c(40, 50, 60, 70), right=FALSE)
+
+# Categorise BMI into labelled categories
+data$BMIcat <- cut(data$bl_BMI, breaks=c(0, 18.5, 25, 30, 200), right=FALSE)
+data$BMIcat <- factor(data$BMIcat, levels=c("[0,18.5)", "[18.5,25)", "[25,30)", "[30,200)"), labels=c("Underweight", "Normal", "Overweight", "Obese"))
+
 
 saveRDS(data, file="K:\\TEU\\APOE on Dementia\\Data Management\\R_Dataframes_TLA\\38358\\Organised\\Hypertension\\Neo\\HTN_excl.rds")
 
