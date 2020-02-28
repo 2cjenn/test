@@ -25,31 +25,33 @@ noncancerillness_mapping <- function(mappath, mapcol="Mapping", outfile) {
   # Some conditions have been aggregated into categories so participants might have the same category listed multiple times
   # this would make dcast throw a warning, so let's remove these first by taking only unique rows
   ptdiagnoses <- unique(ptdiagnoses)
+  ptdiagnoses_long <- ptdiagnoses[!is.na(ptdiagnoses$Mapping),c("ID", "Mapping", "year")]
   # Now dcast from long to wide so we have a column per category
   ptdiagnoses <- dcast(ptdiagnoses, ID ~ Mapping, value.var="coding")
   
   # Save the result
-  saveRDS(ptdiagnoses, file=outfile)
+  saveRDS(ptdiagnoses_long, file=paste0(outfile,"_long.rds"))
+  saveRDS(ptdiagnoses, file=paste0(outfile,".rds"))
 }
 
 #--------------------------------------------------------------------------------------------------------------
 # Neo's hypertension study, parallel to Botswana study
 #--------------------------------------------------------------------------------------------------------------
 # Conditions of interest for hypertension study
-noncancerillness_mapping(mappath="K:\\TEU\\APOE on Dementia\\Data Management\\R_Dataframes_TLA\\38358\\Organised\\Hypertension\\Neo\\UKBHtn_NonCancerIllness_Mapping",
-                         outfile="K:\\TEU\\APOE on Dementia\\Data Management\\R_Dataframes_TLA\\38358\\Organised\\Hypertension\\Neo\\VIhypIllnesses.rds")
+noncancerillness_mapping(mappath="K:\\TEU\\APOE on Dementia\\Data Management\\R_Dataframes_TLA\\38358\\Organised\\Hypertension\\Neo\\UKBHtn_NonCancerIllness_Mapping.xlsx",
+                         outfile="K:\\TEU\\APOE on Dementia\\Data Management\\R_Dataframes_TLA\\38358\\Organised\\Hypertension\\Neo\\VIhypIllnesses")
 
 # Chronic co-morbidities of interest
-noncancerillness_mapping(mappath="K:\\TEU\\APOE on Dementia\\Data Management\\R_Dataframes_TLA\\38358\\Organised\\Hypertension\\Neo\\UKBHtn_NonCancerIllness_Mapping",
-                         mapcol="ComorbidityCategory"
-                         outfile="K:\\TEU\\APOE on Dementia\\Data Management\\R_Dataframes_TLA\\38358\\Organised\\Hypertension\\Neo\\VI_ComorbidityCategories.rds")
+noncancerillness_mapping(mappath="K:\\TEU\\APOE on Dementia\\Data Management\\R_Dataframes_TLA\\38358\\Organised\\Hypertension\\Neo\\UKBHtn_NonCancerIllness_Mapping.xlsx",
+                         mapcol="ComorbidityCategory",
+                         outfile="K:\\TEU\\APOE on Dementia\\Data Management\\R_Dataframes_TLA\\38358\\Organised\\Hypertension\\Neo\\VI_ComorbidityCategories")
+# test <- readRDS("K:\\TEU\\APOE on Dementia\\Data Management\\R_Dataframes_TLA\\38358\\Organised\\Hypertension\\Neo\\VI_ComorbidityCategories.rds")
 
-# Ischemic coronary disease
 
 # Alternate diagnoses for "probable" BP med rubric
-noncancerillness_mapping(mappath="K:\\TEU\\APOE on Dementia\\Data Management\\R_Dataframes_TLA\\38358\\Organised\\Hypertension\\Neo\\UKBHtn_NonCancerIllness_Mapping",
+noncancerillness_mapping(mappath="K:\\TEU\\APOE on Dementia\\Data Management\\R_Dataframes_TLA\\38358\\Organised\\Hypertension\\Neo\\UKBHtn_NonCancerIllness_Mapping.xlsx",
                          mapcol="AlternateDiagnoses",
-                         outfile="K:\\TEU\\APOE on Dementia\\Data Management\\R_Dataframes_TLA\\38358\\Organised\\Hypertension\\Neo\\VIhypAltDiagnoses.rds")
+                         outfile="K:\\TEU\\APOE on Dementia\\Data Management\\R_Dataframes_TLA\\38358\\Organised\\Hypertension\\Neo\\VIhypAltDiagnoses")
 
 
 

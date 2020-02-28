@@ -10,6 +10,7 @@ knitr::opts_chunk$set(echo = FALSE)
 filepath <- "K:\\TEU\\APOE on Dementia\\Data Management\\R_Dataframes_TLA\\38358\\"
 library(dplyr)
 library(tidyr)
+library(lubridate)
 ```
 
 ```{r bloodpressure, include=FALSE}
@@ -73,8 +74,8 @@ medhist$cholmeds <- apply(medhist[,grep("HMH_Med", colnames(medhist), fixed=TRUE
 medhist$contraceptive <- apply(medhist[,grep("HMH_Med", colnames(medhist), fixed=TRUE)], 1, function(x) any(x %in% "Oral contraceptive pill or minipill"))
 medhist$HRT <- apply(medhist[,grep("HMH_Med", colnames(medhist), fixed=TRUE)], 1, function(x) any(x %in% "Hormone replacement therapy"))
 for(col in c("HBPmeds", "diabmeds", "cholmeds", "contraceptive", "HRT")){
-  medhist[[col]][medhist$medication %in% c("Prefer not to answer") | is.na(medhist$medication)] <- NA
-  medhist[[col]][medhist$medication %in% c("Do not know") | is.na(medhist$medication)] <- "Do not know"
+  medhist[[col]][medhist$medication %in% c("Prefer not to answer", "Do not know") | is.na(medhist$medication)] <- NA
+  # medhist[[col]][medhist$medication %in% c("Do not know") | is.na(medhist$medication)] <- "Do not know"
 }
 
 #--------------------------------------------------------------------------------------------------------------
@@ -103,6 +104,7 @@ for(col in c("prevHBP", "prevstroke", "prevCVD")){
 names(medhist)[names(medhist)=="HMH_IllDisab"] <- "illdisab"
 names(medhist)[names(medhist)=="HMH_Diabetes"] <- "diabetes"
 names(medhist)[names(medhist)=="HMH_HBPAge.0"] <- "HBPAge"
+medhist$HBPAge[medhist$HBPAge %in% c(-1,-3)] <- NA
 
 
 saveRDS(medhist[,c("ID", "medication", "HBPmeds", "diabmeds", "cholmeds", "contraceptive", "HRT", 
@@ -293,22 +295,21 @@ bpcodes <- coding6[grep("hypertension|essential hypertension", coding6$meaning),
 veint_HTNhist$VIhyp <- apply(veint_HTNhist[,grep("VeI_NonCancerCode", colnames(veint_HTNhist), fixed=TRUE)], 1, function(x) any(x %in% bpcodes$coding))
 
 
+
 # asthcodes <- coding6[grep("asthma", coding6$meaning),]
 # VI_diag$VIasth <- apply(VI_diag[,grep("VeI_NonCancerCode", colnames(VI_diag), fixed=TRUE)], 1, function(x) any(x %in% asthcodes$coding))
 # 
 # copdcodes <- coding6[grep("copd", coding6$meaning),]
 # VI_diag$VIcopd <- apply(VI_diag[,grep("VeI_NonCancerCode", colnames(VI_diag), fixed=TRUE)], 1, function(x) any(x %in% copdcodes$coding))
 # 
-# dementiacodes <-coding6[grep("dementia", coding6$meaning),]
-# VI_diag$VIdementia <- apply(VI_diag[,grep("VeI_NonCancerCode", colnames(VI_diag), fixed=TRUE)], 1, function(x) any(x %in% dementiacodes$coding))
+dementiacodes <-coding6[grep("dementia", coding6$meaning),]
+veint_HTNhist$VIdementia <- apply(VI_diag[,grep("VeI_NonCancerCode", colnames(VI_diag), fixed=TRUE)], 1, function(x) any(x %in% dementiacodes$coding))
 
 # Here it seems likely that NA doesn't mean not answered, but rather not applicable
 # for(col in c("VIstroke", "VIhyp", "VIasth", "VIcopd", "VIdementia")){
 #   veint[[col]][is.na(veint$VeI_NonCancerCode.0)] <- NA
 # }
 
-saveRDS(veint_HTNhist[,c("ID", "VIstroke", "VIhyp")], 
-        file="K:\\TEU\\APOE on Dementia\\Data Management\\R_Dataframes_TLA\\38358\\Organised\\veint_HTNhist.rds")
 
 # Additionally, prepare a list of all participants and their diagnosis codes 
 # this can later be joined to mappings from codes to specific conditions of interest
@@ -329,6 +330,14 @@ VI_diaglong <- merge(VI_diaglong[,c("ID", "instance", "coding")], VI_durlong[,c(
 VI_diaglong <- unique(VI_diaglong[,c("ID", "coding", "year")])
 # Save this ready to be joined to any diagnosis mapping
 saveRDS(VI_diaglong, "K:\\TEU\\APOE on Dementia\\Data Management\\R_Dataframes_TLA\\38358\\Organised\\VIDiagnosisCodes_long.rds")
+
+VIhyp <- VI_diaglong[VI_diaglong$coding %in% bpcodes$coding,]
+VIhypfirst <- VIhyp %>% group_by(ID) %>% slice(which.min(year))
+VIhypfirst$VIhypdx_yr <- VIhypfirst$year
+
+veint_HTNhist <- merge(veint_HTNhist, VIhypfirst[,c("ID", "VIhypdx_yr")], by="ID", all.x=TRUE)
+saveRDS(veint_HTNhist[,c("ID", "VIstroke", "VIhyp", "VIhypdx_yr", "VIdementia")], 
+        file="K:\\TEU\\APOE on Dementia\\Data Management\\R_Dataframes_TLA\\38358\\Organised\\veint_HTNhist.rds")
 
 ```
 
@@ -355,6 +364,7 @@ covars <- merge(smoking[,c("ID", "Smo_Status", "Smo_TobaccoCurr", "Smo_TobaccoPa
 household <- readRDS(paste0(filepath, "HoH_base", ".rds"))
 household$income <- household$HoH_PreTaxInc.0
 household$income[is.na(household$income)] <- household$HoH_PreTaxInc_P.0[is.na(household$income)]
+household$income <- factor(household$income, levels=c("Less than 18,000", "18,000 to 30,999", "31,000 to 51,999", "52,000 to 100,000", "Greater than 100,000", "Do not know", "Prefer not to answer"), ordered=FALSE)
 covars <- merge(covars, household[,c("ID", "income", "HoH_HouseholdSize.0")], by="ID", all=TRUE)
 
 sleep <- readRDS(paste0(filepath, "Sle_base", ".rds"))
@@ -376,8 +386,7 @@ for(qual in c("College or University degree",
               "A levels/AS levels or equivalent",
               "O levels/GCSEs or equivalent",
               "CSEs or equivalent",
-              "None of the above",
-              "Prefer not to answer")) {
+              "None of the above")) {
   education$edu_highest[is.na(education$edu_highest)] <- ifelse(
     apply(education[is.na(education$edu_highest),grep("Edu_Qualif", colnames(education), fixed=TRUE)], 1, 
           function(x) any(x == qual & !is.na(x))), 
@@ -385,11 +394,18 @@ for(qual in c("College or University degree",
     )
 }
 education$edu_highest <- factor(education$edu_highest, 
-                                levels=c("College or University degree", "NVQ or HND or HNC or equivalent", "Other professional qualifications eg: nursing, teaching", "A levels/AS levels or equivalent", "O levels/GCSEs or equivalent", "CSEs or equivalent", "None of the above", "Prefer not to answer"),
+                                levels=c("College or University degree", "NVQ or HND or HNC or equivalent", "Other professional qualifications eg: nursing, teaching", "A levels/AS levels or equivalent", "O levels/GCSEs or equivalent", "CSEs or equivalent", "None of the above"),
                                 ordered=TRUE)
  
 
 covars <- merge(covars, education[,c("ID", "uni", "eduNA", "edu_highest", "Edu_Age.0")], by="ID", all=TRUE)
+
+
+
+employment <- readRDS("K:\\TEU\\APOE on Dementia\\Data Management\\R_Dataframes_TLA\\38358\\Organised\\Jobcodes_pts.rds")
+employment$employment <- employment$TL
+
+covars <- merge(covars, employment[,c("ID", "employment")], by="ID", all=TRUE)
 
 saveRDS(covars, file="K:\\TEU\\APOE on Dementia\\Data Management\\R_Dataframes_TLA\\38358\\Organised\\covars.rds")
 ```
@@ -404,7 +420,7 @@ TQmedhist <- readRDS("K:\\TEU\\APOE on Dementia\\Data Management\\R_Dataframes_T
 famhist <- readRDS("K:\\TEU\\APOE on Dementia\\Data Management\\R_Dataframes_TLA\\38358\\Organised\\familyhistory.rds")
 deathdate <- readRDS("K:\\TEU\\APOE on Dementia\\Data Management\\R_Dataframes_TLA\\38358\\Organised\\deathdate.rds")
 covars <- readRDS("K:\\TEU\\APOE on Dementia\\Data Management\\R_Dataframes_TLA\\38358\\Organised\\covars.rds")
-
+rubric <- readRDS("K:\\TEU\\APOE on Dementia\\Data Management\\R_Dataframes_TLA\\38358\\Organised\\Hypertension\\Neo\\HTNMedsRubric.rds")
 
 # Combine the baseline characteristics with the ethnicities
 data <- merge(basechar, ethnicity, by="ID", all=TRUE)
@@ -422,23 +438,34 @@ data <- merge(data, famhist, by="ID", all=TRUE)
 data <- merge(data, dementia, by="ID", all=TRUE)
 # And with all other selected covariates
 data <- merge(data, covars, by="ID", all=TRUE)
+# Merge with the "probable BP meds" variable from the rubric
+data <- merge(data, rubric[,c("ID", "HTN_probablemeds")], by="ID", all.x=TRUE)
 
+# Duration of hypertension diagnosis
+data$HTNdx_TQ <- data$age - data$HBPAge
+data$HTNdx_VI <- decimal_date(data$recdate) - data$VIhypdx_yr
+data$HTNdx <- coalesce(data$HTNdx_VI, data$HTNdx_TQ)
 # Single variable for self-reported hypertension
 # If reported in either touchscreen questionnaire or verbal interview
 data$selfrephyp <- data$prevHBP==TRUE | data$VIhyp==TRUE
 
+# Single variable for self-reported meds
+# If participant answered the question in touchscreen questionnaire, use this
+# If they did not answer ("Do not know"/Prefer not to answer"/skipped question) then use the "probable BP meds"
+data$selfrepmeds <- ifelse(!is.na(data$HBPmeds), data$HBPmeds, data$HTN_probablemeds)
+
 # Indicator variable for "some evidence of hypertension" vs "no evidence of hypertension"
-data$evidenceHTN <- (data$selfrephyp==TRUE | data$HBPmeds==TRUE | data$measuredhyp==TRUE)
+data$evidenceHTN <- (data$selfrephyp==TRUE | data$selfrepmeds==TRUE | data$measuredhyp==TRUE)
 unique(data$evidenceHTN)
 
 # Indicator variable for hypertension awareness - 
 # did they say they had hypertension or say that they were taking BP meds
-data$aware <- data$selfrephyp==TRUE | data$HBPmeds==TRUE
+data$aware <- data$selfrephyp==TRUE | data$selfrepmeds==TRUE
 data$aware[data$evidenceHTN==FALSE | is.na(data$evidenceHTN)] <- NA
 
 # Indicator variable for hypertension treatment status
 # Return to this after finalising incorporation of VI medication data
-data$treated <- data$HBPmeds
+data$treated <- data$selfrepmeds
 data$treated[data$aware==FALSE | is.na(data$aware)] <- NA
 
 # Control
@@ -597,8 +624,11 @@ data <- data[data$age >= 40 & data$age < 70,]
 # n = 500011 - 490560 = 9451
 data <- data[!is.na(data$SBP) & !is.na(data$DBP),]
 data <- data[!is.na(data$selfrephyp),]
-data <- data[!is.na(data$HBPmeds),]
+# data <- data[!is.na(data$HBPmeds),]
 # Return to this to incorporate interview meds list responses
+
+# Exclude individuals without highest level of education
+data <- data[!is.na(data$edu_highest),]
 
 # Exclude individuals with no age data
 # n = 0
@@ -608,10 +638,6 @@ data <- data[!is.na(data$age),]
 # n = 0
 data <- data[!is.na(data$gender),]
 
-# Cancel this exclusion since we're using age of leaving full-time education instead
-# Exclude those with no highest level of education provided
-# n = 489780 - 484785 = 4995
-# data <- data[data$eduNA==FALSE,]
 
 
 # Collapse ethnic groups into broader categories
@@ -654,6 +680,9 @@ data$agegrp <- cut(data$age, breaks=c(40, 50, 60, 70), right=FALSE)
 # Categorise BMI into labelled categories
 data$BMIcat <- cut(data$bl_BMI, breaks=c(0, 18.5, 25, 30, 200), right=FALSE)
 data$BMIcat <- factor(data$BMIcat, levels=c("[0,18.5)", "[18.5,25)", "[25,30)", "[30,200)"), labels=c("Underweight", "Normal", "Overweight", "Obese"))
+
+comorbidities <- readRDS("K:\\TEU\\APOE on Dementia\\Data Management\\R_Dataframes_TLA\\38358\\Organised\\Hypertension\\Neo\\VI_ComorbidityCategories.rds")
+data <- merge(data, comorbidities, by="ID", all.x=TRUE)
 
 
 saveRDS(data, file="K:\\TEU\\APOE on Dementia\\Data Management\\R_Dataframes_TLA\\38358\\Organised\\Hypertension\\Neo\\HTN_excl.rds")

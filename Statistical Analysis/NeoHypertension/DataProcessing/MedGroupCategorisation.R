@@ -141,22 +141,22 @@ medsdata$HTN_txalg <- factor(medsdata$HTN_txalg, levels=c("Step 1/2", "Step 3", 
 
 table(medsdata$HTN_txalg)
 
-medsdata$HTN_txcat[
-  medsdata$selfrephyp==TRUE & medsdata$HBPmeds==TRUE
-  ] <- "Definitely on meds for BP"
+# medsdata$HTN_txcat[
+#   medsdata$selfrephyp==TRUE & medsdata$HBPmeds==TRUE
+#   ] <- "Definitely on meds for BP"
 
-medsdata$HTN_txcat2[
+medsdata$HTN_probablemeds[
   #is.na(medsdata$HTN_txcat) &
   medsdata$HTN_txalg %in% c("Step 1/2", "Step 3", "Step 4", "Step 5",
                             "Step 1 for Black OR age<55", "Step 1 for female of childbearing age",
                             "Thiazide only, no alternative diagnosis",
                             "ACEI/ARB only, no alternative diagnosis",
                             "BB only, no alternative diagnosis")
-  ] <- "Probably on meds for BP"
-
-medsdata$HTN_txcat3[
-  medsdata$HTN_txalg %in% c("Taking non-BP medication", "Not taking any medication")
-  ] <- "Definitely not on meds for BP"
+  ] <- TRUE
+medsdata$HTN_probablemeds[is.na(medsdata$HTN_probablemeds)] <- FALSE
+# medsdata$HTN_txcat3[
+#   medsdata$HTN_txalg %in% c("Taking non-BP medication", "Not taking any medication")
+#   ] <- "Definitely not on meds for BP"
 
 
 # saveRDS(medsdata, file="K:\\TEU\\APOE on Dementia\\Data Management\\R_Dataframes_TLA\\38358\\Organised\\Hypertension\\Neo\\ClassifiedHypMedGroups.rds")
