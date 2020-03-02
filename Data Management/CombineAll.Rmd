@@ -445,14 +445,16 @@ data <- merge(data, rubric[,c("ID", "HTN_probablemeds")], by="ID", all.x=TRUE)
 data$HTNdx_TQ <- data$age - data$HBPAge
 data$HTNdx_VI <- decimal_date(data$recdate) - data$VIhypdx_yr
 data$HTNdx <- coalesce(data$HTNdx_VI, data$HTNdx_TQ)
+
 # Single variable for self-reported hypertension
 # If reported in either touchscreen questionnaire or verbal interview
-data$selfrephyp <- data$prevHBP==TRUE | data$VIhyp==TRUE
+data$selfrephyp <- (data$prevHBP==TRUE & !is.na(data$prevHBP)) | data$VIhyp==TRUE
 
 # Single variable for self-reported meds
 # If participant answered the question in touchscreen questionnaire, use this
 # If they did not answer ("Do not know"/Prefer not to answer"/skipped question) then use the "probable BP meds"
-data$selfrepmeds <- ifelse(!is.na(data$HBPmeds), data$HBPmeds, data$HTN_probablemeds)
+data$HTN_probablemeds[is.na(data$HTN_probablemeds)] <- FALSE
+data$selfrepmeds <- (data$HBPmeds==TRUE & !is.na(data$HBPmeds)) | data$HTN_probablemeds
 
 # Indicator variable for "some evidence of hypertension" vs "no evidence of hypertension"
 data$evidenceHTN <- (data$selfrephyp==TRUE | data$selfrepmeds==TRUE | data$measuredhyp==TRUE)

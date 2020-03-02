@@ -79,39 +79,39 @@ VImeds$HTN_txalg <- ifelse(VImeds$step12==TRUE, "Step 1/2",
 #--------------------------------------------------------------------------------------------------------------
 # Definitely not on medication for hypertension
 #--------------------------------------------------------------------------------------------------------------
-# Has heart failure AND is on ACEI/ARB and BB without thiazide
-VImeds$defnot[!is.na(VImeds$heart_failure) & 
-                (!is.na(VImeds[["ACEI"]]) | !is.na(VImeds[["ARBs"]])) & !is.na(VImeds[["BB"]]) & 
-                is.na(VImeds[["Thiazide"]])
-              ] <- TRUE
-# Has arrhythmia AND is on BB only
-VImeds$defnot[!is.na(VImeds$heart_arrhythmia) & 
-                !is.na(VImeds[["BB"]]) & VImeds$onlyone
-              ] <- TRUE
-# Has liver failure/lymphoedema AND is on a (non-thiazide) diuretic
-VImeds$defnot[(!is.na(VImeds$liver_failure) | !is.na(VImeds$lymphoedema)) & 
-                !is.na(VImeds[["Potassium-sparing diuretic"]]) & VImeds$onlyone
-              ] <- TRUE
-# Has kidney failure AND is on a (non-thiazide) diuretic +/- ACEI/ARB
-VImeds$defnot[!is.na(VImeds$kidney_failure) & 
-                !is.na(VImeds[["Potassium-sparing diuretic"]]) & 
-                VImeds$onlyone
-              ] <- TRUE
-VImeds$defnot[!is.na(VImeds$kidney_failure) & 
-                !is.na(VImeds[["Potassium-sparing diuretic"]]) & (!is.na(VImeds[["ACEI"]]) | !is.na(VImeds[["ARBs"]])) &
-                rowSums(VImeds[,hypclasslist], na.rm=TRUE)==2
-              ] <- TRUE
-# Has angina AND is on BB
-VImeds$defnot[!is.na(VImeds$angina) & 
-                !is.na(VImeds[["BB"]]) & VImeds$onlyone
-              ] <- TRUE
-
-# Anything else is not definitely not
-VImeds$defnot[is.na(VImeds$defnot)] <- FALSE
-
+# # Has heart failure AND is on ACEI/ARB and BB without thiazide
+# VImeds$defnot[!is.na(VImeds$heart_failure) &
+#                 (!is.na(VImeds[["ACEI"]]) | !is.na(VImeds[["ARBs"]])) & !is.na(VImeds[["BB"]]) &
+#                 is.na(VImeds[["Thiazide"]])
+#               ] <- TRUE
+# # Has arrhythmia AND is on BB only
+# VImeds$defnot[!is.na(VImeds$heart_arrhythmia) &
+#                 !is.na(VImeds[["BB"]]) & VImeds$onlyone
+#               ] <- TRUE
+# # Has liver failure/lymphoedema AND is on a (non-thiazide) diuretic
+# VImeds$defnot[(!is.na(VImeds$liver_failure) | !is.na(VImeds$lymphoedema)) & 
+#                 !is.na(VImeds[["Potassium-sparing diuretic"]]) & VImeds$onlyone
+#               ] <- TRUE
+# # Has kidney failure AND is on a (non-thiazide) diuretic +/- ACEI/ARB
+# VImeds$defnot[!is.na(VImeds$kidney_failure) & 
+#                 !is.na(VImeds[["Potassium-sparing diuretic"]]) & 
+#                 VImeds$onlyone
+#               ] <- TRUE
+# VImeds$defnot[!is.na(VImeds$kidney_failure) & 
+#                 !is.na(VImeds[["Potassium-sparing diuretic"]]) & (!is.na(VImeds[["ACEI"]]) | !is.na(VImeds[["ARBs"]])) &
+#                 rowSums(VImeds[,hypclasslist], na.rm=TRUE)==2
+#               ] <- TRUE
+# # Has angina AND is on BB
+# VImeds$defnot[!is.na(VImeds$angina) &
+#                 !is.na(VImeds[["BB"]]) & VImeds$onlyone
+#               ] <- TRUE
 # 
-VImeds$HTN_txalg[is.na(VImeds$HTN_txalg) & VImeds$defnot==TRUE] <- "Taking potential BP medication for other indications"
-VImeds$HTN_txalg[is.na(VImeds$HTN_txalg)] <- VImeds$hypmeds[is.na(VImeds$HTN_txalg)]
+# # Anything else is not definitely not
+# VImeds$defnot[is.na(VImeds$defnot)] <- FALSE
+# 
+# # 
+# VImeds$HTN_txalg[is.na(VImeds$HTN_txalg) & VImeds$defnot==TRUE] <- "Taking potential BP medication for other indications"
+# VImeds$HTN_txalg[is.na(VImeds$HTN_txalg)] <- VImeds$hypmeds[is.na(VImeds$HTN_txalg)]
 
 #--------------------------------------------------------------------------------------------------------------
 # Load the full hypertension study data set
@@ -141,23 +141,20 @@ medsdata$HTN_txalg <- factor(medsdata$HTN_txalg, levels=c("Step 1/2", "Step 3", 
 
 table(medsdata$HTN_txalg)
 
-# medsdata$HTN_txcat[
-#   medsdata$selfrephyp==TRUE & medsdata$HBPmeds==TRUE
-#   ] <- "Definitely on meds for BP"
 
 medsdata$HTN_probablemeds[
-  #is.na(medsdata$HTN_txcat) &
   medsdata$HTN_txalg %in% c("Step 1/2", "Step 3", "Step 4", "Step 5",
                             "Step 1 for Black OR age<55", "Step 1 for female of childbearing age",
                             "Thiazide only, no alternative diagnosis",
                             "ACEI/ARB only, no alternative diagnosis",
                             "BB only, no alternative diagnosis")
   ] <- TRUE
-medsdata$HTN_probablemeds[is.na(medsdata$HTN_probablemeds)] <- FALSE
-# medsdata$HTN_txcat3[
-#   medsdata$HTN_txalg %in% c("Taking non-BP medication", "Not taking any medication")
-#   ] <- "Definitely not on meds for BP"
 
+table(medsdata$HTN_probablemeds, useNA='ifany')
+
+
+
+medsdata$HTN_probablemeds[is.na(medsdata$HTN_probablemeds)] <- FALSE
 
 # saveRDS(medsdata, file="K:\\TEU\\APOE on Dementia\\Data Management\\R_Dataframes_TLA\\38358\\Organised\\Hypertension\\Neo\\ClassifiedHypMedGroups.rds")
 saveRDS(medsdata, file="K:\\TEU\\APOE on Dementia\\Data Management\\R_Dataframes_TLA\\38358\\Organised\\Hypertension\\Neo\\HTNMedsRubric.rds")
