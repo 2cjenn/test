@@ -87,7 +87,7 @@ kable(rbind(gender, agegrp, age, ethnicity, ISCED, employment, SBP, DBP))
 
 #multivariable logistic regression for DV control, among treated individuals. covariates to include in model are: age group, gender, BMI (categorical), smoking status, whether has CVD (comorbidity category - yes/no), duration of hypertension, whether ever screened for bowel cancer, household income (continuous, quintiles), Townsend vulnerability/deprivation  index (score), occupation type (categorical), geographic region/country (Wales, England, Scotland, Northern Ireland)
 
-nrow(treated[is.na(treated$employment),])
+nrow(data[is.na(data$employment),])
 model <- glm(controlled ~ agegrp + gender + BMIcat + Smo_Status + CVD + HTNdx + income + townsend_depind + ISCED + employment, data=treated, family="binomial" )
 # model
 kable(printlogresults(model))

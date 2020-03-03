@@ -8,16 +8,20 @@ library(dplyr)
 library(tidyr)
 library(reshape)
 library(readxl)
-library(RSQLite)
-library(DBI)
 
 
 setwd(dirname(rstudioapi::getActiveDocumentContext()$path))
 
-# fileloc <- "K:\\TEU\\CancerPRS\\6thData_07Nov2019\\R\\117fields\\ukb38358.R"
+# Read in the R file produced by the UKB converter
 fileloc <- "K:\\TEU\\CancerPRS\\6thData_07Nov2019\\R\\20200219\\ukb38358.R"
-# fileloc <- "K:\\TEU\\CancerPRS\\6thData_07Nov2019\\R\\100fieldsNeo\\ukb38358.R"
-# fileloc <- "K:\\TEU\\CancerPRS\\6thData_07Nov2019\\R\\100fieldsNeo\\extra\\ukb38358.R"
+
+# Read in the various mapping files downloaded from UKB
+dataProperties <- read_excel("K:\\TEU\\CancerPRS\\Data_Dictionary\\Mappings\\DataFieldProperties.xlsx")
+instances <- read_excel("K:\\TEU\\CancerPRS\\Data_Dictionary\\Mappings\\instances.xlsx")
+instvalues <- read_excel("K:\\TEU\\CancerPRS\\Data_Dictionary\\Mappings\\insvalue.xlsx")
+
+# Read in the data dictionary 
+matching <- read.csv("K:\\TEU\\CancerPRS\\Data_Dictionary\\Renaming_List_UPDATE_Nov2019_TEU.csv")
 
 
 # First make sure the biobank data has been loaded, if not then load it
@@ -37,10 +41,8 @@ bd <- bd[!bd$f.eid %in% withdrawn$V1,]
 #--------------------------------------------------------------------------------------------------------------
 # Prep for labelling instances
 # Find instance type per data field
-dataProperties <- read_excel("K:\\TEU\\CancerPRS\\Data_Dictionary\\Mappings\\DataFieldProperties.xlsx")
-instances <- read_excel("K:\\TEU\\CancerPRS\\Data_Dictionary\\Mappings\\instances.xlsx")
-instvalues <- read_excel("K:\\TEU\\CancerPRS\\Data_Dictionary\\Mappings\\insvalue.xlsx")
 dataInstances <- left_join(dataProperties[,c("field_id", "instance_id")], instvalues[,c("instance_id", "index", "title")], by="instance_id")
+
 
 # Split the column names into data code, instance and measurement
 cols <- data.frame("full"=colnames(bd)[-1])
@@ -49,10 +51,9 @@ cols <- separate(cols, col=full, into=c("f", "code", "instance", "measurement"),
 cols <- left_join(cols, dataInstances, by=c("code" = "field_id", "instance" = "index"))
 cols$instlabel <- ifelse(is.na(cols$title), cols$instance, cols$title)
 
-# Read in the data dictionary 
-matching <- read.csv("K:\\TEU\\CancerPRS\\Data_Dictionary\\Renaming_List_UPDATE_Nov2019_TEU.csv")
-# matching <- read_excel("K:\\TEU\\CancerPRS\\Data_Dictionary\\Renaming_List_UPDATE_Nov2019_TEU_20191113.xlsx")
-# # Use this to find the codes that were in our data but not Alex's; add them to the matching list
+
+# # Use the data dictionary to find the codes that were in our data but not Alex's; 
+# if anything prints out here then you need to add names for these variables to the matching list
 antis <- anti_join(cols, matching, by=c("code" = "Field_ID"))
 unique(antis$code)
 # Join the column codes to the list of data names to get user-friendly variable names
@@ -105,9 +106,12 @@ for (row in 1:nrow(TLA)) {
 }
 
 #--------------------------------------------------------------------------------------------------------------
-# Make these into SQLite tables
+# Make these into individual dataframes and save
+# If you're running this on a new set of downloaded data fields, 
+# it should add them to the existing data files without overwriting the old stuff
+# It won't update existing data fields (but they shouldn't change?)
 df_to_table <- function(tablist, overwrite) {
-  conn <- dbConnect(RSQLite::SQLite(), "K:/TEU/APOE on Dementia/Data Management/UKB.db")
+  # conn <- dbConnect(RSQLite::SQLite(), "K:/TEU/APOE on Dementia/Data Management/UKB.db")
   for (table in tablist) {
     print(table)
     df <- eval(as.name(table))
@@ -131,6 +135,6 @@ df_to_table <- function(tablist, overwrite) {
      # tryCatch({dbWriteTable(conn, table, df, overwrite=overwrite)}, 
      #          error=function(e) {dbWriteTable(conn, paste0(table, "_Neo"), eval(as.name(table)), overwrite=TRUE)})
   }
-  dbDisconnect(conn)
+  # dbDisconnect(conn)
 }
 df_to_table(tablist=tablelist, overwrite=FALSE)
