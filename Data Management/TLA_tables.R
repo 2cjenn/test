@@ -14,16 +14,7 @@ setwd(dirname(rstudioapi::getActiveDocumentContext()$path))
 
 # Read in the R file produced by the UKB converter
 # fileloc <- "K:\\TEU\\CancerPRS\\6thData_07Nov2019\\R\\20200219\\ukb38358.R"
-fileloc <- "K:\\TEU\\CancerPRS\\6thData_07Nov2019\\R\\20200303\\ukb38358.R"
-
-# Read in the various mapping files downloaded from UKB
-dataProperties <- read_excel("K:\\TEU\\CancerPRS\\Data_Dictionary\\Mappings\\DataFieldProperties.xlsx")
-instances <- read_excel("K:\\TEU\\CancerPRS\\Data_Dictionary\\Mappings\\instances.xlsx")
-instvalues <- read_excel("K:\\TEU\\CancerPRS\\Data_Dictionary\\Mappings\\insvalue.xlsx")
-
-# Read in the data dictionary 
-matching <- read.csv("K:\\TEU\\CancerPRS\\Data_Dictionary\\Renaming_List_UPDATE_Nov2019_TEU.csv")
-
+fileloc <- "K:\\TEU\\CancerPRS\\6thData_07Nov2019\\R\\20200302\\ukb38358.R"
 
 # First make sure the biobank data has been loaded, if not then load it
 if(exists("bd") && is.data.frame(get("bd"))) {
@@ -38,6 +29,15 @@ if(exists("bd") && is.data.frame(get("bd"))) {
 ## Remove individuals who have withdrawn from UKB
 withdrawn <- read.csv("K:\\TEU\\APOE on Dementia\\Data Management\\WithdrawnIDs.csv", header=FALSE)
 bd <- bd[!bd$f.eid %in% withdrawn$V1,]
+
+# Read in the various mapping files downloaded from UKB
+dataProperties <- read_excel("K:\\TEU\\CancerPRS\\Data_Dictionary\\Mappings\\DataFieldProperties.xlsx")
+instances <- read_excel("K:\\TEU\\CancerPRS\\Data_Dictionary\\Mappings\\instances.xlsx")
+instvalues <- read_excel("K:\\TEU\\CancerPRS\\Data_Dictionary\\Mappings\\insvalue.xlsx")
+
+# Read in the data dictionary 
+matching <- read.csv("K:\\TEU\\CancerPRS\\Data_Dictionary\\Renaming_List_UPDATE_Nov2019_TEU.csv")
+
 
 #--------------------------------------------------------------------------------------------------------------
 # Prep for labelling instances

@@ -64,6 +64,9 @@ VImeds$BBonly <- !is.na(VImeds[["BB"]]) & VImeds$onlyone & is.na(VImeds$heart_ar
 # VImeds$weird1 <- VImeds$line1 & is.na(VImeds[["Thiazide"]]) & VImeds$line2 & is.na(VImeds[["Other"]])
 # VImeds$weird2 <- !VImeds$line1 & !is.na(VImeds[["Thiazide"]]) & VImeds$line2 & is.na(VImeds[["Other"]])
 
+#--------------------------------------------------------------------------------------------------------------
+# If-else to create a single factor variable with all the categories
+#--------------------------------------------------------------------------------------------------------------
 VImeds$HTN_txalg <- ifelse(VImeds$step12==TRUE, "Step 1/2", 
                         ifelse(VImeds$step3==TRUE, "Step 3", 
                                ifelse(VImeds$step4==TRUE, "Step 4", 
@@ -73,7 +76,7 @@ VImeds$HTN_txalg <- ifelse(VImeds$step12==TRUE, "Step 1/2",
                                                            ifelse(VImeds$thiaonly==TRUE, "Thiazide only, no alternative diagnosis",
                                                                   ifelse(VImeds$ACEARBonly==TRUE, "ACEI/ARB only, no alternative diagnosis",
                                                                          ifelse(VImeds$BBonly==TRUE, "BB only, no alternative diagnosis",
-                                                                                NA)))))))))
+                                                                                VImeds$hypmeds)))))))))
 
 
 #--------------------------------------------------------------------------------------------------------------
@@ -112,49 +115,47 @@ VImeds$HTN_txalg <- ifelse(VImeds$step12==TRUE, "Step 1/2",
 # # 
 # VImeds$HTN_txalg[is.na(VImeds$HTN_txalg) & VImeds$defnot==TRUE] <- "Taking potential BP medication for other indications"
 # VImeds$HTN_txalg[is.na(VImeds$HTN_txalg)] <- VImeds$hypmeds[is.na(VImeds$HTN_txalg)]
-
-#--------------------------------------------------------------------------------------------------------------
-# Load the full hypertension study data set
-#--------------------------------------------------------------------------------------------------------------
-data <- readRDS(file="K:\\TEU\\APOE on Dementia\\Data Management\\R_Dataframes_TLA\\38358\\Organised\\Hypertension\\Neo\\HTN_excl.rds")
-
-# And merge
-medsdata <- merge(data, VImeds[,c("ID", "hypmeds", "hypmedsno", "HTN_txalg")], all.x=TRUE)
-
-# Joining the two datasets introduced a bunch of NAs because of people who aren't taking any medication, and therefore don't feature in the VImeds dataset
-medsdata$hypmeds[is.na(medsdata$hypmeds)] <- "Not taking any medication"
-medsdata$HTN_txalg[is.na(medsdata$HTN_txalg)] <- "Not taking any medication"
+# 
+# #--------------------------------------------------------------------------------------------------------------
+# # Load the full hypertension study data set
+# #--------------------------------------------------------------------------------------------------------------
+# data <- readRDS(file="K:\\TEU\\APOE on Dementia\\Data Management\\R_Dataframes_TLA\\38358\\Organised\\Hypertension\\Neo\\HTN_excl.rds")
+# 
+# # And merge
+# medsdata <- merge(data, VImeds[,c("ID", "hypmeds", "hypmedsno", "HTN_txalg")], all.x=TRUE)
+# 
+# # Joining the two datasets introduced a bunch of NAs because of people who aren't taking any medication, and therefore don't feature in the VImeds dataset
+# medsdata$hypmeds[is.na(medsdata$hypmeds)] <- "Not taking any medication"
+# medsdata$HTN_txalg[is.na(medsdata$HTN_txalg)] <- "Not taking any medication"
 
 #--------------------------------------------------------------------------------------------------------------
 # Once the potential BP medication has been categorised, any remaining are non-standard combinations
 #--------------------------------------------------------------------------------------------------------------
-medsdata$HTN_txalg[medsdata$HTN_txalg=="Taking potential BP medication"] <- "Other uncategorised combination of potential BP medication"
+VImeds$HTN_txalg[VImeds$HTN_txalg=="Taking potential BP medication"] <- "Probably not BP medication"
 # Make the groups a factor, with appropriate ordering of levels
-medsdata$HTN_txalg <- factor(medsdata$HTN_txalg, levels=c("Step 1/2", "Step 3", "Step 4", "Step 5",
+VImeds$HTN_txalg <- factor(VImeds$HTN_txalg, levels=c("Step 1/2", "Step 3", "Step 4", "Step 5",
                                                           "Step 1 for Black OR age<55", "Step 1 for female of childbearing age",
                                                           "Thiazide only, no alternative diagnosis", 
                                                           "ACEI/ARB only, no alternative diagnosis", 
                                                           "BB only, no alternative diagnosis", 
-                                                          "Other uncategorised combination of potential BP medication",
-                                                          "Taking potential BP medication for other indications",
-                                                          "Taking non-BP medication", "Not taking any medication"))
+                                                          "Probably not BP medication",
+                                                          "Taking non-BP medication"))
 
-table(medsdata$HTN_txalg)
+table(VImeds$HTN_txalg)
 
 
-medsdata$HTN_probablemeds[
-  medsdata$HTN_txalg %in% c("Step 1/2", "Step 3", "Step 4", "Step 5",
+VImeds$HTN_probablemeds[
+  VImeds$HTN_txalg %in% c("Step 1/2", "Step 3", "Step 4", "Step 5",
                             "Step 1 for Black OR age<55", "Step 1 for female of childbearing age",
                             "Thiazide only, no alternative diagnosis",
                             "ACEI/ARB only, no alternative diagnosis",
                             "BB only, no alternative diagnosis")
   ] <- TRUE
+VImeds$HTN_probablemeds[is.na(VImeds$HTN_probablemeds)] <- FALSE
+table(VImeds$HTN_probablemeds, useNA='ifany')
 
-table(medsdata$HTN_probablemeds, useNA='ifany')
 
-
-
-medsdata$HTN_probablemeds[is.na(medsdata$HTN_probablemeds)] <- FALSE
 
 # saveRDS(medsdata, file="K:\\TEU\\APOE on Dementia\\Data Management\\R_Dataframes_TLA\\38358\\Organised\\Hypertension\\Neo\\ClassifiedHypMedGroups.rds")
-saveRDS(medsdata, file="K:\\TEU\\APOE on Dementia\\Data Management\\R_Dataframes_TLA\\38358\\Organised\\Hypertension\\Neo\\HTNMedsRubric.rds")
+saveRDS(VImeds[,c("ID", hypdruglist, hypclasslist, "hypmedsno", "hypmeds", "HTN_txalg", "HTN_probablemeds")], 
+        file="K:\\TEU\\APOE on Dementia\\Data Management\\R_Dataframes_TLA\\38358\\Organised\\Hypertension\\Neo\\HTNMedsRubric.rds")

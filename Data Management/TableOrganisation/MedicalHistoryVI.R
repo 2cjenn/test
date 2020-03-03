@@ -67,5 +67,5 @@ VIhypfirst <- VIhyp %>% group_by(ID) %>% slice(which.min(year))
 VIhypfirst$VIhypdx_yr <- VIhypfirst$year
 
 veint_HTNhist <- merge(veint_HTNhist, VIhypfirst[,c("ID", "VIhypdx_yr")], by="ID", all.x=TRUE)
-saveRDS(veint_HTNhist[,c("ID", "VIstroke", "VIhyp", "VIhypdx_yr", "VIdementia")], 
+saveRDS(veint_HTNhist[,c("ID", "VIstroke", "VIhyp", "VIhypdx_yr", "VIdementia", "VeI_NNonCancer.0")], 
         file="K:\\TEU\\APOE on Dementia\\Data Management\\R_Dataframes_TLA\\38358\\Organised\\veint_HTNhist.rds")

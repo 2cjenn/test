@@ -55,7 +55,7 @@ write.csv(level4, "K:\\TEU\\APOE on Dementia\\Data Management\\R_Dataframes_TLA\
           na="", row.names=FALSE)
 
 # And save it as an R data file, why not
-saveRDS(level3, "K:\\TEU\\APOE on Dementia\\Data Management\\R_Dataframes_TLA\\38358\\Organised\\JobCodes.rds")
+saveRDS(level4, "K:\\TEU\\APOE on Dementia\\Data Management\\R_Dataframes_TLA\\38358\\Organised\\JobCodes.rds")
 
 
 #--------------------------------------------------------------------------------------------------------------

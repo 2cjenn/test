@@ -13,9 +13,10 @@ noncancerillness_mapping <- function(mappath, mapcol="Mapping", outfile) {
   # Load the mapped diagnoses data
   diagnoses <- read_excel(mappath)
   diagnoses$Mapping <- gsub(" ", "_", diagnoses[[mapcol]])
+  diagnoses <- diagnoses[!is.na(diagnoses$Mapping),]
   
   # Join them
-  ptdiagnoses <- merge(pts, diagnoses[,c("coding", "Mapping")], by="coding")
+  ptdiagnoses <- merge(pts, diagnoses[,c("coding", "Mapping")], by="coding", all.x=TRUE)
   
   nrow(unique(ptdiagnoses[,c("ID", "coding")]))
   # Pivot to get a column for each mapped condition
@@ -27,6 +28,7 @@ noncancerillness_mapping <- function(mappath, mapcol="Mapping", outfile) {
   ptdiagnoses <- unique(ptdiagnoses)
   ptdiagnoses_long <- ptdiagnoses[!is.na(ptdiagnoses$Mapping),c("ID", "Mapping", "year")]
   # Now dcast from long to wide so we have a column per category
+  ptdiagnoses <- unique(ptdiagnoses[,c("ID", "Mapping", "coding")])
   ptdiagnoses <- dcast(ptdiagnoses, ID ~ Mapping, value.var="coding")
   
   # Save the result
@@ -52,6 +54,16 @@ noncancerillness_mapping(mappath="K:\\TEU\\APOE on Dementia\\Data Management\\R_
 noncancerillness_mapping(mappath="K:\\TEU\\APOE on Dementia\\Data Management\\R_Dataframes_TLA\\38358\\Organised\\Hypertension\\Neo\\UKBHtn_NonCancerIllness_Mapping.xlsx",
                          mapcol="AlternateDiagnoses",
                          outfile="K:\\TEU\\APOE on Dementia\\Data Management\\R_Dataframes_TLA\\38358\\Organised\\Hypertension\\Neo\\VIhypAltDiagnoses")
+
+# Really serious conditions to be excluded from the data set
+noncancerillness_mapping(mappath="K:\\TEU\\APOE on Dementia\\Data Management\\R_Dataframes_TLA\\38358\\Organised\\Hypertension\\Neo\\UKBHtn_NonCancerIllness_Mapping.xlsx",
+                         mapcol="Exclude",
+                         outfile="K:\\TEU\\APOE on Dementia\\Data Management\\R_Dataframes_TLA\\38358\\Organised\\Hypertension\\Neo\\VIhypExclude")
+
+# Group B and Group C
+noncancerillness_mapping(mappath="K:\\TEU\\APOE on Dementia\\Data Management\\R_Dataframes_TLA\\38358\\Organised\\Hypertension\\Neo\\UKBHtn_NonCancerIllness_Mapping.xlsx",
+                         mapcol="ComorbidityGroup",
+                         outfile="K:\\TEU\\APOE on Dementia\\Data Management\\R_Dataframes_TLA\\38358\\Organised\\Hypertension\\Neo\\VIhypGroupBC")
 
 
 

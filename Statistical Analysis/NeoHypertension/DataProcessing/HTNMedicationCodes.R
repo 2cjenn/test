@@ -55,9 +55,7 @@ rm(htmeds, htmedslong, codegeneric, codeclass)
 # Note: We are considering hypertensive medications ONLY
 #--------------------------------------------------------------------------------------------------------------
 
-veint <- readRDS("K:\\TEU\\APOE on Dementia\\Data Management\\R_Dataframes_TLA\\38358\\VeI_base.rds")
-# We're only interested in the medication code columns from the verbal interview data
-veint <- veint[,c(1, grep("VeI_MedCode", colnames(veint), fixed=TRUE))]
+veint <- readRDS("K:\\TEU\\APOE on Dementia\\Data Management\\R_Dataframes_TLA\\38358\\VeI_medcodes_base.rds")
 # We have this field for all 502520 individuals
 sum(rowSums(veint[,c(2:49)], na.rm=TRUE)==0)
 # But for 138537 individuals it is NA across all columns

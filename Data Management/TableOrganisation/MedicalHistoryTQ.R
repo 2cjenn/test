@@ -64,9 +64,10 @@ for(col in c("prevHBP", "prevstroke", "prevCVD")){
 names(medhist)[names(medhist)=="HMH_IllDisab"] <- "illdisab"
 names(medhist)[names(medhist)=="HMH_Diabetes"] <- "diabetes"
 names(medhist)[names(medhist)=="HMH_HBPAge.0"] <- "HBPAge"
+names(medhist)[names(medhist)=="HMH_BowelSc"] <- "BowelCancerScreening"
 medhist$HBPAge[medhist$HBPAge %in% c(-1,-3)] <- NA
 
 
 saveRDS(medhist[,c("ID", "medication", "HBPmeds", "diabmeds", "cholmeds", "contraceptive", "HRT", 
-                   "vasc_cond", "prevHBP", "prevstroke", "prevCVD", "illdisab", "diabetes", "HBPAge")],
+                   "vasc_cond", "prevHBP", "prevstroke", "prevCVD", "illdisab", "diabetes", "BowelCancerScreening", "HBPAge")],
         file="K:\\TEU\\APOE on Dementia\\Data Management\\R_Dataframes_TLA\\38358\\Organised\\tq_medhist.rds")
