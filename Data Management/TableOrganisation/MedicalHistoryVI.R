@@ -8,12 +8,11 @@ library(dplyr)
 
 #--------------------------------------------------------------------------------------------------------------
 
-# Read in the raw data
-veint <- readRDS("K:\\TEU\\APOE on Dementia\\Data Management\\R_Dataframes_TLA\\38358\\VeI_base.rds")
-VI_diag <- veint[,c(1, grep("VeI_NonCancerCode.", colnames(veint), fixed=TRUE))]
-VI_diagdur <- veint[,c(1, grep("VeI_NonCancerYear.", colnames(veint), fixed=TRUE))]
-VI_cancerdur <- veint[,c(1, grep("VeI_CancerYr.", colnames(veint), fixed=TRUE))]
+VI_diag <- readRDS("K:\\TEU\\APOE on Dementia\\Data Management\\R_Dataframes_TLA\\38358\\VeI_diag_base.rds")
+VI_diagdur <- readRDS("K:\\TEU\\APOE on Dementia\\Data Management\\R_Dataframes_TLA\\38358\\VeI_diagdur_base.rds")
 
+# Use the "year" columns for duration
+VI_diagdur <- VI_diagdur[,c(1, grep("VeI_NonCancerYear.", colnames(VI_diagdur), fixed=TRUE))]
 
 coding6 <- read.table("K:/TEU/CancerPRS/Data_Dictionary/Mappings/coding6.tsv", sep="\t", header=TRUE, quote="", comment.char="$", fill=FALSE)
 

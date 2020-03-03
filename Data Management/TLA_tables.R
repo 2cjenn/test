@@ -13,7 +13,8 @@ library(readxl)
 setwd(dirname(rstudioapi::getActiveDocumentContext()$path))
 
 # Read in the R file produced by the UKB converter
-fileloc <- "K:\\TEU\\CancerPRS\\6thData_07Nov2019\\R\\20200219\\ukb38358.R"
+# fileloc <- "K:\\TEU\\CancerPRS\\6thData_07Nov2019\\R\\20200219\\ukb38358.R"
+fileloc <- "K:\\TEU\\CancerPRS\\6thData_07Nov2019\\R\\20200303\\ukb38358.R"
 
 # Read in the various mapping files downloaded from UKB
 dataProperties <- read_excel("K:\\TEU\\CancerPRS\\Data_Dictionary\\Mappings\\DataFieldProperties.xlsx")
