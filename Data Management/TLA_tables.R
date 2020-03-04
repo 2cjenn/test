@@ -22,6 +22,7 @@ if(exists("bd") && is.data.frame(get("bd"))) {
 } else {
   print("Please wait a moment")
   source(fileloc)
+  # Remove all the other files that were created by the UKB R script to keep clean workspace and save memory
   rm(list=(ls()[ls()!="bd"]))
   print("Ok, ready!")
 }

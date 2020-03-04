@@ -11,6 +11,12 @@ output:
 knitr::opts_chunk$set(echo = FALSE)
 library(kableExtra)
 library(knitr)
+library(DiagrammeR)
+library(DiagrammeRsvg)
+library(magrittr)
+library(svglite)
+library(rsvg)
+library(png)
 
 source("K:/TEU/APOE on Dementia/Statistical Analysis/JCfunctions.R")
 
@@ -22,38 +28,58 @@ treated <- data[data$treated==TRUE & !is.na(data$treated),]
 
 
 ```{r fig2, include=FALSE, echo=FALSE, results='asis'}
+ethnicity <- c("White", "Black", "Asian", "Other")
+agegrp <- c("[40,50)", "[50,60)", "[60,70)")
+dflist <- c(list("Whole population"=data), 
+            lapply(ethnicity, function(x) data[data$ethnicity==x,]),
+            lapply(agegrp, function(x) data[data$agegrp==x,])
+            )
+names(dflist) <- c("Whole population", paste0("UKB ", ethnicity, "\npopulation"), paste0("UKB population\naged ",agegrp))
+filenames <- list("Wholepop", "White", "Black", "Asian", "Other", "40_50", "50_60", "60_70")
+names(filenames) <- names(dflist)
 
-for(eth in c("All", "White", "Black", "Asian", "Other")){
-  print(paste0("Ethnicity = ", eth))
-  if (eth=="All"){
-    df <- data
-  } else {
-    df <- data[data$ethnicity==eth,]  
-  }
+grlist <- list()
+for(dfname in names(dflist)){
+  df <- dflist[[dfname]]
+  nlist <- list(wholepop=nrow(data))
+  pctlist <- list()
   for(variable in c("evidenceHTN", "aware", "treated", "controlled")){
     var <- paste0(variable, "_")
     tab <- table(df[[var]])
-    print(kable(tab))
-    print(kable(round(100*prop.table(tab),2)))
+    pct <- round(100*prop.table(tab),1)
+    nlist[[variable]] <- tab
+    pctlist[[variable]] <- pct
   }
+  svg <- export_svg(DiagrammeR::grViz("K:\\TEU\\APOE on Dementia\\Statistical Analysis\\NeoHypertension\\RMarkdown\\HTNtree.gv")) %>% charToRaw %>% rsvg %>% png::writePNG(paste0(filenames[[dfname]],'.png'))
 }
-
-for(age in c("[40,50)", "[50,60)", "[60,70)")){
-  print(paste0("Age group = ", age))
-  if (eth=="All"){
-    df <- data
-  } else {
-    df <- data[data$agegrp==age,]  
-  }
-  for(variable in c("evidenceHTN", "aware", "treated", "controlled")){
-    var <- paste0(variable, "_")
-    tab <- table(df[[var]])
-    print(kable(tab))
-    print(kable(round(100*prop.table(tab),2)))
-  }
-}
-
+# DiagrammeR::grViz("K:\\TEU\\APOE on Dementia\\Statistical Analysis\\NeoHypertension\\RMarkdown\\HTNtree.gv")
+# knitr::include_graphics("Wholepop.png")
+# knitr::include_graphics("White.png")
+# knitr::include_graphics("Black.png")
+# knitr::include_graphics("Asian.png")
+# knitr::include_graphics("Other.png")
+# knitr::include_graphics("40_50.png")
+# knitr::include_graphics("50_60.png")
+# knitr::include_graphics("60_70.png")
 ```
+![Whole population.](K:/TEU/APOE on Dementia/Statistical Analysis/NeoHypertension/RMarkdown/Wholepop.png)
+
+![Individuals of White ethnicity.](K:/TEU/APOE on Dementia/Statistical Analysis/NeoHypertension/RMarkdown/White.png)
+
+![Individuals of Black ethnicity.](K:/TEU/APOE on Dementia/Statistical Analysis/NeoHypertension/RMarkdown/Black.png)
+
+![Individuals of Asian ethnicity.](K:/TEU/APOE on Dementia/Statistical Analysis/NeoHypertension/RMarkdown/Asian.png)
+
+![Individuals of Other ethnicity.](K:/TEU/APOE on Dementia/Statistical Analysis/NeoHypertension/RMarkdown/Other.png)
+
+![Individuals aged between 40 and 50.](K:/TEU/APOE on Dementia/Statistical Analysis/NeoHypertension/RMarkdown/40_50.png)
+
+![Individuals aged between 50 and 60.](K:/TEU/APOE on Dementia/Statistical Analysis/NeoHypertension/RMarkdown/50_60.png)
+
+![Individuals aged between 60 and 70.](K:/TEU/APOE on Dementia/Statistical Analysis/NeoHypertension/RMarkdown/60_70.png)
+
+
+
 
 ```{r table1, include=TRUE, echo=FALSE}
 
@@ -88,8 +114,9 @@ kable(rbind(gender, agegrp, age, ethnicity, ISCED, employment, SBP, DBP))
 
 #multivariable logistic regression for DV control, among treated individuals. covariates to include in model are: age group, gender, BMI (categorical), smoking status, whether has CVD (comorbidity category - yes/no), duration of hypertension, whether ever screened for bowel cancer, household income (continuous, quintiles), Townsend vulnerability/deprivation  index (score), occupation type (categorical), geographic region/country (Wales, England, Scotland, Northern Ireland)
 
-nrow(data[is.na(data$employment),])
+
 model <- glm(controlled ~ agegrp + gender + BMIcat + Smo_Status + CVD + HTNdx + income + townsend_depind + ISCED + employment, data=treated, family="binomial" )
+model <- glm(controlled ~ agegrp + gender, data=treated, family="binomial" )
 # model
 kable(printlogresults(model))
 
