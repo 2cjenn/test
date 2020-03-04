@@ -56,7 +56,9 @@ VI_durlong <- VI_durlong[!is.na(VI_durlong$year),]
 VI_durlong <- VI_durlong %>% tidyr::separate(medno, into=c("VeI", "NonCancerYear", "instance"))
 # Merge the diagnosis codes with the corresponding durations
 VI_diaglong <- merge(VI_diaglong[,c("ID", "instance", "coding")], VI_durlong[,c("ID", "instance", "year")], all.x=TRUE)
-# And remove rows where individuals have the same illness recorded twice - 
+# Note that when the year is coded -1 it means unknown, and -3 means preferred not to answer
+VI_diaglong$year[VI_diaglong$year %in% c(-1,-3)] <- NA
+# remove rows where individuals have the same illness recorded twice - 
 # two subtly different conditions that fit in the same UKB category?
 VI_diaglong <- unique(VI_diaglong[,c("ID", "coding", "year")])
 # Save this ready to be joined to any diagnosis mapping

@@ -57,13 +57,13 @@ for(carrier in c(TRUE, FALSE)){
 
 ```{r genderHR, include=TRUE, echo=FALSE}
 
-model1 <- coxph(Surv(time_to_dementia, dementia_status) ~ age + gender + e4carrier + controlled_, 
-                data=data[data$treated==TRUE,])
+model1 <- coxph(Surv(time_to_dementia, dementia_status) ~ age + gender + e4carrier_ + controlled_, 
+                data=data[data$treated==TRUE & !is.na(data$treated),])
 kable(printcoxresults(model1), 
       caption=paste0("Cox regression of age, gender, e4 carrier status and control status among participants who are taking BP medication, n=", model1$n))
 
-model1 <- coxph(Surv(time_to_dementia, dementia_status) ~ age + gender + e4carrier * controlled_, 
-                data=data[data$treated==TRUE,])
+model1 <- coxph(Surv(time_to_dementia, dementia_status) ~ age + gender + e4carrier_ * controlled_, 
+                data=data[data$treated==TRUE & !is.na(data$treated),])
 kable(printcoxresults(model1), 
       caption=paste0("Cox regression of age, gender, e4 carrier status and control status among participants who are taking BP medication, with interaction term, n=", model1$n))
 
@@ -76,23 +76,23 @@ kable(printcoxresults(model1),
 
 ```{r stratifygender, include=TRUE, echo=FALSE}
 
-model1 <- coxph(Surv(time_to_dementia, dementia_status) ~ age + e4carrier + controlled_, 
-                data=data[data$treated==TRUE & data$gender=="Female",])
+model1 <- coxph(Surv(time_to_dementia, dementia_status) ~ age + e4carrier_ + controlled_, 
+                data=data[data$treated==TRUE & !is.na(data$treated) & data$gender=="Female",])
 kable(printcoxresults(model1), 
       caption=paste0("Cox regression of age, e4 carrier status and control status among females who are taking BP medication, n=", model1$n))
 
-model1 <- coxph(Surv(time_to_dementia, dementia_status) ~ age + e4carrier * controlled_, 
-                data=data[data$treated==TRUE & data$gender=="Female",])
+model1 <- coxph(Surv(time_to_dementia, dementia_status) ~ age + e4carrier_ * controlled_, 
+                data=data[data$treated==TRUE & !is.na(data$treated) & data$gender=="Female",])
 kable(printcoxresults(model1), 
       caption=paste0("Cox regression of age, e4 carrier status and control status among females who are taking BP medication, with interaction term, n=", model1$n))
 
-model1 <- coxph(Surv(time_to_dementia, dementia_status) ~ age + e4carrier + controlled_, 
-                data=data[data$treated==TRUE & data$gender=="Male",])
+model1 <- coxph(Surv(time_to_dementia, dementia_status) ~ age + e4carrier_ + controlled_, 
+                data=data[data$treated==TRUE & !is.na(data$treated) & data$gender=="Male",])
 kable(printcoxresults(model1), 
       caption=paste0("Cox regression of age, e4 carrier status and control status among males who are taking BP medication, n=", model1$n))
 
-model1 <- coxph(Surv(time_to_dementia, dementia_status) ~ age + e4carrier * controlled_, 
-                data=data[data$treated==TRUE & data$gender=="Male",])
+model1 <- coxph(Surv(time_to_dementia, dementia_status) ~ age + e4carrier_ * controlled_, 
+                data=data[data$treated==TRUE & !is.na(data$treated) & data$gender=="Male",])
 kable(printcoxresults(model1), 
       caption=paste0("Cox regression of age, e4 carrier status and control status among males who are taking BP medication, with interaction term, n=", model1$n))
 

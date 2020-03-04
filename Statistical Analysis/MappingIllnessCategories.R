@@ -18,21 +18,20 @@ noncancerillness_mapping <- function(mappath, mapcol="Mapping", outfile) {
   # Join them
   ptdiagnoses <- merge(pts, diagnoses[,c("coding", "Mapping")], by="coding", all.x=TRUE)
   
-  nrow(unique(ptdiagnoses[,c("ID", "coding")]))
+  # Save a long version with the earliest year of diagnosis per coded condition
+  ptdiagnoses <- aggregate(year ~ ID + coding + Mapping, data=ptdiagnoses, min)
+  saveRDS(ptdiagnoses, file=paste0(outfile,"_long.rds"))
+  
   # Pivot to get a column for each mapped condition
   # We don't need the UKB code for each condition any more,
   # but we do need a dummy column filled with 1s so that when we pivot each condition column will be 1/0
   ptdiagnoses$coding <- 1
-  # Some conditions have been aggregated into categories so participants might have the same category listed multiple times
-  # this would make dcast throw a warning, so let's remove these first by taking only unique rows
-  ptdiagnoses <- unique(ptdiagnoses)
-  ptdiagnoses_long <- ptdiagnoses[!is.na(ptdiagnoses$Mapping),c("ID", "Mapping", "year")]
   # Now dcast from long to wide so we have a column per category
-  ptdiagnoses <- unique(ptdiagnoses[,c("ID", "Mapping", "coding")])
-  ptdiagnoses <- dcast(ptdiagnoses, ID ~ Mapping, value.var="coding")
+  # ptdiagnoses <- unique(ptdiagnoses[,c("ID", "Mapping", "coding")])
+  ptdiagnoses <- dcast(ptdiagnoses, ID ~ Mapping, value.var="coding", fun.aggregate = sum)
   
   # Save the result
-  saveRDS(ptdiagnoses_long, file=paste0(outfile,"_long.rds"))
+  
   saveRDS(ptdiagnoses, file=paste0(outfile,".rds"))
 }
 
@@ -65,7 +64,7 @@ noncancerillness_mapping(mappath="K:\\TEU\\APOE on Dementia\\Data Management\\R_
                          mapcol="ComorbidityGroup",
                          outfile="K:\\TEU\\APOE on Dementia\\Data Management\\R_Dataframes_TLA\\38358\\Organised\\Hypertension\\Neo\\VIhypGroupBC")
 
-
+test <- readRDS("K:\\TEU\\APOE on Dementia\\Data Management\\R_Dataframes_TLA\\38358\\Organised\\Hypertension\\Neo\\VIhypGroupBC.rds")
 
 #--------------------------------------------------------------------------------------------------------------
 # Old version

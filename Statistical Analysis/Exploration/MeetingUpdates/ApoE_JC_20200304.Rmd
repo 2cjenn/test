@@ -1,0 +1,94 @@
+---
+title: "Investigating gender * control interaction"
+author: "Jennifer Collister"
+date: "04/03/2020"
+output: 
+  word_document:
+      reference_docx: "K:/TEU/APOE on Dementia/RMarkdownStyle.docx"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE)
+
+library(survival)
+library(survminer)
+library(lmtest)
+library(kableExtra)
+library(knitr)
+library(timereg)
+library(epitools)
+library(tab)
+library(popEpi)
+
+source("K:/TEU/APOE on Dementia/Statistical Analysis/JCfunctions.R")
+```
+
+```{r loaddata, include=FALSE, echo=FALSE}
+data <- readRDS(file="K:\\TEU\\APOE on Dementia\\Data Management\\R_Dataframes_TLA\\38358\\Organised\\Hypertension\\APOE\\apoe_excl.rds")
+# Exclude individuals below the age of 60
+data <- data[data$age>=60,]
+
+# For this analysis, we want to consider individuals receiving treatment for hypertension
+data <- data[data$treated==TRUE & !is.na(data$treated),]
+
+```
+
+Our population (n=`r nrow(data)`) is individuals receiving treatment for hypertension, age [60,70), excluding those with prevalent dementia or incomplete BP data.
+
+```{r contingencytable, include=TRUE, echo=FALSE}
+
+tab1 <- table(data$controlled_, data$gender)
+
+kable(propped(tab1, margin=2), caption="Contingency table of control status and gender")
+  
+chi <- chisq.test(tab1)
+
+```
+
+We see that the control status of participants is not independent of their gender (Chi-squared p=`r sprintf("%g", chi$p.value)`) - it appears that a higher proportion of men have inadequately controlled hypertension than women.
+
+```{r dementiaincidence, include=TRUE, echo=FALSE}
+tab2 <- table(data$controlled_[data$dementia_status==TRUE], data$gender[data$dementia_status==TRUE])
+  
+tabpct <- round(100*tab2/tab1,2)
+  
+prettytab <- tab2
+for(i in c(1:2)){
+  for(j in c(1:2)){
+    prettytab[i,j] <- paste0(tab2[i,j], "/", tab1[i,j], " (", tabpct[i,j], "%)")
+  }
+}
+kable(prettytab, caption=paste0("Among the treated population the number of dementia cases out of total individuals in each category is:"))
+
+```
+
+At a glance, it appears that dementia is more prevalent among men than women, with successful control appearing to have a protective effect among women and a detrimental effect on men.
+
+# Cox regression of gender and control, controlling for age and e4 carrier status
+
+```{r genderHR, include=TRUE, echo=FALSE}
+
+model1 <- coxph(Surv(time_to_dementia, dementia_status) ~ age + e4carrier_ + gender + controlled_, 
+                data=data)
+kable(printcoxresults(model1), 
+      caption=paste0("Cox regression of age, e4 carrier status, gender and control status among participants who are taking BP medication, n=", model1$n))
+
+```
+
+Controlling for age and ApoE e4 carrier status, we see that the hazard rate of dementia among males is 30% higher than among women, and the hazard rate is 18% higher among controlled individuals than among those who are not adequately controlling their BP.
+
+```{r interaction, include=TRUE, echo=FALSE}
+model1 <- coxph(Surv(time_to_dementia, dementia_status) ~ age + e4carrier_ + gender * controlled_, 
+                data=data)
+kable(printcoxresults(model1), 
+      caption=paste0("Cox regression of age, e4 carrier status, gender and control status among participants who are taking BP medication, with interaction term between gender and control, n=", model1$n))
+
+```
+
+As we suspected last time, the interaction between gender and control is statistically significant.
+
+* Effect of control among females: 0.965
+* Effect of control among males: 0.965 x 1.400 = 1.351
+
+
+

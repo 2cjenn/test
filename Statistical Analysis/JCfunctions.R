@@ -1,4 +1,4 @@
-
+library(stringr)
 
 code_filter <- function(df, diagcolname, datecolname=NULL, ncols, codelist, codelength=NA, separator=".", first=FALSE) {
   if (is.na(codelength)) {
@@ -61,6 +61,14 @@ printcoxresults <- function(modeloutput, loghr=TRUE){
   if(loghr==TRUE){
     results <- summary(modeloutput)$coefficients[,c(1:3,5)]
     colnames(results) <- c("Log HR", "Hazard Ratio", "SE(logHR)", "p-value")
+    rows <- rownames(results)
+    variables <- names(modeloutput$xlevels)
+    for (row in 1:length(rows)){
+      for (var in variables){
+        rows[row] <- str_replace(string=rows[row], pattern=fixed(var), replacement="")
+      }
+    }
+    rownames(results) <- rows
   } else {
     results <- cbind(summary(modeloutput)$coefficients[,2], summary(modeloutput)$coefficients[,5])
     colnames(results) <- c("Hazard Ratio", "p-value")
@@ -72,6 +80,14 @@ printcoxresults <- function(modeloutput, loghr=TRUE){
 printlogresults <- function(modeloutput){
   results <- cbind(exp(modeloutput$coefficients), summary(modeloutput)$coefficients[,4])
   colnames(results) <- c("Odds Ratio", "p-value")
+  rows <- rownames(results)
+  variables <- names(modeloutput$xlevels)
+  for (row in 1:length(rows)){
+    for (var in variables){
+      rows[row] <- str_replace(string=rows[row], pattern=fixed(var), replacement="")
+    }
+  }
+  rownames(results) <- rows
   return(results)
 }
 

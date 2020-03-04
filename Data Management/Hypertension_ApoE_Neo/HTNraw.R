@@ -79,7 +79,7 @@ data <- data[data$age >= 40 & data$age < 70,]
 # Exclude individuals with missing BP data
 # or missing answers to BP questions on touchscreen questionnaire
 # n = 500011 - 490560 = 9451
-data <- data[!is.na(data$SBP) & !is.na(data$DBP),]
+data <- data[!is.na(data$SBP) | !is.na(data$DBP),]
 data <- data[!is.na(data$selfrephyp),]
 data <- data[!is.na(data$selfrepmeds),]
 

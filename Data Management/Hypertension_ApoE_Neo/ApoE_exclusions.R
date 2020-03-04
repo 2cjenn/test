@@ -13,6 +13,7 @@ library(dplyr)
 apoe <- readRDS("K:\\TEU\\APOE on Dementia\\Data Management\\R_Dataframes_TLA\\38358\\Organised\\Hypertension\\APOE\\apoe_surv.rds")
 
 apoe$e4carrier <- apoe$apoe4>0
+apoe$e4carrier_ <- factor(as.numeric(apoe$e4carrier), levels=c(0,1), labels=c("Not a carrier", "e4 carrier"))
 apoe$apoe4 <- factor(apoe$apoe4)
 apoe$number_of_apoe4_alleles <- apoe$apoe4
 
@@ -38,11 +39,6 @@ apoe$Sex <- factor(apoe$Sex, ordered=FALSE)
 apoe <- apoe[apoe$Sex == apoe$gender,]
 
 ## Other important exclusions
-
-# Exclude individuals with missing BP data
-# n = 432
-apoe <- apoe[!is.na(apoe$SBP) & !is.na(apoe$DBP),]
-apoe <- apoe[!is.na(apoe$evidenceHTN),]
 
 # Restrict to self-report "white"
 apoe$cauc <- apoe$eth_group=="White"

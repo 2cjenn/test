@@ -14,11 +14,11 @@ data <- readRDS("K:\\TEU\\APOE on Dementia\\Data Management\\R_Dataframes_TLA\\3
 #--------------------------------------------------------------------------------------------------------------
 
 # Exclude individuals without highest level of education
-# n = 498696 - 489004 = 
+# n = 498696 - 489006 = 
 data <- data[!is.na(data$edu_highest),]
 
 # Exclude individuals who have serious health conditions
-# n = 489004 - 483752 = 
+# n = 489006 - 483794 = 
 seriouscomorbid <- readRDS("K:\\TEU\\APOE on Dementia\\Data Management\\R_Dataframes_TLA\\38358\\Organised\\Hypertension\\Neo\\VIhypExclude.rds")
 data <- data[!data$ID %in% seriouscomorbid$ID[!is.na(seriouscomorbid$Yes)],]
 
