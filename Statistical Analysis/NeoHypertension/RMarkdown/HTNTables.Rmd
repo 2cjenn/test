@@ -26,6 +26,7 @@ hypertensives <- data[data$evidenceHTN==TRUE & !is.na(data$evidenceHTN),]
 treated <- data[data$treated==TRUE & !is.na(data$treated),]
 ```
 
+![Exclusion Flowchart.](K:/TEU/APOE on Dementia/Statistical Analysis/NeoHypertension/RMarkdown/ExclFlowchart.png)
 
 ```{r fig2, include=FALSE, echo=FALSE, results='asis'}
 ethnicity <- c("White", "Black", "Asian", "Other")
@@ -41,7 +42,7 @@ names(filenames) <- names(dflist)
 grlist <- list()
 for(dfname in names(dflist)){
   df <- dflist[[dfname]]
-  nlist <- list(wholepop=nrow(data))
+  nlist <- list(wholepop=nrow(df))
   pctlist <- list()
   for(variable in c("evidenceHTN", "aware", "treated", "controlled")){
     var <- paste0(variable, "_")
@@ -50,17 +51,9 @@ for(dfname in names(dflist)){
     nlist[[variable]] <- tab
     pctlist[[variable]] <- pct
   }
-  svg <- export_svg(DiagrammeR::grViz("K:\\TEU\\APOE on Dementia\\Statistical Analysis\\NeoHypertension\\RMarkdown\\HTNtree.gv")) %>% charToRaw %>% rsvg %>% png::writePNG(paste0(filenames[[dfname]],'.png'))
+  export_svg(DiagrammeR::grViz("K:\\TEU\\APOE on Dementia\\Statistical Analysis\\NeoHypertension\\RMarkdown\\HTNtree.gv")) %>% charToRaw %>% rsvg %>% png::writePNG(paste0(filenames[[dfname]],'.png'))
 }
-# DiagrammeR::grViz("K:\\TEU\\APOE on Dementia\\Statistical Analysis\\NeoHypertension\\RMarkdown\\HTNtree.gv")
-# knitr::include_graphics("Wholepop.png")
-# knitr::include_graphics("White.png")
-# knitr::include_graphics("Black.png")
-# knitr::include_graphics("Asian.png")
-# knitr::include_graphics("Other.png")
-# knitr::include_graphics("40_50.png")
-# knitr::include_graphics("50_60.png")
-# knitr::include_graphics("60_70.png")
+
 ```
 ![Whole population.](K:/TEU/APOE on Dementia/Statistical Analysis/NeoHypertension/RMarkdown/Wholepop.png)
 
