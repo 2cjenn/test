@@ -5,6 +5,7 @@
 library(tidyr)
 library(reshape2)
 library(dplyr)
+library(forcats)
 
 #--------------------------------------------------------------------------------------------------------------
 
@@ -12,21 +13,32 @@ library(dplyr)
 #--------------------------------------------------------------------------------------------------------------
 # Smoking
 smoking <- readRDS("K:\\TEU\\APOE on Dementia\\Data Management\\R_Dataframes_TLA\\38358\\Smo_base.rds")
-smoking$Smo_Status = factor(smoking$Smo_Status, ordered=FALSE)
+smoking$Smo_Status <- factor(smoking$Smo_Status, ordered=FALSE)
 
 #--------------------------------------------------------------------------------------------------------------
 # Alcohol
 alcohol <- readRDS("K:\\TEU\\APOE on Dementia\\Data Management\\R_Dataframes_TLA\\38358\\Alc_base.rds")
-alcohol$Alc_Status = factor(alcohol$Alc_Status, ordered=FALSE)
+alcohol$Alc_Status <- factor(alcohol$Alc_Status, ordered=FALSE)
+
+alcohol$weekly_alcunits <- alcohol$Alc_RedWineWk + alcohol$Alc_WhiteWineWk + alcohol$Alc_BeerCiderWk + alcohol$Alc_SpiritsWk + alcohol$Alc_FortWineWk + alcohol$Alc_OtherAlcWk
 
 covars <- merge(smoking[,c("ID", "Smo_Status", "Smo_TobaccoCurr", "Smo_TobaccoPast")], 
-                alcohol[,c("ID", "Alc_Status", "Alc_Freq")], by="ID", all=TRUE)
+                alcohol[,c("ID", "Alc_Status", "Alc_Freq", "weekly_alcunits")], by="ID", all=TRUE)
 #--------------------------------------------------------------------------------------------------------------
 # Household
 household <- readRDS("K:\\TEU\\APOE on Dementia\\Data Management\\R_Dataframes_TLA\\38358\\HoH_base.rds")
-household$income <- household$HoH_PreTaxInc.0
-household$income[is.na(household$income)] <- household$HoH_PreTaxInc_P.0[is.na(household$income)]
-household$income <- factor(household$income, levels=c("Less than 18,000", "18,000 to 30,999", "31,000 to 51,999", "52,000 to 100,000", "Greater than 100,000", "Do not know", "Prefer not to answer"), ordered=FALSE)
+household$income <- as.character(household$HoH_PreTaxInc.0)
+household$income[is.na(household$income)] <- as.character(household$HoH_PreTaxInc_P.0[is.na(household$income)])
+household$income[household$income=="Prefer not to answer"] <- NA
+household$income <- fct_collapse(household$income, 
+                                 "Less than 18,000" = "Less than 18,000",
+                                 "18,000 to 30,999" = c("18,000 to 30,999", "18,000 to 31,000"),
+                                 "31,000 to 51,999" = c("31,000 to 51,999", "31,000 to 52,000"),
+                                 "Greater than 100,000" = "Greater than 100,000",
+                                 "Do not know" = "Do not know"
+                                 )
+household$income <- factor(household$income, levels=c("Less than 18,000", "18,000 to 30,999",
+                                                      "31,000 to 51,999", "Greater than 100,000", "Do not know"))                      
 
 covars <- merge(covars, household[,c("ID", "income", "HoH_HouseholdSize.0")], by="ID", all=TRUE)
 
@@ -76,6 +88,12 @@ employment <- readRDS("K:\\TEU\\APOE on Dementia\\Data Management\\R_Dataframes_
 employment$employment <- employment$TL
 
 covars <- merge(covars, employment[,c("ID", "employment")], by="ID", all=TRUE)
+
+#--------------------------------------------------------------------------------------------------------------
+# Physical Activity
+phys_act <- readRDS("K:\\TEU\\APOE on Dementia\\Data Management\\R_Dataframes_TLA\\38358\\Pha_base.rds")
+
+covars <- merge(covars, phys_act[,c("ID", "PhA_METsWkAllAct")], by="ID", all=TRUE)
 
 #--------------------------------------------------------------------------------------------------------------
 # Other from verbal interview

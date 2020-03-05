@@ -36,7 +36,7 @@ bp$DBPcat <- ifelse(bp$DBP<=80, "DBP<=80",
 bp$DBPcat <- factor(bp$DBPcat, levels=c("DBP<=80", "80<DBP<90", "90<=DBP<100", "DBP>=100"))
 # Indicator variable for hypertensive status at baseline assessment
 bp$measuredhyp <- (bp$SBP>=140 | bp$DBP>=90)
-bp$controlled <- !(bp$SBP>=140 | bp$DBP>=90)
+bp$controlled <- !bp$measuredhyp
 
 # Save the organised data
 saveRDS(bp[,c("ID", "SBP", "DBP", "PulseRate", "SBPcat", "DBPcat", "measuredhyp", "controlled")],
