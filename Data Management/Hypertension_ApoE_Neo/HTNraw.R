@@ -40,7 +40,7 @@ data <- merge(data, cogfunc, by="ID", all=TRUE)
 # And with all other selected covariates
 data <- merge(data, covars, by="ID", all=TRUE)
 # Merge with the "probable BP meds" variable from the rubric
-data <- merge(data, rubric[,c("ID", "HTN_probablemeds")], by="ID", all.x=TRUE)
+data <- merge(data, rubric[,c("ID", "hypmedsno", "HTN_probablemeds")], by="ID", all.x=TRUE)
 
 saveRDS(data, file="K:\\TEU\\APOE on Dementia\\Data Management\\R_Dataframes_TLA\\38358\\Organised\\Hypertension\\HTN_raw.rds")
 

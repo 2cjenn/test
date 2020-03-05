@@ -28,6 +28,35 @@ treated <- data[data$treated==TRUE & !is.na(data$treated),]
 
 ![Exclusion Flowchart.](K:/TEU/APOE on Dementia/Statistical Analysis/NeoHypertension/RMarkdown/ExclFlowchart.png)
 
+# Table 1. Characteristics of hypertensive participants, n = `r nrow(hypertensives)`.
+
+```{r table1, include=TRUE, echo=FALSE}
+
+
+for(var in c("gender", "agegrp", "age", "ethnicity", "ISCED", "employment", "SBP", "DBP")){
+  if(is.factor(hypertensives[[var]])){
+    n <- table(hypertensives[[var]], useNA='ifany')
+    pct <- round(100*prop.table(n),2)
+    variable <- rep(var, dim(n))
+  } else {
+    med <- median(hypertensives[[var]])
+    IQR <- round(quantile(hypertensives[[var]], na.rm=TRUE),1)
+    n <- med
+    pct <- paste0("(", IQR[4], "-", IQR[2], ")")
+    variable <- var
+  }
+  do.call("<-",list(var, cbind(n, pct)))
+  # df <- data.frame(variable, as.numeric(n), as.numeric(pct))
+}
+kable(rbind(gender, agegrp, age, ethnicity, ISCED, employment, SBP, DBP))
+# kable(df) %>% collapse_rows(columns=1)
+
+
+
+```
+
+# Figure 2. Hypertension prevalence, awareness, treatment and control among adults aged 40-69 years in the UKB, overall
+
 ```{r fig2, include=FALSE, echo=FALSE, results='asis'}
 ethnicity <- c("White", "Black", "Asian", "Other")
 agegrp <- c("[40,50)", "[50,60)", "[60,70)")
@@ -57,6 +86,16 @@ for(dfname in names(dflist)){
 ```
 ![Whole population.](K:/TEU/APOE on Dementia/Statistical Analysis/NeoHypertension/RMarkdown/Wholepop.png)
 
+# Figure 3. Hypertension prevalence, awareness, treatment and control among adults aged 40-69 years in the UKB, by age group
+
+![Individuals aged between 40 and 50.](K:/TEU/APOE on Dementia/Statistical Analysis/NeoHypertension/RMarkdown/40_50.png)
+
+![Individuals aged between 50 and 60.](K:/TEU/APOE on Dementia/Statistical Analysis/NeoHypertension/RMarkdown/50_60.png)
+
+![Individuals aged between 60 and 70.](K:/TEU/APOE on Dementia/Statistical Analysis/NeoHypertension/RMarkdown/60_70.png)
+
+# Figure 4. Hypertension prevalence, awareness, treatment and control among adults aged 40-69 years in the UKB, by ethnicity
+
 ![Individuals of White ethnicity.](K:/TEU/APOE on Dementia/Statistical Analysis/NeoHypertension/RMarkdown/White.png)
 
 ![Individuals of Black ethnicity.](K:/TEU/APOE on Dementia/Statistical Analysis/NeoHypertension/RMarkdown/Black.png)
@@ -65,53 +104,39 @@ for(dfname in names(dflist)){
 
 ![Individuals of Other ethnicity.](K:/TEU/APOE on Dementia/Statistical Analysis/NeoHypertension/RMarkdown/Other.png)
 
-![Individuals aged between 40 and 50.](K:/TEU/APOE on Dementia/Statistical Analysis/NeoHypertension/RMarkdown/40_50.png)
 
-![Individuals aged between 50 and 60.](K:/TEU/APOE on Dementia/Statistical Analysis/NeoHypertension/RMarkdown/50_60.png)
-
-![Individuals aged between 60 and 70.](K:/TEU/APOE on Dementia/Statistical Analysis/NeoHypertension/RMarkdown/60_70.png)
-
-
-
-
-```{r table1, include=TRUE, echo=FALSE}
-
-
-for(var in c("gender", "agegrp", "age", "ethnicity", "ISCED", "employment", "SBP", "DBP")){
-  if(is.factor(treated[[var]])){
-    n <- table(treated[[var]], useNA='ifany')
-    pct <- round(100*prop.table(n),2)
-    variable <- rep(var, dim(n))
-  } else {
-    med <- median(treated[[var]])
-    IQR <- round(quantile(treated[[var]], na.rm=TRUE),1)
-    n <- med
-    pct <- paste0("(", IQR[4], "-", IQR[2], ")")
-    variable <- var
-  }
-  do.call("<-",list(var, cbind(n, pct)))
-  # df <- data.frame(variable, as.numeric(n), as.numeric(pct))
-}
-kable(rbind(gender, agegrp, age, ethnicity, ISCED, employment, SBP, DBP))
-# kable(df) %>% collapse_rows(columns=1)
-
-
-
-```
-
-# Print new line
-
+# Table 2. Univariable and multivariable logistic regression identifying factors associated with hypertension control, among UK adults on antihypertensive treatment, n = `r nrow(treated)`
 
 ```{r logisticregression, include=TRUE, echo=FALSE}
+options(knitr.kable.NA='')
 
+source("K:/TEU/APOE on Dementia/Statistical Analysis/JCfunctions.R")
+# Univariable regressions
+modellist <- list()
+for(var in c("c_age", "gender", "BMIcat", "Smo_Status", "GroupB", "GroupC", "HTNdx", "hypmedsno", "townsend_depind", "income", "ISCED", "employment", "BirthCountryIncomeLevel", "BowelCancerScreening")){
+  formula <- paste0("controlled ~ ", var)
+  model <- glm(formula, data=treated)
+  if(is.factor(data[[var]])){
+    coefflist <- c(levels(data[[var]]))  
+  } else {
+    coefflist <- c(var)
+  }
+  modellist[[var]] <- printlogresults(model, coefflist)
+  
+}
+individualOR <- do.call(rbind, modellist)
+# individualOR <- individualOR[setdiff(rownames(individualOR),"(Intercept)"),]
+kable(individualOR, row.names=FALSE)
+# ("c_age", "gender", "BMIcat", "Smo_Status", "GroupB", "GroupC", "HTNdx", "hypmedsno", "townsend_depind", "income", "ISCED", "employment", "BirthCountryIncomeLevel", "BowelCancerScreening")
 
 #multivariable logistic regression for DV control, among treated individuals. covariates to include in model are: age group, gender, BMI (categorical), smoking status, whether has CVD (comorbidity category - yes/no), duration of hypertension, whether ever screened for bowel cancer, household income (continuous, quintiles), Townsend vulnerability/deprivation  index (score), occupation type (categorical), geographic region/country (Wales, England, Scotland, Northern Ireland)
 
 
-model <- glm(controlled ~ agegrp + gender + BMIcat + Smo_Status + CVD + HTNdx + income + townsend_depind + ISCED + employment, data=treated, family="binomial" )
-model <- glm(controlled ~ agegrp + gender, data=treated, family="binomial" )
-# model
+model <- glm(controlled ~ c_age + gender + BMIcat + Smo_Status + GroupB + GroupC + HTNdx + hypmedsno + townsend_depind + income + ISCED + employment + BirthCountryIncomeLevel + BowelCancerScreening, data=treated, family="binomial" )
+
 kable(printlogresults(model))
+
+kable(thing)
 
 ```
 

@@ -77,6 +77,9 @@ saveRDS(VI_opdur, "K:\\TEU\\APOE on Dementia\\Data Management\\R_Dataframes_TLA\
 countries <- readRDS("K:\\TEU\\APOE on Dementia\\Data Management\\R_Dataframes_TLA\\38358\\Organised\\CountryIncome.rds")
 # And merge
 veint <- merge(veint, countries, by="VeI_BirthCountry", all.x=TRUE)
+names(veint)[names(veint)=="Country"] <- "BirthCountry"
+names(veint)[names(veint)=="Continent"] <- "BirthContinent"
+names(veint)[names(veint)=="IncomeLevel"] <- "BirthCountryIncomeLevel"
 
 # Note that we've left the "Ncancer" etc - number of diagnoses or operations columns in the general veint dataframe,
 # as these can be useful as stand-alone covariates

@@ -77,19 +77,62 @@ printcoxresults <- function(modeloutput, loghr=TRUE){
 }
 
 # Pretty print the results from a logistic regression model
-printlogresults <- function(modeloutput){
-  results <- cbind(exp(modeloutput$coefficients), summary(modeloutput)$coefficients[,4])
-  colnames(results) <- c("Odds Ratio", "p-value")
-  rows <- rownames(results)
-  variables <- names(modeloutput$xlevels)
-  for (row in 1:length(rows)){
-    for (var in variables){
-      rows[row] <- str_replace(string=rows[row], pattern=fixed(var), replacement="")
-    }
-  }
-  rownames(results) <- rows
+printlogresults <- function(modeloutput, coefflist=NULL){
+  summ <- summary(modeloutput)
+  coeff <- summ$coefficients
+  NOMVAR <- rownames(coeff)
+  regression <- data.frame(
+    NOMVAR=(rownames(coeff)),
+    OR=format(round(exp(coeff[,1]),3), nsmall=3), # OR
+    CI=paste0("(",format(round(exp(coeff[,1]-coeff[,2]),2), nsmall=2), ", ",
+              format(round(exp(coeff[,1]+coeff[,2]),2),nsmall=2),")"), # 95% CI
+    P=formatC(coeff[,4], format="e", digits=3) # p-value
+    ) 
+  VARIABLE=c("",gsub("[-^0-9]", "", names(unlist(modeloutput$xlevels))))
+  MODALITY=c("",as.character(unlist(modeloutput$xlevels)))
+  names=data.frame(VARIABLE,MODALITY,NOMVAR=c("(Intercept)",paste(VARIABLE,MODALITY,sep="")[-1]))
+  
+  results <- merge(names,regression,all.x=TRUE)
+  results <- results[match(rownames(coeff), results$NOMVAR),]
+  # rows <- rownames(results)
+  # levels <- modeloutput$xlevels
+  # 
+  # variables <- names(modeloutput$xlevels)
+  # n <- rep(-1, length(rows))
+  # for (row in 1:length(rows)){
+  #   for (var in variables){
+  #     rows[row] <- str_replace(string=rows[row], pattern=fixed(var), replacement="")
+  #     # Count n for factors: 
+  #     # modeloutput$data is the dataframe used in the regression model
+  #     # count the number of rows where that factor is equal to each value
+  #     # n[row] <- max(n[[row]], nrow(modeloutput$data[modeloutput$data[[var]] == rows[row], ]))
+  #   }
+  # }
+  # # results <- cbind(n, results)
+  # colnames(results) <- c("Odds Ratio", "95% CI", "p-value")
+  # rownames(results) <- rows
+  # 
+  # if(!is.null(coefflist)){
+  #   rs <- data.frame(results, stringsAsFactors=FALSE)
+  #   rs$names <- rownames(rs)
+  #   tb <- data.frame(coefflist, stringsAsFactors=FALSE)
+  #   results <- merge(tb, rs, by.x="coefflist", by.y="names", all.x=TRUE)
+  #   results <- results[match(coefflist, results$coefflist),]
+  #   
+  #   results$Odds.Ratio[is.na(results$Odds.Ratio)] <- "1"
+  #   
+  #   colnames(results) <- c("Coefficient", "Odds ratio", "95% CI", "p value")
+  # }
   return(results)
 }
+# modeloutput <- model
+
+
+# VARIABLE=c("",gsub("[-^0-9]", "", names(unlist(modeloutput$xlevels))))
+# MODALITY=c("",as.character(unlist(modeloutput$xlevels)))
+# names=data.frame(VARIABLE,MODALITY,NOMVAR=c("(Intercept)",paste(VARIABLE,MODALITY,sep="")[-1]))
+# regression=data.frame(NOMVAR=names(coefficients(modeloutput)), COEF=as.numeric(coefficients(modeloutput)))
+# thing <- merge(names,regression,all.x=TRUE)
 
 # Round to the nearest m
 mround <- function(x, base){

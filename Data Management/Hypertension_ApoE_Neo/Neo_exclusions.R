@@ -74,12 +74,13 @@ data$aware[data$evidenceHTN==FALSE | is.na(data$evidenceHTN)] <- NA
 # Return to this after finalising incorporation of VI medication data
 data$treated <- data$selfrepmeds
 data$treated[data$aware==FALSE | is.na(data$aware)] <- NA
+data$hypmedsno[data$treated==FALSE | is.na(data$treated)] <- 0
 
 # Control
 data$controlled[data$treated==FALSE | is.na(data$treated)] <- NA
 
 # Center age on the minimum
-data$c_age <- data$age - 50
+data$c_age <- data$age - 40
 
 # Make the key dichotomous variables into factors to improve readability of outputs
 data$prevHBP_ <- factor(as.numeric(data$prevHBP), levels=c(0,1), labels=c("Did not report prior HTN diagnosis (touchscreen)", "Self-reported prior HTN diagnosis in touchscreen questionnaire"))
@@ -178,11 +179,27 @@ data$agegrp <- cut(data$age, breaks=c(40, 50, 60, 70), right=FALSE)
 
 # Categorise BMI into labelled categories
 data$BMIcat <- cut(data$bl_BMI, breaks=c(0, 18.5, 25, 30, 200), right=FALSE)
-data$BMIcat <- factor(data$BMIcat, levels=c("[0,18.5)", "[18.5,25)", "[25,30)", "[30,200)"), labels=c("Underweight", "Normal", "Overweight", "Obese"))
+data$BMIcat <- factor(data$BMIcat, levels=c("[0,18.5)", "[18.5,25)", "[25,30)", "[30,200)"), 
+                      labels=c("Underweight", "Normal", "Overweight", "Obese"))
+data$BMIcat <- relevel(data$BMIcat, ref="Normal")
+
 
 # Define "binge" levels of alcohol consumption
 data$alc_binge[data$gender=="Female"] <- data[data$gender=="Female",]$weekly_alcunits>7 & !is.na(data[data$gender=="Female",]$weekly_alcunits)
 data$alc_binge[data$gender=="Male"] <- data[data$gender=="Male",]$weekly_alcunits>14 & !is.na(data[data$gender=="Male",]$weekly_alcunits)
+data$alc_binge <- factor(as.numeric(data$alc_binge), levels=c(0,1), labels=c("Safe alcohol use", "Harmful alcohol use"))
+
+# Indicator variable for whether physical activity > or <= 150 METs per day
+data$METs_over150 <- (data$PhA_METsWkAllAct/7)>150 & !is.na(data$PhA_METsWkAllAct)
+
+# Convert bowel cancer screening to a factor
+data$BowelCancerScreening[data$BowelCancerScreening %in% c("Prefer not to answer", "Do not know")] <- NA
+data$BowelCancerScreening <- factor(data$BowelCancerScreening, levels=c("No", "Yes"), 
+                                    labels=c("Not screened", "Screened for bowel cancer"), ordered=FALSE)
+
+# Convert income level of birth country to a factor
+data$BirthCountryIncomeLevel[data$BirthCountryIncomeLevel %in% c("LM", "UM")] <- "M"
+data$BirthCountryIncomeLevel <- factor(data$BirthCountryIncomeLevel, levels=c("H", "M", "L"), labels=c("High income", "Middle income", "Low income"))
 
 # Add mapping to comorbidities of interest
 comorbidities <- readRDS("K:\\TEU\\APOE on Dementia\\Data Management\\R_Dataframes_TLA\\38358\\Organised\\Hypertension\\Neo\\VI_ComorbidityCategories.rds")
@@ -190,7 +207,11 @@ data <- merge(data, comorbidities, by="ID", all.x=TRUE)
 
 # Add mapping to comorbidity groups B and C
 comorbgrps <- readRDS("K:\\TEU\\APOE on Dementia\\Data Management\\R_Dataframes_TLA\\38358\\Organised\\Hypertension\\Neo\\VIhypGroupBC.rds")
-data <- merge(data, comorbgrps[,c("ID", "Group_B", "Group_C")], by="ID", all.x=TRUE) 
+data <- merge(data, comorbgrps[,c("ID", "Group_B", "Group_C")], by="ID", all.x=TRUE)
+data$GroupB <- !is.na(data$Group_B)
+data$GroupB <- factor(as.numeric(data$GroupB), levels=c(1,0), labels=c("no CVD", "CVD"))
+data$GroupC <- !is.na(data$Group_C)
+data$GroupC <- factor(as.numeric(data$GroupC), levels=c(1,0), labels=c("No other comorbidity", "Other comorbidity"))
 
 
 saveRDS(data, file="K:\\TEU\\APOE on Dementia\\Data Management\\R_Dataframes_TLA\\38358\\Organised\\Hypertension\\Neo\\HTN_excl.rds")

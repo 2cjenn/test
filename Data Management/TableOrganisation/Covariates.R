@@ -13,12 +13,12 @@ library(forcats)
 #--------------------------------------------------------------------------------------------------------------
 # Smoking
 smoking <- readRDS("K:\\TEU\\APOE on Dementia\\Data Management\\R_Dataframes_TLA\\38358\\Smo_base.rds")
-smoking$Smo_Status <- factor(smoking$Smo_Status, ordered=FALSE)
+smoking$Smo_Status <- factor(smoking$Smo_Status, levels=c("Never", "Previous", "Current", "Prefer not to answer"), ordered=FALSE)
 
 #--------------------------------------------------------------------------------------------------------------
 # Alcohol
 alcohol <- readRDS("K:\\TEU\\APOE on Dementia\\Data Management\\R_Dataframes_TLA\\38358\\Alc_base.rds")
-alcohol$Alc_Status <- factor(alcohol$Alc_Status, ordered=FALSE)
+alcohol$Alc_Status <- factor(alcohol$Alc_Status, levels=c("Never", "Previous", "Current", "Prefer not to answer"), ordered=FALSE)
 
 alcohol$weekly_alcunits <- alcohol$Alc_RedWineWk + alcohol$Alc_WhiteWineWk + alcohol$Alc_BeerCiderWk + alcohol$Alc_SpiritsWk + alcohol$Alc_FortWineWk + alcohol$Alc_OtherAlcWk
 
@@ -103,8 +103,8 @@ names(veint)[names(veint)=="VeI_NNonCancer.0"] <- "NumberDiagnoses"
 names(veint)[names(veint)=="VeI_NOperation.0"] <- "NumberOperations"
 names(veint)[names(veint)=="VeI_Ntreatments"] <- "NumberMedications"
 
-veint$Country[is.na(veint$Country)] <- "United Kingdom"
-covars <- merge(covars, veint[,c("ID", "Continent", "Country", "IncomeLevel", 
+veint$Country[is.na(veint$BirthCountry)] <- "United Kingdom"
+covars <- merge(covars, veint[,c("ID", "BirthContinent", "BirthCountry", "BirthCountryIncomeLevel", 
                                  "NumberCancers", "NumberDiagnoses", "NumberOperations", "NumberMedications")],
                 by="ID", all=TRUE)
 
