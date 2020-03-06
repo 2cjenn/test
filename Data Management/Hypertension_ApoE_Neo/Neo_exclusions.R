@@ -17,10 +17,10 @@ data <- readRDS("K:\\TEU\\APOE on Dementia\\Data Management\\R_Dataframes_TLA\\3
 # Duration of hypertension diagnosis
 data$HTNdx_TQ <- round(data$age - data$HBPAge,1)
 data$HTNdx_VI <- round(decimal_date(data$recdate) - data$VIhypdx_yr,1)
-data$HTNdx <- coalesce(data$HTNdx_VI, data$HTNdx_TQ)
+data$HTNdx_duration <- coalesce(data$HTNdx_VI, data$HTNdx_TQ)
 # Any durations less than 0 are clearly errors (only 2)
 # Any diagnoses before the age of about 20 are probably errors
-data$HTNdx[(data$HTNdx < 0 | data$HTNdx > data$HBPAge-20)& !is.na(data$HTNdx)] <- NA
+data$HTNdx_duration[(data$HTNdx_duration < 0 | data$HTNdx_duration > data$HBPAge-20)& !is.na(data$HTNdx_duration)] <- NA
 
 # Single variable for self-reported hypertension
 # If reported in either touchscreen questionnaire or verbal interview
