@@ -5,6 +5,7 @@
 library(tidyr)
 library(reshape2)
 library(dplyr)
+library(lubridate)
 
 #--------------------------------------------------------------------------------------------------------------
 data <- readRDS("K:\\TEU\\APOE on Dementia\\Data Management\\R_Dataframes_TLA\\38358\\Organised\\Hypertension\\HTN_raw.rds")
@@ -14,9 +15,12 @@ data <- readRDS("K:\\TEU\\APOE on Dementia\\Data Management\\R_Dataframes_TLA\\3
 #--------------------------------------------------------------------------------------------------------------
 
 # Duration of hypertension diagnosis
-data$HTNdx_TQ <- data$age - data$HBPAge
-data$HTNdx_VI <- decimal_date(data$recdate) - data$VIhypdx_yr
+data$HTNdx_TQ <- round(data$age - data$HBPAge,1)
+data$HTNdx_VI <- round(decimal_date(data$recdate) - data$VIhypdx_yr,1)
 data$HTNdx <- coalesce(data$HTNdx_VI, data$HTNdx_TQ)
+# Any durations less than 0 are clearly errors (only 2)
+# Any diagnoses before the age of about 20 are probably errors
+data$HTNdx[(data$HTNdx < 0 | data$HTNdx > data$HBPAge-20)& !is.na(data$HTNdx)] <- NA
 
 # Single variable for self-reported hypertension
 # If reported in either touchscreen questionnaire or verbal interview
@@ -120,11 +124,11 @@ data <- data[data$NumberCancers==0 & !is.na(data$NumberCancers),]
 
 excl$cancer <- nrow(data)
 
-# Exclude individuals with severely limited function (hand grip, reaction time)
-# n = 443782 - 443627 = 155
-data <- data[data$mean_reacttime<1500 | is.na(data$mean_reacttime),]
-
-excl$limitfunc <- nrow(data)
+# # Exclude individuals with severely limited function (hand grip, reaction time)
+# # n = 443782 - 443627 = 155
+# data <- data[data$mean_reacttime<1500 | is.na(data$mean_reacttime),]
+# 
+# excl$limitfunc <- nrow(data)
 
 excl$hypert <- nrow(data[data$evidenceHTN==TRUE,])
 
@@ -173,6 +177,12 @@ data$ISCED <- factor(data$ISCED,
 # Convert "missing" employment to "unemployed" so it doesn't interfere with Cox regression
 levels(data$employment) <- c(levels(data$employment), "Unemployed/retired/other")
 data$employment[is.na(data$employment)] <- "Unemployed/retired/other"
+data$employment <- factor(data$employment, levels=c("Managers and Senior Officials", "Professional Occupations",
+                                                    "Associate Professional and Technical Occupations",
+                                                    "Administrative and Secretarial Occupations",
+                                                    "Skilled Trades Occupations", "Personal Service Occupations",
+                                                    "Sales and Customer Service Occupations", "Process, Plant and Machine Operatives",
+                                                    "Elementary Occupations", "Other job (free text entry)", "Unemployed/retired/other"))
 
 # Categorise age into 10-yr groups
 data$agegrp <- cut(data$age, breaks=c(40, 50, 60, 70), right=FALSE)
@@ -187,31 +197,41 @@ data$BMIcat <- relevel(data$BMIcat, ref="Normal")
 # Define "binge" levels of alcohol consumption
 data$alc_binge[data$gender=="Female"] <- data[data$gender=="Female",]$weekly_alcunits>7 & !is.na(data[data$gender=="Female",]$weekly_alcunits)
 data$alc_binge[data$gender=="Male"] <- data[data$gender=="Male",]$weekly_alcunits>14 & !is.na(data[data$gender=="Male",]$weekly_alcunits)
-data$alc_binge <- factor(as.numeric(data$alc_binge), levels=c(0,1), labels=c("Safe alcohol use", "Harmful alcohol use"))
+data$alc_binge_ <- factor(as.numeric(data$alc_binge), levels=c(0,1), labels=c("Safe alcohol use", "Harmful alcohol use"))
 
 # Indicator variable for whether physical activity > or <= 150 METs per day
 data$METs_over150 <- (data$PhA_METsWkAllAct/7)>150 & !is.na(data$PhA_METsWkAllAct)
+data$METs_over150_ <- factor(as.numeric(data$METs_over150), levels=c(0,1), labels=c("Average daily METs <= 150", "Average daily METs > 150"))
 
 # Convert bowel cancer screening to a factor
 data$BowelCancerScreening[data$BowelCancerScreening %in% c("Prefer not to answer", "Do not know")] <- NA
 data$BowelCancerScreening <- factor(data$BowelCancerScreening, levels=c("No", "Yes"), 
                                     labels=c("Not screened", "Screened for bowel cancer"), ordered=FALSE)
 
+# Convert family history to a factor
+data$FamilyHist_CVD_ <- factor(as.numeric(data$FaH_CVD), levels=c(0,1), labels=c("No family history of CVD", "Family history of CVD"))
+
 # Convert income level of birth country to a factor
 data$BirthCountryIncomeLevel[data$BirthCountryIncomeLevel %in% c("LM", "UM")] <- "M"
 data$BirthCountryIncomeLevel <- factor(data$BirthCountryIncomeLevel, levels=c("H", "M", "L"), labels=c("High income", "Middle income", "Low income"))
 
-# Add mapping to comorbidities of interest
-comorbidities <- readRDS("K:\\TEU\\APOE on Dementia\\Data Management\\R_Dataframes_TLA\\38358\\Organised\\Hypertension\\Neo\\VI_ComorbidityCategories.rds")
-data <- merge(data, comorbidities, by="ID", all.x=TRUE)
+# # Add mapping to comorbidities of interest
+# comorbidities <- readRDS("K:\\TEU\\APOE on Dementia\\Data Management\\R_Dataframes_TLA\\38358\\Organised\\Hypertension\\Neo\\VI_ComorbidityCategories.rds")
+# data <- merge(data, comorbidities, by="ID", all.x=TRUE)
 
 # Add mapping to comorbidity groups B and C
 comorbgrps <- readRDS("K:\\TEU\\APOE on Dementia\\Data Management\\R_Dataframes_TLA\\38358\\Organised\\Hypertension\\Neo\\VIhypGroupBC.rds")
 data <- merge(data, comorbgrps[,c("ID", "Group_B", "Group_C")], by="ID", all.x=TRUE)
-data$GroupB <- !is.na(data$Group_B)
-data$GroupB <- factor(as.numeric(data$GroupB), levels=c(1,0), labels=c("no CVD", "CVD"))
-data$GroupC <- !is.na(data$Group_C)
-data$GroupC <- factor(as.numeric(data$GroupC), levels=c(1,0), labels=c("No other comorbidity", "Other comorbidity"))
+data$GroupB <- data$Group_B>0 & !is.na(data$Group_B)
+data$GroupB <- factor(as.numeric(data$GroupB), levels=c(0,1), labels=c("no CVD", "CVD"))
+data$GroupC <- data$Group_C>0 & !is.na(data$Group_C)
+data$GroupC <- factor(as.numeric(data$GroupC), levels=c(0,1), labels=c("No other comorbidity", "Other comorbidity"))
 
+comorbtype <- readRDS("K:\\TEU\\APOE on Dementia\\Data Management\\R_Dataframes_TLA\\38358\\Organised\\Hypertension\\Neo\\VIhypGroupBC_type.rds")
+data <- merge(data, comorbtype, by="ID", all.x=TRUE)
+for(col in names(comorbtype)[-1]){
+  data[[col]] <- data[[col]]>0 & !is.na(data[[col]])
+  data[[col]] <- factor(as.numeric(data[[col]]), levels=c(0,1), labels=c("None", gsub("_", " ", col)))
+}
 
 saveRDS(data, file="K:\\TEU\\APOE on Dementia\\Data Management\\R_Dataframes_TLA\\38358\\Organised\\Hypertension\\Neo\\HTN_excl.rds")
