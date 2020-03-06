@@ -55,7 +55,7 @@ VI_durlong <- gather(data=VI_diagdur, key=medno, value=year, VeI_NonCancerYear.0
 VI_durlong <- VI_durlong[!is.na(VI_durlong$year),]
 VI_durlong <- VI_durlong %>% tidyr::separate(medno, into=c("VeI", "NonCancerYear", "instance"))
 # Merge the diagnosis codes with the corresponding durations
-VI_diaglong <- merge(VI_diaglong[,c("ID", "instance", "coding")], VI_durlong[,c("ID", "instance", "year")], all.x=TRUE)
+VI_diaglong <- merge(VI_diaglong[,c("ID", "instance", "coding")], VI_durlong[,c("ID", "instance", "year")], by=c("ID", "instance"), all.x=TRUE)
 # Note that when the year is coded -1 it means unknown, and -3 means preferred not to answer
 VI_diaglong$year[VI_diaglong$year %in% c(-1,-3)] <- NA
 # remove rows where individuals have the same illness recorded twice - 

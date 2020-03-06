@@ -77,52 +77,66 @@ printcoxresults <- function(modeloutput, loghr=TRUE){
 }
 
 # Pretty print the results from a logistic regression model
-printlogresults <- function(modeloutput, coefflist=NULL){
-  summ <- summary(modeloutput)
+printlogresults <- function(model, coeffnames=NULL){
+  summ <- summary(model)
   coeff <- summ$coefficients
-  NOMVAR <- rownames(coeff)
+  # NOMVAR <- rownames(coeff)
   regression <- data.frame(
-    NOMVAR=(rownames(coeff)),
+    coeffname=(rownames(coeff)),
     OR=format(round(exp(coeff[,1]),3), nsmall=3), # OR
     CI=paste0("(",format(round(exp(coeff[,1]-coeff[,2]),2), nsmall=2), ", ",
               format(round(exp(coeff[,1]+coeff[,2]),2),nsmall=2),")"), # 95% CI
-    P=formatC(coeff[,4], format="e", digits=3) # p-value
-    ) 
-  VARIABLE=c("",gsub("[-^0-9]", "", names(unlist(modeloutput$xlevels))))
-  MODALITY=c("",as.character(unlist(modeloutput$xlevels)))
-  names=data.frame(VARIABLE,MODALITY,NOMVAR=c("(Intercept)",paste(VARIABLE,MODALITY,sep="")[-1]))
-  
-  results <- merge(names,regression,all.x=TRUE)
-  results <- results[match(rownames(coeff), results$NOMVAR),]
+    # p=formatC(coeff[,4], format="e", digits=3), # p-value
+    p=ifelse(coeff[,4]<0.001, "<0.001", round(coeff[,4],3)), # p-value
+    stringsAsFactors=FALSE
+    )
+  if(!is.null(coeffnames)){
+    results <- merge(coeffnames, regression, all.x=TRUE)
+    results$OR[is.na(results$OR)] <- "1"
+    results <- results[match(coeffnames$coeffname, results$coeffname),]
+    results <- results[,c("variable", "levels", "OR", "CI", "p")]
+    names(results) <- c("Coefficient", "Level", "Odds ratio", "95% CI", "p value")
+  } else {
+    results <- regression
+    names(results) <- c("Coefficient", "Odds ratio", "95% CI", "p value")
+  }
+  rownames(results) <- NULL
+  # VARIABLE=c("",gsub("[-^0-9]", "", names(unlist(modeloutput$xlevels))))
+  # MODALITY=c("",as.character(unlist(model$xlevels)))
+  # names=data.frame(VARIABLE,MODALITY,NOMVAR=c("(Intercept)",paste(VARIABLE,MODALITY,sep="")[-1]))
+  # 
+  # results <- merge(names,regression,all=TRUE)
+  # results <- results[(order(match(coeff,results$NOMVAR)))]
+  # 
   # rows <- rownames(results)
   # levels <- modeloutput$xlevels
-  # 
-  # variables <- names(modeloutput$xlevels)
+  # rows <- rownames(coeff)
+  # variables <- names(model$xlevels)
   # n <- rep(-1, length(rows))
   # for (row in 1:length(rows)){
   #   for (var in variables){
   #     rows[row] <- str_replace(string=rows[row], pattern=fixed(var), replacement="")
-  #     # Count n for factors: 
+  #     # Count n for factors:
   #     # modeloutput$data is the dataframe used in the regression model
   #     # count the number of rows where that factor is equal to each value
   #     # n[row] <- max(n[[row]], nrow(modeloutput$data[modeloutput$data[[var]] == rows[row], ]))
   #   }
   # }
-  # # results <- cbind(n, results)
+  # results <- cbind(n, results)
   # colnames(results) <- c("Odds Ratio", "95% CI", "p-value")
   # rownames(results) <- rows
-  # 
-  # if(!is.null(coefflist)){
-  #   rs <- data.frame(results, stringsAsFactors=FALSE)
-  #   rs$names <- rownames(rs)
-  #   tb <- data.frame(coefflist, stringsAsFactors=FALSE)
-  #   results <- merge(tb, rs, by.x="coefflist", by.y="names", all.x=TRUE)
-  #   results <- results[match(coefflist, results$coefflist),]
-  #   
-  #   results$Odds.Ratio[is.na(results$Odds.Ratio)] <- "1"
-  #   
-  #   colnames(results) <- c("Coefficient", "Odds ratio", "95% CI", "p value")
-  # }
+# 
+#   if(!is.null(coefflist)){
+#     rs <- data.frame(results, stringsAsFactors=FALSE)
+#     rs$names <- rownames(rs)
+#     tb <- data.frame(coefflist, stringsAsFactors=FALSE)
+#     results <- merge(tb, rs, by.x="coefflist", by.y="names", all.x=TRUE)
+#     results <- results[match(coefflist, results$coefflist),]
+# 
+#     results$Odds.Ratio[is.na(results$Odds.Ratio)] <- "1"
+# 
+#     colnames(results) <- c("Coefficient", "Odds ratio", "95% CI", "p value")
+#   }
   return(results)
 }
 # modeloutput <- model

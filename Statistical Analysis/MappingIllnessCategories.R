@@ -64,6 +64,13 @@ noncancerillness_mapping(mappath="K:\\TEU\\APOE on Dementia\\Data Management\\R_
                          mapcol="ComorbidityGroup",
                          outfile="K:\\TEU\\APOE on Dementia\\Data Management\\R_Dataframes_TLA\\38358\\Organised\\Hypertension\\Neo\\VIhypGroupBC")
 
+# Conditions within Group B and Group C
+# Group B and Group C
+noncancerillness_mapping(mappath="K:\\TEU\\APOE on Dementia\\Data Management\\R_Dataframes_TLA\\38358\\Organised\\Hypertension\\Neo\\UKBHtn_NonCancerIllness_Mapping.xlsx",
+                         mapcol="ComorbidityType",
+                         outfile="K:\\TEU\\APOE on Dementia\\Data Management\\R_Dataframes_TLA\\38358\\Organised\\Hypertension\\Neo\\VIhypGroupBC_type")
+
+
 test <- readRDS("K:\\TEU\\APOE on Dementia\\Data Management\\R_Dataframes_TLA\\38358\\Organised\\Hypertension\\Neo\\VIhypGroupBC.rds")
 
 #--------------------------------------------------------------------------------------------------------------

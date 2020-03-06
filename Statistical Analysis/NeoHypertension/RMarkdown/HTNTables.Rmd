@@ -19,6 +19,7 @@ library(rsvg)
 library(png)
 
 source("K:/TEU/APOE on Dementia/Statistical Analysis/JCfunctions.R")
+options(knitr.kable.NA='')
 
 data <- readRDS(file="K:\\TEU\\APOE on Dementia\\Data Management\\R_Dataframes_TLA\\38358\\Organised\\Hypertension\\Neo\\HTN_excl.rds")
 
@@ -32,23 +33,29 @@ treated <- data[data$treated==TRUE & !is.na(data$treated),]
 
 ```{r table1, include=TRUE, echo=FALSE}
 
-
+tab1 <- c()
 for(var in c("gender", "agegrp", "age", "ethnicity", "ISCED", "employment", "SBP", "DBP")){
   if(is.factor(hypertensives[[var]])){
     n <- table(hypertensives[[var]], useNA='ifany')
     pct <- round(100*prop.table(n),2)
-    variable <- rep(var, dim(n))
+    variable <- c(var,rep(NA, dim(n)-1))
+    levels <- names(n)
+    # tab <- table(hypertensives$)
   } else {
     med <- median(hypertensives[[var]])
     IQR <- round(quantile(hypertensives[[var]], na.rm=TRUE),1)
     n <- med
     pct <- paste0("(", IQR[4], "-", IQR[2], ")")
-    variable <- var
+    variable <- paste0("Median ", var, " (IQR)")
+    levels <- NA
   }
-  do.call("<-",list(var, cbind(n, pct)))
+  tab1 <- rbind(tab1, cbind(variable, levels, n, pct))
+  rownames(tab1) <- c()
+  # do.call("<-",list(var, cbind(n, pct)))
   # df <- data.frame(variable, as.numeric(n), as.numeric(pct))
 }
-kable(rbind(gender, agegrp, age, ethnicity, ISCED, employment, SBP, DBP))
+# kable(rbind(gender, agegrp, age, ethnicity, ISCED, employment, SBP, DBP))
+kable(tab1)
 # kable(df) %>% collapse_rows(columns=1)
 
 
@@ -107,36 +114,87 @@ for(dfname in names(dflist)){
 
 # Table 2. Univariable and multivariable logistic regression identifying factors associated with hypertension control, among UK adults on antihypertensive treatment, n = `r nrow(treated)`
 
-```{r logisticregression, include=TRUE, echo=FALSE}
-options(knitr.kable.NA='')
+```{r logisticregression, include=FALSE, echo=FALSE}
 
 source("K:/TEU/APOE on Dementia/Statistical Analysis/JCfunctions.R")
 # Univariable regressions
 modellist <- list()
 for(var in c("c_age", "gender", "BMIcat", "Smo_Status", "GroupB", "GroupC", "HTNdx", "hypmedsno", "townsend_depind", "income", "ISCED", "employment", "BirthCountryIncomeLevel", "BowelCancerScreening")){
-  formula <- paste0("controlled ~ ", var)
-  model <- glm(formula, data=treated)
-  if(is.factor(data[[var]])){
-    coefflist <- c(levels(data[[var]]))  
+  # Prepare the list of coefficients - variables and levels for factors or blanks for continuous
+  if(is.factor(treated[[var]])){
+    levels <- levels(treated[[var]])
+    variable <- c(var,rep(NA, length(levels)-1))
+    coeffname <- paste0(var,levels)
   } else {
-    coefflist <- c(var)
+    levels <- NA
+    variable <- var
+    coeffname <- var
   }
-  modellist[[var]] <- printlogresults(model, coefflist)
+  coefflist <- data.frame(coeffname, variable, levels, stringsAsFactors=FALSE)
   
+  # Prepare the formula and pass it to the model
+  formula <- paste0("controlled ~ ", var)
+  model <- glm(formula, data=treated, family="binomial")
+  
+  # Add the pretty-formatted outputs to the list
+  modellist[[var]] <- printlogresults(model, coefflist)
 }
+# Vertically concatenate all the pretty outputs into one output table
 individualOR <- do.call(rbind, modellist)
-# individualOR <- individualOR[setdiff(rownames(individualOR),"(Intercept)"),]
+# Print the entire table
 kable(individualOR, row.names=FALSE)
-# ("c_age", "gender", "BMIcat", "Smo_Status", "GroupB", "GroupC", "HTNdx", "hypmedsno", "townsend_depind", "income", "ISCED", "employment", "BirthCountryIncomeLevel", "BowelCancerScreening")
-
-#multivariable logistic regression for DV control, among treated individuals. covariates to include in model are: age group, gender, BMI (categorical), smoking status, whether has CVD (comorbidity category - yes/no), duration of hypertension, whether ever screened for bowel cancer, household income (continuous, quintiles), Townsend vulnerability/deprivation  index (score), occupation type (categorical), geographic region/country (Wales, England, Scotland, Northern Ireland)
 
 
-model <- glm(controlled ~ c_age + gender + BMIcat + Smo_Status + GroupB + GroupC + HTNdx + hypmedsno + townsend_depind + income + ISCED + employment + BirthCountryIncomeLevel + BowelCancerScreening, data=treated, family="binomial" )
+# multivariable logistic regression for DV control, among treated individuals. covariates to include in model are: 
+# age group, 
+# gender, 
+# BMI (categorical), 
+# smoking, 
+# whether has CVD (comorbidity category - yes/no),
+# whether has other chronic comorbidity (yes/no to Group C)
+# duration of hypertension, 
+# number of antihypertensive medications, 
+# Townsend vulnerability/deprivation  index (score or quintiles),
+# household income (categorical),
+# education level (categorical), 
+# occupation type (categorical), 
+# geographic region/country (Wales, England, Scotland, Northern Ireland), 
+# whether ever screened for bowel cancer
+
+
+model <- glm(controlled ~ c_age + gender + BMIcat + Smo_Status + GroupB + GroupC + HTNdx + hypmedsno + townsend_depind + income + ISCED + employment + BirthCountryIncomeLevel + BowelCancerScreening + FaH_CVD + alc_binge + METs_over150, data=treated, family="binomial" )
 
 kable(printlogresults(model))
 
-kable(thing)
+# kable(thing)
+
+```
+
+# Table 3: Hypertension prevalence awareness, treatment and control by comorbidity type, among hypertensives
+
+```{r table3}
+comorbtype <- readRDS("K:\\TEU\\APOE on Dementia\\Data Management\\R_Dataframes_TLA\\38358\\Organised\\Hypertension\\Neo\\VIhypGroupBC_type.rds")
+GroupC_type <- names(comorbtype)[-1]
+GroupC_type <- GroupC_type[!GroupC_type %in% "CVD"]
+
+dflist <- c(list("None"=hypertensives[hypertensives$GroupB=="no CVD" & hypertensives$GroupC=="No other comorbidity",]), 
+            list("CVD"=hypertensives[hypertensives$CVD=="CVD",]),
+            lapply(GroupC_type, function(x) hypertensives[hypertensives[[x]]==gsub("_", " ", x),])
+            )
+tab3 <- c()
+for(df in dflist){
+  n <- nrow(df)
+  mean_age <- round(mean(df$age),1)
+  mean_SBP <- round(mean(df$SBP),1)
+  mean_DBP <- round(mean(df$DBP),1)
+  pct_aware <- round(100*nrow(df[df$aware==TRUE & !is.na(df$aware),])/nrow(df),1)
+  pct_treat <- round(100*nrow(df[df$treated==TRUE & !is.na(df$treated),])/nrow(df[df$aware==TRUE & !is.na(df$aware),]),1)
+  pct_control <- round(100*nrow(df[df$controlled==TRUE & !is.na(df$controlled),])/nrow(df[df$treated==TRUE & !is.na(df$treated),]),1)
+  tab3 <- rbind(tab3,(cbind(n, mean_age, paste0(mean_SBP,"/",mean_DBP), pct_aware, pct_treat, pct_control)))
+}
+rownames(tab3) <- c("None", "CVD", gsub("_", " ", GroupC_type))
+colnames(tab3) <- c("n", "Mean age", "Mean SBP/DBP", "% Aware", "% Treated", "% Controlled")
+kable(tab3)
 
 ```
 
