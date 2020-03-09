@@ -8,6 +8,7 @@
 
 # But track the markdown style file, in case ever break it! #
 !RMarkdownStyle.docx
+!RMarkdownLandscape.docx
 
 # No longer using databases, so don't waste space tracking these #
 **.db
