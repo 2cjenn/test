@@ -53,6 +53,48 @@ df_to_table <- function(tablist, overwrite) {
   dbDisconnect(conn)
 }
 
+# Print numbers and proportions for factors, median and IQR or mean and 95% CI for continuous variables
+# Optionally provide p-values from chi-squared (categorical) and t-test (continuous)
+descriptivetable <- function(df, varlist, contavg='mean', assocvar=NULL){
+  outtable <- c()
+  for(var in varlist){
+    if(is.factor(df[[var]])){
+      n <- table(df[[var]], useNA='ifany')
+      pct <- round(100*prop.table(n),2)
+      variable <- c(var, rep(NA, dim(n)-1))
+      levels <- names(n)
+      if(!is.null(assocvar)){
+        tab <- table(df[[assocvar]], df[[var]])
+        chi <- chisq.test(tab)
+        pval <- c(ifelse(chi$p.value<0.001, "<0.001", round(chi$p.value,3)), rep(NA, dim(n)-1))
+      }
+    } else {
+      if(contavg=="mean"){
+        n <- round(mean(df[[var]], na.rm=TRUE),2)
+        pct <- round(sd(df[[var]]),2)
+        variable <- paste0("Mean ", var, " (SD)")
+      } else if (contavg=="median"){
+        n <- round(median(df[[var]], na.rm=TRUE),2)
+        IQR <- round(quantile(df[[var]], na.rm=TRUE),1)
+        pct <- paste0("(", IQR[4], "-", IQR[2], ")")
+        variable <- paste0("Median ", var, " (IQR)")
+      }
+      levels <- NA
+      if(!is.null(assocvar)){
+        tt <- t.test(df[[var]][df[[assocvar]]==TRUE], df[[var]][df[[assocvar]]==FALSE])
+        pval <- ifelse(tt$p.value<0.001, "<0.001", round(tt$p.value,3))
+      }
+    }
+    if(!is.null(assocvar)){
+      outtable <- rbind(outtable, cbind(variable, levels, n, pct, pval))
+    } else {
+      outtable<- rbind(outtable, cbind(variable, levels, n, pct))
+    }
+  }
+  rownames(outtable) <- c()
+  return(outtable)
+}
+
 # Prettyprint the results from a Cox model
 # To use this, 
 # model <- coxph(Surv(time_to_dementia, dementia_status) ~ age, data=data)
@@ -101,52 +143,14 @@ printlogresults <- function(model, coeffnames=NULL){
     names(results) <- c("Coefficient", "Odds ratio", "95% CI", "p value")
   }
   rownames(results) <- NULL
+  # https://www.r-bloggers.com/regression-on-categorical-variables/
   # VARIABLE=c("",gsub("[-^0-9]", "", names(unlist(modeloutput$xlevels))))
   # MODALITY=c("",as.character(unlist(model$xlevels)))
   # names=data.frame(VARIABLE,MODALITY,NOMVAR=c("(Intercept)",paste(VARIABLE,MODALITY,sep="")[-1]))
-  # 
-  # results <- merge(names,regression,all=TRUE)
-  # results <- results[(order(match(coeff,results$NOMVAR)))]
-  # 
-  # rows <- rownames(results)
-  # levels <- modeloutput$xlevels
-  # rows <- rownames(coeff)
-  # variables <- names(model$xlevels)
-  # n <- rep(-1, length(rows))
-  # for (row in 1:length(rows)){
-  #   for (var in variables){
-  #     rows[row] <- str_replace(string=rows[row], pattern=fixed(var), replacement="")
-  #     # Count n for factors:
-  #     # modeloutput$data is the dataframe used in the regression model
-  #     # count the number of rows where that factor is equal to each value
-  #     # n[row] <- max(n[[row]], nrow(modeloutput$data[modeloutput$data[[var]] == rows[row], ]))
-  #   }
-  # }
-  # results <- cbind(n, results)
-  # colnames(results) <- c("Odds Ratio", "95% CI", "p-value")
-  # rownames(results) <- rows
-# 
-#   if(!is.null(coefflist)){
-#     rs <- data.frame(results, stringsAsFactors=FALSE)
-#     rs$names <- rownames(rs)
-#     tb <- data.frame(coefflist, stringsAsFactors=FALSE)
-#     results <- merge(tb, rs, by.x="coefflist", by.y="names", all.x=TRUE)
-#     results <- results[match(coefflist, results$coefflist),]
-# 
-#     results$Odds.Ratio[is.na(results$Odds.Ratio)] <- "1"
-# 
-#     colnames(results) <- c("Coefficient", "Odds ratio", "95% CI", "p value")
-#   }
+
   return(results)
 }
-# modeloutput <- model
 
-
-# VARIABLE=c("",gsub("[-^0-9]", "", names(unlist(modeloutput$xlevels))))
-# MODALITY=c("",as.character(unlist(modeloutput$xlevels)))
-# names=data.frame(VARIABLE,MODALITY,NOMVAR=c("(Intercept)",paste(VARIABLE,MODALITY,sep="")[-1]))
-# regression=data.frame(NOMVAR=names(coefficients(modeloutput)), COEF=as.numeric(coefficients(modeloutput)))
-# thing <- merge(names,regression,all.x=TRUE)
 
 # Round to the nearest m
 mround <- function(x, base){

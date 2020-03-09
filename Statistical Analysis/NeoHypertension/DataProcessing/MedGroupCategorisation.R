@@ -67,16 +67,18 @@ VImeds$BBonly <- !is.na(VImeds[["BB"]]) & VImeds$onlyone & is.na(VImeds$heart_ar
 #--------------------------------------------------------------------------------------------------------------
 # If-else to create a single factor variable with all the categories
 #--------------------------------------------------------------------------------------------------------------
-VImeds$HTN_txalg <- ifelse(VImeds$step12==TRUE, "Step 1/2", 
-                        ifelse(VImeds$step3==TRUE, "Step 3", 
-                               ifelse(VImeds$step4==TRUE, "Step 4", 
-                                      ifelse(VImeds$step5==TRUE, "Step 5",
-                                             ifelse(VImeds$step1_b55==TRUE, "Step 1 for Black OR age<55",
-                                                    ifelse(VImeds$step1_f45==TRUE, "Step 1 for female of childbearing age",
-                                                           ifelse(VImeds$thiaonly==TRUE, "Thiazide only, no alternative diagnosis",
-                                                                  ifelse(VImeds$ACEARBonly==TRUE, "ACEI/ARB only, no alternative diagnosis",
-                                                                         ifelse(VImeds$BBonly==TRUE, "BB only, no alternative diagnosis",
-                                                                                VImeds$hypmeds)))))))))
+VImeds$HTN_txalg <- dplyr::case_when(
+  VImeds$step12==TRUE ~ "Step 1/2",
+  VImeds$step3==TRUE ~ "Step 3",
+  VImeds$step4==TRUE ~ "Step 4",
+  VImeds$step5==TRUE ~ "Step 5",
+  VImeds$step1_b55==TRUE ~ "Step 1 for Black OR age<55",
+  VImeds$step1_f45==TRUE ~ "Step 1 for female of childbearing age",
+  VImeds$thiaonly==TRUE ~ "Thiazide only, no alternative diagnosis",
+  VImeds$ACEARBonly==TRUE ~ "ACEI/ARB only, no alternative diagnosis",
+  VImeds$BBonly==TRUE ~ "BB only, no alternative diagnosis",
+  TRUE ~ VImeds$hypmeds
+  )
 
 
 #--------------------------------------------------------------------------------------------------------------
