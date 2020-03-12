@@ -58,5 +58,92 @@ apoe <- apoe[!is.na(apoe$age),]
 # n = 2247
 apoe <- apoe[apoe$age >= 40 & apoe$age < 70,]
 
+#--------------------------------------------------------------------------------------------------------------
+# Create some more complex variables
+#--------------------------------------------------------------------------------------------------------------
+data <- apoe
+# Duration of hypertension diagnosis
+data$HTNdx_TQ <- round(data$age - data$HBPAge,1)
+data$HTNdx_VI <- round(decimal_date(data$recdate) - data$VIhypdx_yr,1)
+data$HTNdx_duration <- coalesce(data$HTNdx_VI, data$HTNdx_TQ)
+# Any durations less than 0 are clearly errors (only 2)
+# Any diagnoses before the age of about 20 are probably errors
+data$HTNdx_duration[(data$HTNdx_duration < 0 | data$HTNdx_duration > data$HBPAge-20)& !is.na(data$HTNdx_duration)] <- NA
+
+# Single variable for self-reported hypertension
+# If reported in either touchscreen questionnaire or verbal interview
+data$selfrephyp <- (data$prevHBP==TRUE & !is.na(data$prevHBP)) | data$VIhyp==TRUE
+data$selfrephyp[is.na(data$prevHBP) & is.na(data$NumberDiagnoses)] <- NA
+
+# Single variable for self-reported meds
+# If participant answered the question in touchscreen questionnaire, use this
+# If they did not answer ("Do not know"/Prefer not to answer"/skipped question) then use the "probable BP meds"
+data$HTN_probablemeds[is.na(data$HTN_probablemeds)] <- FALSE
+data$selfrepmeds <- (data$HBPmeds==TRUE & !is.na(data$HBPmeds)) | data$HTN_probablemeds
+data$selfrepmeds[is.na(data$HBPmeds) & is.na(data$NumberMedications)] <-NA
+
+
+#--------------------------------------------------------------------------------------------------------------
+# Hypertension exclusions
+#--------------------------------------------------------------------------------------------------------------
+
+# Exclude individuals who have withdrawn from the study
+withdrawn <- read.csv("K:\\TEU\\APOE on Dementia\\Data Management\\WithdrawnIDs.csv", header=FALSE)
+data <- data[!data$ID %in% withdrawn$V1,]
+
+excl <- list(initial=nrow(data))
+
+# Exclude those outside the 40-70 age range
+# n = 502506 - 500011 = 2495
+data <- data[data$age >= 40 & data$age < 70,]
+
+excl$agerange=nrow(data)
+
+# Exclude individuals with missing BP data
+# or missing answers to BP questions on touchscreen questionnaire
+# n = 500011 - 498698 = 1313
+data <- data[!is.na(data$SBP),]
+data <- data[!is.na(data$DBP),]
+data <- data[!is.na(data$selfrephyp),]
+data <- data[!is.na(data$selfrepmeds),]
+
+excl$BP=nrow(data)
+
+#--------------------------------------------------------------------------------------------------------------
+# Generate hypertension category variables
+#--------------------------------------------------------------------------------------------------------------
+
+# Indicator variable for "some evidence of hypertension" vs "no evidence of hypertension"
+data$evidenceHTN <- (data$selfrephyp==TRUE | data$selfrepmeds==TRUE | data$measuredhyp==TRUE)
+unique(data$evidenceHTN)
+
+# Indicator variable for hypertension awareness - 
+# did they say they had hypertension or say that they were taking BP meds
+data$aware <- data$selfrephyp==TRUE | data$selfrepmeds==TRUE
+data$aware[data$evidenceHTN==FALSE | is.na(data$evidenceHTN)] <- NA
+
+# Indicator variable for hypertension treatment status
+# Return to this after finalising incorporation of VI medication data
+data$treated <- data$selfrepmeds
+data$treated[data$aware==FALSE | is.na(data$aware)] <- NA
+data$hypmedsno[data$treated==FALSE | is.na(data$treated)] <- 0
+
+# Control
+data$controlled[data$treated==FALSE | is.na(data$treated)] <- NA
+
+# Center age on the minimum
+data$c_age <- data$age - 40
+
+# Make the key dichotomous variables into factors to improve readability of outputs
+data$prevHBP_ <- factor(as.numeric(data$prevHBP), levels=c(0,1), labels=c("Did not report prior HTN diagnosis (touchscreen)", "Self-reported prior HTN diagnosis in touchscreen questionnaire"))
+data$VIhyp_ <- factor(as.numeric(data$VIhyp), levels=c(0,1), labels=c("Did not report prior HTN diagnosis (VI)", "Self-reported prior HTN diagnosis in verbal interview"))
+data$selfrephyp_ <- factor(as.numeric(data$selfrephyp), levels=c(0,1), labels=c("Did not report prior HTN diagnosis", "Self-reported prior HTN diagnosis"))
+data$measuredhyp_ <- factor(as.numeric(data$measuredhyp), levels=c(0,1), labels=c("Measured BP < 140/90 at baseline", "Measured BP >= 140/90 at baseline"))
+data$controlled_ <- factor(as.numeric(data$controlled), levels=c(0,1), labels=c("Inadequately controlled", "Successfully controlled"))
+data$aware_ <- factor(as.numeric(data$aware), levels=c(0,1), labels=c("Unaware of hypertension", "Aware of hypertension"))
+data$treated_ <- factor(as.numeric(data$treated), levels=c(0,1), labels=c("Did not report BP medication", "Self-reported BP medication"))
+data$evidenceHTN_ <- factor(as.numeric(data$evidenceHTN), levels=c(0,1), labels=c("No evidence of hypertension", "Evidence of hypertension"))
+
+
 # Remaining n = 474,343
-saveRDS(apoe, file="K:\\TEU\\APOE on Dementia\\Data Management\\R_Dataframes_TLA\\38358\\Organised\\Hypertension\\APOE\\apoe_excl.rds")
+saveRDS(data, file="K:\\TEU\\APOE on Dementia\\Data Management\\R_Dataframes_TLA\\38358\\Organised\\Hypertension\\APOE\\apoe_excl.rds")

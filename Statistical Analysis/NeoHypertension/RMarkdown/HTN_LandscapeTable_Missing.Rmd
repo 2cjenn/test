@@ -35,7 +35,7 @@ treated <- data[data$treated==TRUE & !is.na(data$treated),]
 
 # Note on data completeness
 
-```{r data_completeness, include=TRUE, echo=FALSE}
+```{r data_completeness, include=FALSE, echo=FALSE}
 
 varlist <- c("c_age", "gender", "BMIcat", "Smo_Status", "GroupB", "GroupC", "HTNdx_duration", "hypmedsno", "townsend_depind", "income", "ISCED", "employment", "BirthCountryIncomeLevel", "BowelCancerScreening")
 
@@ -47,12 +47,8 @@ count_missing <- cbind(varlist, count_missing)
 kable(count_missing)
 ```
 
-# Table 2. Univariable and multivariable logistic regression identifying factors associated with hypertension control, among UK adults on antihypertensive treatment, n = `r nrow(treated)`.
-
-Note that I haven't yet got the n's in, for the adjusted cases this is not trivial to automate, but I'm working on it!
-This is why I have provided the data completeness table above.
-
-In the fully adjusted model, 41597 participants have been deleted due to missingness (mostly in the hypertension duration and income variables, as unfortunately their missingness doesn't overlap very much).
+Here I've quickly created a "No answer" category for income, and used the median hypertension duration (it's very skewed, most diagnoses are comparatively recent) as a filler value.
+Note concerns about quality of hypertension duration data - this could be recorded either as an estimated age of diagnosis or year of diagnosis by the nurse in the verbal interview. Values that indicated diagnosis before birth were automatically truncated to D.o.B - and while that approach may have made sense for some conditions, it doesn't seem adequate for hypertension, as it is unlikely that individuals were being diagnosed with hypertension in childhood (in this population of 40-69yr olds, ~300 stated a diagnosis of hypertension more than 50 years ago)
 
 
 ```{r logisticregression, include=TRUE, echo=FALSE}

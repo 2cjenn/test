@@ -33,43 +33,10 @@ treated <- data[data$treated==TRUE & !is.na(data$treated),]
 
 ```{r table1, include=TRUE, echo=FALSE}
 
-descriptivetable <- function(df, varlist, assocvar=NULL){
-  tab1 <- c()
-  for(var in varlist){
-    if(is.factor(df[[var]])){
-      n <- table(df[[var]], useNA='ifany')
-      pct <- round(100*prop.table(n),2)
-      variable <- c(var, rep(NA, dim(n)-1))
-      levels <- names(n)
-      if(!is.null(assocvar)){
-        tab <- table(df[[assocvar]], df[[var]])
-        chi <- chisq.test(tab)
-        pval <- c(ifelse(chi$p.value<0.001, "<0.001", round(chi$p.value,3)), rep(NA, dim(n)-1))
-      }
-    } else {
-      med <- median(df[[var]])
-      IQR <- round(quantile(df[[var]], na.rm=TRUE),1)
-      n <- med
-      pct <- paste0("(", IQR[4], "-", IQR[2], ")")
-      variable <- paste0("Median ", var, " (IQR)")
-      levels <- NA
-      if(!is.null(assocvar)){
-        tt <- t.test(df[[var]][df[[assocvar]]==TRUE], df[[var]][df[[assocvar]]==FALSE])
-        pval <- ifelse(tt$p.value<0.001, "<0.001", round(tt$p.value,3))
-      }
-    }
-    if(!is.null(assocvar)){
-      tab1 <- rbind(tab1, cbind(variable, levels, n, pct, pval))
-    } else {
-      tab1<- rbind(tab1, cbind(variable, levels, n, pct))
-    }
-  }
-  rownames(tab1) <- c()
-  return(tab1)
-}
+
 tab1 <- descriptivetable(df=hypertensives, 
                          varlist=c("gender", "agegrp", "age", "ethnicity", "ISCED", "employment", "SBP", "DBP"),
-                         assocvar="aware")
+                         contavg='mean', assocvar="aware")
 kable(tab1)
 
 ```
