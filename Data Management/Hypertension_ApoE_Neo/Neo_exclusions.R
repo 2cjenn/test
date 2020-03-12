@@ -160,19 +160,22 @@ data$ethnicity <- factor(data$ethnicity, levels=c("White", "Black", "Asian", "Ot
 # data$education <- factor(data$education, levels=c("None", "Primary", "Secondary", "Tertiary or higher", "Unknown/unanswered"))
 
 # Convert UKB qualification categories into ISCED education categories
-data$ISCED <- ifelse(data$edu_highest=="College or University degree", "ISCED 5: First stage of tertiary education",
-                     ifelse(data$edu_highest=="NVQ or HND or HNC or equivalent", "ISCED 5: First stage of tertiary education",
-                            ifelse(data$edu_highest=="Other professional qualifications eg: nursing, teaching", "ISCED 4: Post-secondary non-tertiary education",
-                                   ifelse(data$edu_highest=="A levels/AS levels or equivalent", "ISCED 3: Upper secondary education",
-                                          ifelse(data$edu_highest=="O levels/GCSEs or equivalent", "ISCED 2: Lower secondary education",
-                                                 ifelse(data$edu_highest=="CSEs or equivalent", "ISCED 2: Lower secondary education",
-                                                        ifelse(data$edu_highest=="None of the above", "ISCED 1: Primary education",
-                                                               ifelse(data$edu_highest=="Prefer not to answer", NA, NA))))))))
+data$ISCED <- dplyr::case_when(
+  data$edu_highest == "College or University degree" ~ "ISCED 5: First stage of tertiary education",
+  data$edu_highest == "NVQ or HND or HNC or equivalent" ~ "ISCED 5: First stage of tertiary education",
+  data$edu_highest == "Other professional qualifications eg: nursing, teaching" ~ "ISCED 4: Post-secondary non-tertiary education",
+  data$edu_highest == "A levels/AS levels or equivalent" ~ "ISCED 3: Upper secondary education",
+  data$edu_highest == "O levels/GCSEs or equivalent" ~ "ISCED 2: Lower secondary education",
+  data$edu_highest == "CSEs or equivalent" ~ "ISCED 2: Lower secondary education",
+  data$edu_highest == "None of the above" ~ "ISCED 1: Primary education",
+  data$edu_highest == "Prefer not to answer" ~ "Unanswered",
+  is.na(data$edu_highest) ~ "Unanswered"
+  )
 
 data$ISCED <- factor(data$ISCED, 
                      levels=c("ISCED 5: First stage of tertiary education", "ISCED 4: Post-secondary non-tertiary education", 
                               "ISCED 3: Upper secondary education", "ISCED 2: Lower secondary education",
-                              "ISCED 1: Primary education"))
+                              "ISCED 1: Primary education")) # Excluding "Unanswered" from factor levels codes it as NA
 
 # Convert "missing" employment to "unemployed" so it doesn't interfere with Cox regression
 levels(data$employment) <- c(levels(data$employment), "Unemployed/retired/other")
@@ -188,7 +191,7 @@ data$employment <- factor(data$employment, levels=c("Managers and Senior Officia
 data$agegrp <- cut(data$age, breaks=c(40, 50, 60, 70), right=FALSE)
 
 # Categorise BMI into labelled categories
-data$BMIcat <- cut(data$bl_BMI, breaks=c(0, 18.5, 25, 30, 200), right=FALSE)
+data$BMIcat <- cut(data$BMI, breaks=c(0, 18.5, 25, 30, 200), right=FALSE)
 data$BMIcat <- factor(data$BMIcat, levels=c("[0,18.5)", "[18.5,25)", "[25,30)", "[30,200)"), 
                       labels=c("Underweight", "Normal", "Overweight", "Obese"))
 data$BMIcat <- relevel(data$BMIcat, ref="Normal")
@@ -214,6 +217,15 @@ data$FamilyHist_CVD_ <- factor(as.numeric(data$FaH_CVD), levels=c(0,1), labels=c
 # Convert income level of birth country to a factor
 data$BirthCountryIncomeLevel[data$BirthCountryIncomeLevel %in% c("LM", "UM")] <- "M"
 data$BirthCountryIncomeLevel <- factor(data$BirthCountryIncomeLevel, levels=c("H", "M", "L"), labels=c("High income", "Middle income", "Low income"))
+
+# Add hypertension severity indicator
+data$HTNdx_severity <- dplyr::case_when(
+  data$SBP>=180 | data$DBP>=110 ~ "Stage 3",
+  between(data$SBP, 160, 179) | between(data$DBP, 100, 109) ~ "Stage 2",
+  between(data$SBP, 140, 159) | between(data$DBP, 90, 99) ~ "Stage 1",
+  TRUE ~ ""
+)
+data$HTNdx_severity[data$HTNdx_severity==""] <- NA
 
 # # Add mapping to comorbidities of interest
 # comorbidities <- readRDS("K:\\TEU\\APOE on Dementia\\Data Management\\R_Dataframes_TLA\\38358\\Organised\\Hypertension\\Neo\\VI_ComorbidityCategories.rds")

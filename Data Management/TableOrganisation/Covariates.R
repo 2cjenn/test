@@ -51,9 +51,10 @@ covars <- merge(covars, sleep, by="ID", all=TRUE)
 #--------------------------------------------------------------------------------------------------------------
 # Body measurements
 body <- readRDS("K:\\TEU\\APOE on Dementia\\Data Management\\R_Dataframes_TLA\\38358\\BSM_base.rds")
-body$bl_BMI <- body$BSM_BMI
+body$BMI <- body$BSM_BMI
+body$WaistCirc <- body$BSM_Waist
 
-covars <- merge(covars, body[,c("ID", "BSM_HeightStand", "BSM_Weight", "bl_BMI")], by="ID", all=TRUE)
+covars <- merge(covars, body[,c("ID", "BSM_HeightStand", "BSM_Weight", "BMI", "WaistCirc")], by="ID", all=TRUE)
 
 #--------------------------------------------------------------------------------------------------------------
 # Education
@@ -84,10 +85,14 @@ covars <- merge(covars, education[,c("ID", "uni", "eduNA", "edu_highest", "Edu_A
 
 #--------------------------------------------------------------------------------------------------------------
 # Employment
-employment <- readRDS("K:\\TEU\\APOE on Dementia\\Data Management\\R_Dataframes_TLA\\38358\\Organised\\Jobcodes_pts.rds")
-employment$employment <- employment$TL
+jobcodes <- readRDS("K:\\TEU\\APOE on Dementia\\Data Management\\R_Dataframes_TLA\\38358\\Organised\\Jobcodes_pts.rds")
+jobcodes$employment <- jobcodes$TL
 
-covars <- merge(covars, employment[,c("ID", "employment")], by="ID", all=TRUE)
+employment <- readRDS("K:\\TEU\\APOE on Dementia\\Data Management\\R_Dataframes_TLA\\38358\\Emp_base.rds")
+employment$shiftwork <- employment$Emp_ShiftWrk.0
+
+covars <- merge(covars, jobcodes[,c("ID", "employment")], by="ID", all=TRUE)
+covars <- merge(covars, employment[,c("ID", "shiftwork")], by="ID", all=TRUE)
 
 #--------------------------------------------------------------------------------------------------------------
 # Physical Activity

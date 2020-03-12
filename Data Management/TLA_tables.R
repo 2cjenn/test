@@ -14,7 +14,7 @@ setwd(dirname(rstudioapi::getActiveDocumentContext()$path))
 
 # Read in the R file produced by the UKB converter
 # fileloc <- "K:\\TEU\\CancerPRS\\6thData_07Nov2019\\R\\20200219\\ukb38358.R"
-fileloc <- "K:\\TEU\\CancerPRS\\6thData_07Nov2019\\R\\20200302\\ukb38358.R"
+fileloc <- "K:\\TEU\\CancerPRS\\6thData_07Nov2019\\R\\20200303\\ukb38358.R"
 
 # First make sure the biobank data has been loaded, if not then load it
 if(exists("bd") && is.data.frame(get("bd"))) {
