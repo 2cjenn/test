@@ -1,8 +1,10 @@
 ---
 title: "Data Dictionary"
 author: "Jennifer Collister"
-date: "19/02/2020"
-output: word_document
+date: "11/03/2020"
+output: 
+  word_document:
+      reference_docx: "K:/TEU/APOE on Dementia/RMarkdownLandscape.docx"
 ---
 
 ```{r setup, include=FALSE, echo=FALSE}
@@ -10,267 +12,63 @@ knitr::opts_chunk$set(echo = TRUE)
 library(kableExtra)
 library(knitr)
 library(dataMeta)
-```
+library(readxl)
+library(devtools)
+library(dplyr)
 
-```{r loaddata, include=FALSE}
+install_local("K:\\TEU\\Code Repository\\dataMetaFork")
 
 data <- readRDS(file="K:\\TEU\\APOE on Dementia\\Data Management\\R_Dataframes_TLA\\38358\\Organised\\Hypertension\\Neo\\HTN_excl.rds")
+
+dictpath <- "K:\\TEU\\APOE on Dementia\\Data Management\\DataDictionary\\DataDictionary.xlsx"
 
 ```
 
 # Core analysis
 
-## Core endpoints
 
-* hypertension awareness
-* hypertension treatment
-* hypertension control
+```{r datameta, include=TRUE, echo=FALSE}
 
-## Explanatory variables of interest
+core <- data[,c("ID", "evidenceHTN_", "aware_", "treated_", "controlled_", "ethnicity", "age", "gender", "ISCED", "BMIcat", "BMI", "recdate")]
 
-* Ethnicity
-
-## Covariates
-
-* Age
-* Gender
-* Education
-* BMI
-* Date of recruitment
-
-
-
-```{r coreanalysis, include=FALSE}
-# (varname, varlabel, description, vartype, UKBfield, response, n)
-core <- list("aware"=list(), "treated"=list(), "controlled"=list(), 
-             "ethnicity"=list(), 
-             "age"=list(), "gender"=list(), "education"=list(), "BMI"=list())
-
-# Hypertension awareness
-core[["aware"]] <- list("varname"="aware", 
-              "varlabel"="Participant awareness of hypertension", 
-              "description"="If the participant self-reported a diagnosis of hypertension in the touchscreen questionnaire or verbal interview, or reported that they were taking BP medication", 
-              "vartype"="Boolean", 
-              "UKBfield"="6150, 6153, 6177, 20002, 20003", 
-              "response"=c(paste0("FALSE: ", levels(data$aware_)[1]), paste0("TRUE: ", levels(data$aware_)[2])),
-              "n"=table(data$aware)
-              )
-
-# Hypertension treatment
-core[["treated"]] <- list("varname"="treated", 
-              "varlabel"="Participant treatment of hypertension", 
-              "description"="Among participants who were aware of their hypertension, if they self-reported taking BP meds or the list of medication they provided in verbal interview was found to include a standard hypertensive treatment regimen then they were considered to be treated for hypertension", 
-              "vartype"="Boolean", 
-              "UKBfield"="6153, 6177, 20003", 
-              "response"=c(paste0("FALSE: ", levels(data$treated_)[1]), paste0("TRUE: ", levels(data$treated_)[2])),
-              "n"=table(data$treated)
-              )
-
-# Hypertension control
-core[["controlled"]] <- list("varname"="controlled", 
-              "varlabel"="Participant control of hypertension", 
-              "description"="Among participants who were taking treatment for hypertension, if their mean measured BP at baseline assessment was < 140/90 then they was considered to be successfully controlling their BP", 
-              "vartype"="Boolean", 
-              "UKBfield"="93, 94, 4079, 4080", 
-              "response"=c(paste0("FALSE: ", levels(data$controlled_)[1]), paste0("TRUE: ", levels(data$controlled_)[2])),
-              "n"=table(data$controlled)
-              )
-
-# Ethnicity
-core[["ethnicity"]] <- list("varname"="eth_group", 
-              "varlabel"="Ethnic group", 
-              "description"="Broad ethnic category of individuals", 
-              "vartype"="Character", 
-              "UKBfield"="21000", 
-              "response"=c(levels(data$eth_group)),
-              "n"=table(data$eth_group)
-              )
-
-# Age
-core[["age"]] <- list("varname"="age", 
-              "varlabel"="Age at baseline assessment (years)", 
-              "description"="Age at baseline assessment, estimated from month and year of birth and date of attending recruitment centre", 
-              "vartype"="Continuous numeric", 
-              "UKBfield"="34, 52, 53", 
-              "response"="Non-missing values",
-              "n"=nrow(data[!is.na(data$age),])
-              )
-
-# Gender
-core[["gender"]] <- list("varname"="gender", 
-              "varlabel"="Gender", 
-              "description"="Self-reported gender", 
-              "vartype"="Character", 
-              "UKBfield"="31", 
-              "response"=c(levels(data$gender)),
-              "n"=table(data$gender)
-              )
-
-# Education
-core[["education"]] <- list("varname"="edu_highest", 
-              "varlabel"="Highest achieved qualification", 
-              "description"="Highest reported educational qualification, derived from list of qualifications reported in touchscreen questionnaire", 
-              "vartype"="Character", 
-              "UKBfield"="6138", 
-              "response"=c(levels(data$edu_highest)),
-              "n"=table(data$edu_highest)
-              )
-
-# BMI
-core[["BMI"]] <- list("varname"="BSM_BMI", 
-              "varlabel"="Body mass index at baseline assessment", 
-              "description"="Derived by UKB from weight and height at baseline assessment", 
-              "vartype"="Continuous numeric", 
-              "UKBfield"="21001", 
-              "response"="Non-missing values",
-              "n"=nrow(data[!is.na(data$BSM_BMI),])
-              )
-
-coredf <- data.frame(do.call(rbind, core))
-```
-
-
-```{r tabulate_core, include=TRUE}
-
-# kable(coredf)
-thing <- c(table(data$aware_), 
-        table(data$treated_), 
-        table(data$controlled_), 
-        table(data$eth_group),
-        "age"=nrow(data[!is.na(data$age),]),
-        "recdate"=nrow(data[!is.na(data$recdate),]),
-        table(data$gender),
-        table(data$edu_highest),
-        "bmi"=nrow(data[!is.na(data$BSM_BMI),])
-        )
-kable(c(table(data$aware_), 
-        table(data$treated_), 
-        table(data$controlled_), 
-        table(data$eth_group),
-        "age"=nrow(data[!is.na(data$age),]),
-        "recdate"=nrow(data[!is.na(data$recdate),]),
-        table(data$gender),
-        table(data$edu_highest),
-        "bmi"=nrow(data[!is.na(data$BSM_BMI),])
-        ),
-      row.names=
-      )
- 
-```
-
-```{r loaddata, include=FALSE}
-
-data <- readRDS(file="K:\\TEU\\APOE on Dementia\\Data Management\\R_Dataframes_TLA\\38358\\Organised\\Hypertension\\Neo\\HTN_excl.rds")
-install_local("K:\\TEU\\Code Repository\\dataMetaFork")
-```
-
-```{r datameta}
-
-core <- data[,c("ID", "evidenceHTN_", "aware_", "treated_", "controlled_", "eth_group", "age", "recdate", "gender", "edu_highest", "bl_BMI")]
-
-var_desc <- c("Participant ID", 
-              "Evidence of hypertension", 
-              "Among participants with evidence of hypertension, if they self-reported a diagnosis of hypertension in the touchscreen questionnaire or verbal interview, or reported that they were taking BP medication then they were considered to be aware of their hypertension",
-              "Among participants who were aware of their hypertension, if they self-reported taking BP meds or the list of medication they provided in verbal interview was found to include a standard hypertensive treatment regimen then they were considered to be treated for hypertension",
-              "Among participants who were taking treatment for hypertension, if their mean measured BP at baseline assessment was < 140/90 then they were considered to be successfully controlling their BP",
-              "Broad ethnic category of participant",
-              "Age at baseline assessment, estimated from month and year of birth and date of attending recruitment centre",
-              "Date of attending recruitment centre",
-              "Self-reported gender",
-              "Highest reported educational qualification, derived from list of qualifications reported in touchscreen questionnaire",
-              "Body mass index at baseline assessment, derived by UKB from height and weight at baseline assessment")
-
-var_type <- c(0, 1, 1, 1, 1, 1, 0, 0, 1, 1, 0)
-
-
-core_linker <- build_linker(core, variable_description = var_desc, variable_type = var_type)
+core_linker <- build_linker(core, master_dictionary=dictpath)
 
 core_dict <- build_dict(my.data=core, linker=core_linker, option_description=NULL, prompt_varopts=FALSE, na.rm=TRUE)
-# core_dict$n <- 
 
 kable(core_dict)
 
-data_desc = "The variables required for the core analysis"
+core_desc = "The variables required for the core analysis"
 
-coredata <- incorporate_attr(my.data=core, data.dictionary=core_dict, main_string=data_desc)
-
-attributes(coredata)
-
+coredata <- incorporate_attr(my.data=core, data.dictionary=core_dict, main_string=core_desc)
 
 ```
 
 
 # Expanded analysis
 
-# Explanatory variables
 
-* Chronic co-morbidities
-  * Number
-  * Duration of diagnosis
-  * Type
-    * Asthma
-    * COPD
-    * Diabetes
-    * Cancer
-    * Depression
+```{r extradict, include=TRUE, echo=FALSE}
 
-## Other covariates
+extra <- data[,c("ID", 
+                 "GroupB", "GroupC", 
+                 "BirthCountryIncomeLevel", "income", "townsend_depind", "employment", "shiftwork",
+                 "Smo_Status", "alc_binge_", "METs_over150_", "PhA_METsWkAllAct", "Sle_Duration",
+                 "mean_reacttime",
+                 "HTNdx_duration", "HTNdx_severity",
+                 "FamilyHist_CVD_", 
+                 "WaistCirc"
+                 )]
 
-* Sociodemographic characteristics
-  * Country of birth
-  * Household income
-    * Continuous
-    * Quintiles
-  * Townsend score
-  * Employment shift type
-  * Occupation type
-* Lifestyle behaviour
-  * Tobacco 20116
-  * Harmful alcohol use
-  * Physical activity
-    * Continuous METS
-    * > or <= 150 METs
-  * Sleep duration
-* Function
-  * Reaction time
-  * Handgrip strength
-* Hypertension disease characteristics
-  * Duration of diagnosis
-  * Severity (Stage I, II, III)
-  * Known history of stroke
-    * Yes/No
-    * Type
-    * Duration of diagnosis
-  * Known history of ischemic coronary disease
-    * Yes/No
-    * Type
-    * Duration of diagnosis
-  * Family history of hypertension
-* Physical measurements
-  * Waist circumference
-  * BP1
-  * BP2
-* Baseline blood chemistry tests
-  * Glucose
-  * Total cholesterol
-  * HDL cholesterol
-  * LDL cholesterol
-  * Triglycerides
+extra_linker <- build_linker(extra, master_dictionary=dictpath)
 
-```{r tabulate_extra, include=TRUE}
+extra_dict <- build_dict(my.data=extra, linker=extra_linker, option_description=NULL, prompt_varopts=FALSE, na.rm=TRUE)
 
-# kable(coredf)
+kable(extra_dict)
 
-kable(c(table(data$aware_), 
-        table(data$treated_), 
-        table(data$controlled_), 
-        table(data$eth_group),
-        "age"=nrow(data[!is.na(data$age),]),
-        table(data$gender),
-        "bmi"=nrow(data[!is.na(data$BSM_BMI),])
-        )
-      )
- 
+extra_desc = "The variables required for the core analysis"
+
+extradata <- incorporate_attr(my.data=extra, data.dictionary=extra_dict, main_string=extra_desc)
+
 ```
 
 
