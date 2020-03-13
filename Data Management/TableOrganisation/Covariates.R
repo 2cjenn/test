@@ -13,13 +13,18 @@ library(forcats)
 #--------------------------------------------------------------------------------------------------------------
 # Smoking
 smoking <- readRDS("K:\\TEU\\APOE on Dementia\\Data Management\\R_Dataframes_TLA\\38358\\Smo_base.rds")
-smoking$Smo_Status <- factor(smoking$Smo_Status, levels=c("Never", "Previous", "Current", "Prefer not to answer"), ordered=FALSE)
+smoking$Smo_Status <- factor(smoking$Smo_Status, levels=c("Never", "Previous", "Current", "Prefer not to answer"), 
+                             labels=c("Never", "Previous", "Current", "Unanswered"), ordered=FALSE)
+smoking$Smo_Status[is.na(smoking$Smo_Status)] <- "Unanswered"
 
 #--------------------------------------------------------------------------------------------------------------
 # Alcohol
 alcohol <- readRDS("K:\\TEU\\APOE on Dementia\\Data Management\\R_Dataframes_TLA\\38358\\Alc_base.rds")
 alcohol$Alc_Status <- factor(alcohol$Alc_Status, levels=c("Never", "Previous", "Current", "Prefer not to answer"), ordered=FALSE)
 
+for(var in c("Alc_RedWineWk", "Alc_WhiteWineWk", "Alc_BeerCiderWk", "Alc_SpiritsWk", "Alc_FortWineWk", "Alc_OtherAlcWk")){
+  alcohol[[var]] <- ifelse(alcohol[[var]]<0|is.na(alcohol[[var]]), 0, alcohol[[var]])
+}
 alcohol$weekly_alcunits <- alcohol$Alc_RedWineWk + alcohol$Alc_WhiteWineWk + alcohol$Alc_BeerCiderWk + alcohol$Alc_SpiritsWk + alcohol$Alc_FortWineWk + alcohol$Alc_OtherAlcWk
 
 covars <- merge(smoking[,c("ID", "Smo_Status", "Smo_TobaccoCurr", "Smo_TobaccoPast")], 
@@ -29,16 +34,19 @@ covars <- merge(smoking[,c("ID", "Smo_Status", "Smo_TobaccoCurr", "Smo_TobaccoPa
 household <- readRDS("K:\\TEU\\APOE on Dementia\\Data Management\\R_Dataframes_TLA\\38358\\HoH_base.rds")
 household$income <- as.character(household$HoH_PreTaxInc.0)
 household$income[is.na(household$income)] <- as.character(household$HoH_PreTaxInc_P.0[is.na(household$income)])
-household$income[household$income=="Prefer not to answer"] <- NA
+household$income[household$income=="Prefer not to answer" | is.na(household$income)] <- "Unanswered"
 household$income <- fct_collapse(household$income, 
                                  "Less than 18,000" = "Less than 18,000",
                                  "18,000 to 30,999" = c("18,000 to 30,999", "18,000 to 31,000"),
                                  "31,000 to 51,999" = c("31,000 to 51,999", "31,000 to 52,000"),
+                                 "52,000 to 100,000" = "52,000 to 100,000",
                                  "Greater than 100,000" = "Greater than 100,000",
-                                 "Do not know" = "Do not know"
+                                 "Do not know" = "Do not know",
+                                 "Unanswered" = "Unanswered"
                                  )
 household$income <- factor(household$income, levels=c("Less than 18,000", "18,000 to 30,999",
-                                                      "31,000 to 51,999", "Greater than 100,000", "Do not know"))                      
+                                                      "31,000 to 51,999", "52,000 to 100,000", "Greater than 100,000", 
+                                                      "Do not know", "Unanswered"))                      
 
 covars <- merge(covars, household[,c("ID", "income", "HoH_HouseholdSize.0")], by="ID", all=TRUE)
 

@@ -71,7 +71,7 @@ descriptivetable <- function(df, varlist, contavg='mean', assocvar=NULL){
     } else {
       if(contavg=="mean"){
         n <- round(mean(df[[var]], na.rm=TRUE),2)
-        pct <- round(sd(df[[var]]),2)
+        pct <- round(sd(df[[var]], na.rm=TRUE),2)
         variable <- paste0("Mean ", var, " (SD)")
       } else if (contavg=="median"){
         n <- round(median(df[[var]], na.rm=TRUE),2)
@@ -119,7 +119,7 @@ printcoxresults <- function(modeloutput, loghr=TRUE){
 }
 
 # Pretty print the results from a logistic regression model
-printlogresults <- function(model, coeffnames=NULL){
+printlogresults <- function(model, coeffnames=NULL, IDcol=FALSE){
   summ <- summary(model)
   coeff <- summ$coefficients
   # NOMVAR <- rownames(coeff)
@@ -136,8 +136,13 @@ printlogresults <- function(model, coeffnames=NULL){
     results <- merge(coeffnames, regression, all.x=TRUE)
     results$OR[is.na(results$OR)] <- "1"
     results <- results[match(coeffnames$coeffname, results$coeffname),]
-    results <- results[,c("variable", "levels", "OR", "CI", "p")]
-    names(results) <- c("Coefficient", "Level", "Odds ratio", "95% CI", "p value")
+    if(IDcol==TRUE){
+      results <- results[,c("coeffname", "variable", "levels", "OR", "CI", "p")]
+      names(results) <- c("IDcol", "Coefficient", "Level", "Odds ratio", "95% CI", "p value")
+    } else {
+      results <- results[,c("variable", "levels", "OR", "CI", "p")]
+      names(results) <- c("Coefficient", "Level", "Odds ratio", "95% CI", "p value")
+    }
   } else {
     results <- regression
     names(results) <- c("Coefficient", "Odds ratio", "95% CI", "p value")

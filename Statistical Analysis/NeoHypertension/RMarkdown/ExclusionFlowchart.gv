@@ -42,7 +42,7 @@ digraph dot {
   [4]: paste0('Considered healthy\nn = ', excl$cancer)
   [5]: paste0('Evidence of hypertension\nn = ', excl$hypert)
   [6]: paste0(excl$initial-excl$agerange,' outside the age range of [40,70) years')
-  [7]: paste0(excl$agerange-excl$BP,' missing BP data from baseline assessment','\n',excl$BP-excl$education,' missing data on educational qualifications')
-  [8]: paste0(excl$education-excl$seriouscomorb,' serious comordbidities', '\n', excl$seriouscomorb-excl$cancer, ' with cancer')
+  [7]: paste0(excl$agerange-excl$BP,' missing BP data from baseline assessment')
+  [8]: paste0(excl$BP-excl$seriouscomorb,' serious comordbidities', '\n', excl$seriouscomorb-excl$cancer, ' with cancer')
   [9]: paste0(excl$cancer-excl$hypert,' no evidence of hypertension at baseline')
   

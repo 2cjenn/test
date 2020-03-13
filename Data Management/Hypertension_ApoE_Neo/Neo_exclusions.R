@@ -19,7 +19,7 @@ data$HTNdx_TQ <- round(data$age - data$HBPAge,1)
 data$HTNdx_VI <- round(decimal_date(data$recdate) - data$VIhypdx_yr,1)
 data$HTNdx_duration <- coalesce(data$HTNdx_VI, data$HTNdx_TQ)
 # Any durations less than 0 are clearly errors (only 2)
-# Any diagnoses before the age of about 20 are probably errors
+# Any diagnoses before the age of about 20 are probably due to other causes
 data$HTNdx_duration[(data$HTNdx_duration < 0 | data$HTNdx_duration > data$HBPAge-20)& !is.na(data$HTNdx_duration)] <- NA
 
 # Single variable for self-reported hypertension
@@ -107,9 +107,9 @@ data <- readRDS(file="K:\\TEU\\APOE on Dementia\\Data Management\\R_Dataframes_T
 
 # Exclude individuals without highest level of education
 # n = 498698 - 489006 = 
-data <- data[!is.na(data$edu_highest),]
+# data <- data[!is.na(data$edu_highest),]
 
-excl$education <- nrow(data)
+# excl$education <- nrow(data)
 
 # Exclude individuals who have serious health conditions
 # n = 489006 - 483794 = 5212
@@ -142,14 +142,16 @@ export_svg(DiagrammeR::grViz("K:\\TEU\\APOE on Dementia\\Statistical Analysis\\N
 
 # Collapse ethnic groups into broader categories
 data$ethnicity <- as.character(data$eth_group)
-data$ethnicity[data$ethnicity=="Chinese"] <- "Asian"
-data$ethnicity[data$ethnicity=="Asian or Asian British"] <- "Asian"
-data$ethnicity[data$ethnicity=="Black or Black British"] <- "Black"
-data$ethnicity[data$ethnicity=="Other ethnic group"] <- "Other"
-data$ethnicity[data$ethnicity=="Prefer not to answer"] <- "Other"
-data$ethnicity[data$ethnicity=="Do not know"] <- "Other"
-data$ethnicity[data$ethnicity=="Mixed"] <- "Other"
-data$ethnicity <- factor(data$ethnicity, levels=c("White", "Black", "Asian", "Other"))
+data$ethnicity <- ifelse(data$ethnicity=="White", "White", "Non-white")
+# data$ethnicity[data$ethnicity=="Chinese"] <- "Asian"
+# data$ethnicity[data$ethnicity=="Asian or Asian British"] <- "Asian"
+# data$ethnicity[data$ethnicity=="Black or Black British"] <- "Black"
+# data$ethnicity[data$ethnicity=="Other ethnic group"] <- "Other"
+# data$ethnicity[data$ethnicity=="Prefer not to answer"] <- "Other"
+# data$ethnicity[data$ethnicity=="Do not know"] <- "Other"
+# data$ethnicity[data$ethnicity=="Mixed"] <- "Other"
+# data$ethnicity <- factor(data$ethnicity, levels=c("White", "Black", "Asian", "Other"))
+data$ethnicity <- factor(data$ethnicity, levels=c("White", "Non-white"))
 
 # # Categorise age of leaving education into primary, secondary or tertiary education
 # data$education[data$Edu_Age.0==-2 & !is.na(data$Edu_Age.0)] <- "None"
@@ -175,7 +177,7 @@ data$ISCED <- dplyr::case_when(
 data$ISCED <- factor(data$ISCED, 
                      levels=c("ISCED 5: First stage of tertiary education", "ISCED 4: Post-secondary non-tertiary education", 
                               "ISCED 3: Upper secondary education", "ISCED 2: Lower secondary education",
-                              "ISCED 1: Primary education")) # Excluding "Unanswered" from factor levels codes it as NA
+                              "ISCED 1: Primary education", "Unanswered")) # Excluding "Unanswered" from factor levels codes it as NA
 
 # Convert "missing" employment to "unemployed" so it doesn't interfere with Cox regression
 levels(data$employment) <- c(levels(data$employment), "Unemployed/retired/other")
@@ -191,10 +193,25 @@ data$employment <- factor(data$employment, levels=c("Managers and Senior Officia
 data$agegrp <- cut(data$age, breaks=c(40, 50, 60, 70), right=FALSE)
 
 # Categorise BMI into labelled categories
-data$BMIcat <- cut(data$BMI, breaks=c(0, 18.5, 25, 30, 200), right=FALSE)
-data$BMIcat <- factor(data$BMIcat, levels=c("[0,18.5)", "[18.5,25)", "[25,30)", "[30,200)"), 
-                      labels=c("Underweight", "Normal", "Overweight", "Obese"))
-data$BMIcat <- relevel(data$BMIcat, ref="Normal")
+data$BMIcat <- as.character(cut(data$BMI, breaks=c(0, 18.5, 25, 30, 200), right=FALSE))
+data$BMIcat[is.na(data$BMIcat)] <- "Unknown"
+data$BMIcat <- factor(data$BMIcat, levels=c("[18.5,25)", "[0,18.5)", "[25,30)", "[30,200)", "Unknown"), 
+                      labels=c("Normal", "Underweight", "Overweight", "Obese", "Unknown"))
+
+# Categorise waist circ into labelled categories
+data$WaistCircCat <- dplyr::case_when(
+  data$gender=="Female" & data$WaistCirc>=88 ~ "Obese",
+  data$gender=="Female" & data$WaistCirc>=80 ~ "Overweight",
+  data$gender=="Male" & data$WaistCirc>=102 ~ "Obese",
+  data$gender=="Male" & data$WaistCirc>=94 ~ "Overweight",
+  TRUE ~ "Normal"
+)
+data$WaistCircCat <- factor(data$WaistCircCat, levels=c("Normal", "Overweight", "Obese"))
+
+# Truncate alcohol consumption at upper 95th percentile
+upper95 <- quantile(data$weekly_alcunits, 0.95, na.rm=TRUE)
+data$weekly_alcunits[data$weekly_alcunits>upper95] <- upper95
+data$weekly_alcunits[is.na(data$weekly_alcunits)] <- 0
 
 
 # Define "binge" levels of alcohol consumption
@@ -203,13 +220,17 @@ data$alc_binge[data$gender=="Male"] <- data[data$gender=="Male",]$weekly_alcunit
 data$alc_binge_ <- factor(as.numeric(data$alc_binge), levels=c(0,1), labels=c("Safe alcohol use", "Harmful alcohol use"))
 
 # Indicator variable for whether physical activity > or <= 150 METs per day
-data$METs_over150 <- (data$PhA_METsWkAllAct/7)>150 & !is.na(data$PhA_METsWkAllAct)
-data$METs_over150_ <- factor(as.numeric(data$METs_over150), levels=c(0,1), labels=c("Average daily METs <= 150", "Average daily METs > 150"))
+data$METs_over150 <- dplyr::case_when(
+  is.na(data$PhA_METsWkAllAct) ~ "Unknown",
+  data$PhA_METsWkAllAct/7 > 150 ~ "Average daily METs > 150",
+  TRUE ~ "Average daily METs <= 150")
+data$METs_over150 <- factor(data$METs_over150, levels=c("Average daily METs <= 150", "Average daily METs > 150", "Unknown"))
 
 # Convert bowel cancer screening to a factor
-data$BowelCancerScreening[data$BowelCancerScreening %in% c("Prefer not to answer", "Do not know")] <- NA
-data$BowelCancerScreening <- factor(data$BowelCancerScreening, levels=c("No", "Yes"), 
-                                    labels=c("Not screened", "Screened for bowel cancer"), ordered=FALSE)
+data$BowelCancerScreening <- as.character(data$BowelCancerScreening)
+data$BowelCancerScreening[data$BowelCancerScreening %in% c("Prefer not to answer", "Do not know") | is.na(data$BowelCancerScreening)] <- "Unanswered"
+data$BowelCancerScreening <- factor(data$BowelCancerScreening, levels=c("No", "Yes", "Unanswered"), 
+                                    labels=c("Not screened", "Screened for bowel cancer", "Unanswered"), ordered=FALSE)
 
 # Convert family history to a factor
 data$FamilyHist_CVD_ <- factor(as.numeric(data$FaH_CVD), levels=c(0,1), labels=c("No family history of CVD", "Family history of CVD"))
@@ -223,9 +244,18 @@ data$HTNdx_severity <- dplyr::case_when(
   data$SBP>=180 | data$DBP>=110 ~ "Stage 3",
   between(data$SBP, 160, 179) | between(data$DBP, 100, 109) ~ "Stage 2",
   between(data$SBP, 140, 159) | between(data$DBP, 90, 99) ~ "Stage 1",
-  TRUE ~ ""
+  TRUE ~ "Normotensive"
 )
-data$HTNdx_severity[data$HTNdx_severity==""] <- NA
+data$HTNdx_severity <- factor(data$HTNdx_severity, levels=c("Normotensive", "Stage 1", "Stage 2", "Stage 3"))
+
+# Indicator variable for missing hypertension duration
+# We set HTN duration to 0 (or mean, or anything) when it's missing, and interact it with the missingness indicator in the regression
+data$HTNdx_durcat <- cut(data$HTNdx_duration, breaks=c(0, 1, 2, 5, 10, 20, 100), right=FALSE)
+levels(data$HTNdx_durcat) <- c(levels(data$HTNdx_durcat), "Unanswered")
+data$HTNdx_durcat[is.na(data$HTNdx_durcat)] <- "Unanswered"
+data$HTNdx_durind <- as.numeric(is.na(data$HTNdx_duration))
+# data$HTNdx_duration[is.na(data$HTNdx_duration)] <- 0
+
 
 # # Add mapping to comorbidities of interest
 # comorbidities <- readRDS("K:\\TEU\\APOE on Dementia\\Data Management\\R_Dataframes_TLA\\38358\\Organised\\Hypertension\\Neo\\VI_ComorbidityCategories.rds")
@@ -233,14 +263,14 @@ data$HTNdx_severity[data$HTNdx_severity==""] <- NA
 
 # Add mapping to comorbidity groups B and C
 comorbgrps <- readRDS("K:\\TEU\\APOE on Dementia\\Data Management\\R_Dataframes_TLA\\38358\\Organised\\Hypertension\\Neo\\VIhypGroupBC.rds")
-data <- merge(data, comorbgrps[,c("ID", "Group_B", "Group_C")], by="ID", all.x=TRUE)
-data$GroupB <- data$Group_B>0 & !is.na(data$Group_B)
-data$GroupB <- factor(as.numeric(data$GroupB), levels=c(0,1), labels=c("no CVD", "CVD"))
-data$GroupC <- data$Group_C>0 & !is.na(data$Group_C)
-data$GroupC <- factor(as.numeric(data$GroupC), levels=c(0,1), labels=c("No other comorbidity", "Other comorbidity"))
+data <- merge(data, comorbgrps, by="ID", all.x=TRUE)
+for(comorb in names(comorbgrps)[-1]){
+  data[[paste0(comorb,"_")]] <- data[[comorb]]>0 & !is.na(data[[comorb]])
+  data[[paste0(comorb,"_")]] <- factor(as.numeric(data[[paste0(comorb,"_")]]), levels=c(0,1), labels=c("No", "Yes"))
+}
 
 comorbtype <- readRDS("K:\\TEU\\APOE on Dementia\\Data Management\\R_Dataframes_TLA\\38358\\Organised\\Hypertension\\Neo\\VIhypGroupBC_type.rds")
-data <- merge(data, comorbtype, by="ID", all.x=TRUE)
+data <- merge(data, comorbtype, all.x=TRUE)
 for(col in names(comorbtype)[-1]){
   data[[col]] <- data[[col]]>0 & !is.na(data[[col]])
   data[[col]] <- factor(as.numeric(data[[col]]), levels=c(0,1), labels=c("None", gsub("_", " ", col)))

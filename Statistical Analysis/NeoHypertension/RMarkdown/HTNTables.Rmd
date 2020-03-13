@@ -34,9 +34,14 @@ treated <- data[data$treated==TRUE & !is.na(data$treated),]
 ```{r table1, include=TRUE, echo=FALSE}
 
 
+# tab1 <- descriptivetable(df=hypertensives, 
+#                         varlist=c("gender", "agegrp", "age", "ethnicity", "ISCED", "employment", "SBP", "DBP"),
+#                         contavg='mean', assocvar="aware")
+
 tab1 <- descriptivetable(df=hypertensives, 
-                         varlist=c("gender", "agegrp", "age", "ethnicity", "ISCED", "employment", "SBP", "DBP"),
-                         contavg='mean', assocvar="aware")
+                         varlist=c("age", "gender", "BMIcat", "WaistCircCat", "ethnicity", "Smo_Status", "weekly_alcunits", "alc_binge_", "HTNdx_severity", "HTNdx_duration", "HTNdx_durcat", "hypmedsno", "townsend_depind", "income", "ISCED", "employment", "BirthCountryIncomeLevel", "BowelCancerScreening", "FamilyHist_CVD_", "PhA_METsWkAllAct", "METs_over150", "CVD_", "Diabetes_", "Asthma_or_COPD_", "Migraine_", "Depression_", "Back_pain_", "Other_chronic_comorbidities_"),
+                         contavg='mean')
+
 kable(tab1)
 
 ```
@@ -72,32 +77,15 @@ for(dfname in names(dflist)){
 ```
 ![Whole population.](K:/TEU/APOE on Dementia/Statistical Analysis/NeoHypertension/RMarkdown/Wholepop.png)
 
-# Figure 3. Hypertension prevalence, awareness, treatment and control among adults aged 40-69 years in the UKB, by age group
-
-![Individuals aged between 40 and 50.](K:/TEU/APOE on Dementia/Statistical Analysis/NeoHypertension/RMarkdown/40_50.png)
-
-![Individuals aged between 50 and 60.](K:/TEU/APOE on Dementia/Statistical Analysis/NeoHypertension/RMarkdown/50_60.png)
-
-![Individuals aged between 60 and 70.](K:/TEU/APOE on Dementia/Statistical Analysis/NeoHypertension/RMarkdown/60_70.png)
-
-# Figure 4. Hypertension prevalence, awareness, treatment and control among adults aged 40-69 years in the UKB, by ethnicity
-
-![Individuals of White ethnicity.](K:/TEU/APOE on Dementia/Statistical Analysis/NeoHypertension/RMarkdown/White.png)
-
-![Individuals of Black ethnicity.](K:/TEU/APOE on Dementia/Statistical Analysis/NeoHypertension/RMarkdown/Black.png)
-
-![Individuals of Asian ethnicity.](K:/TEU/APOE on Dementia/Statistical Analysis/NeoHypertension/RMarkdown/Asian.png)
-
-![Individuals of Other ethnicity.](K:/TEU/APOE on Dementia/Statistical Analysis/NeoHypertension/RMarkdown/Other.png)
-
 # Table 3: Hypertension prevalence awareness, treatment and control by comorbidity type, among hypertensives
 
 ```{r table3}
 comorbtype <- readRDS("K:\\TEU\\APOE on Dementia\\Data Management\\R_Dataframes_TLA\\38358\\Organised\\Hypertension\\Neo\\VIhypGroupBC_type.rds")
-GroupC_type <- names(comorbtype)[-1]
-GroupC_type <- GroupC_type[!GroupC_type %in% "CVD"]
+comorbtypes <- names(comorbtype)[-1]
+GroupC_type <- comorbtypes[!comorbtypes %in% "CVD"]
+hypertensives$None <- rowSums("None"==hypertensives[,comorbtypes]) == length(comorbtypes)
 
-dflist <- c(list("None"=hypertensives[hypertensives$GroupB=="no CVD" & hypertensives$GroupC=="No other comorbidity",]), 
+dflist <- c(list("None"=hypertensives[hypertensives$None==TRUE,]), 
             list("CVD"=hypertensives[hypertensives$CVD=="CVD",]),
             lapply(GroupC_type, function(x) hypertensives[hypertensives[[x]]==gsub("_", " ", x),])
             )
@@ -117,6 +105,26 @@ colnames(tab3) <- c("n", "Mean age", "Mean SBP/DBP", "% Aware", "% Treated", "% 
 kable(tab3)
 
 ```
+
+# Figure 3. Hypertension prevalence, awareness, treatment and control among adults aged 40-69 years in the UKB, by age group
+
+![Individuals aged between 40 and 50.](K:/TEU/APOE on Dementia/Statistical Analysis/NeoHypertension/RMarkdown/40_50.png)
+
+![Individuals aged between 50 and 60.](K:/TEU/APOE on Dementia/Statistical Analysis/NeoHypertension/RMarkdown/50_60.png)
+
+![Individuals aged between 60 and 70.](K:/TEU/APOE on Dementia/Statistical Analysis/NeoHypertension/RMarkdown/60_70.png)
+
+# Figure 4. Hypertension prevalence, awareness, treatment and control among adults aged 40-69 years in the UKB, by ethnicity
+
+![Individuals of White ethnicity.](K:/TEU/APOE on Dementia/Statistical Analysis/NeoHypertension/RMarkdown/White.png)
+
+![Individuals of Black ethnicity.](K:/TEU/APOE on Dementia/Statistical Analysis/NeoHypertension/RMarkdown/Black.png)
+
+![Individuals of Asian ethnicity.](K:/TEU/APOE on Dementia/Statistical Analysis/NeoHypertension/RMarkdown/Asian.png)
+
+![Individuals of Other ethnicity.](K:/TEU/APOE on Dementia/Statistical Analysis/NeoHypertension/RMarkdown/Other.png)
+
+
 
 
 
