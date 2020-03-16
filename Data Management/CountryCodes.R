@@ -44,33 +44,37 @@ saveRDS(level1, "K:\\TEU\\APOE on Dementia\\Data Management\\R_Dataframes_TLA\\3
 # Use the World Bank spreadsheet to determine which countries are classified as high, middle or low income
 # Load in the income levels of the countries
 incomelevel <- read_xlsx("K:\\TEU\\APOE on Dementia\\Data Management\\Mappings\\CountryIncomeCategory.xlsx", 
-                         sheet="Country Analytical History", skip=4, col_names=TRUE)
-incomelevel <- incomelevel[!is.na(incomelevel$X__1),]
-names(incomelevel)[names(incomelevel)=="X__1"] <- "CountryShort"
-names(incomelevel)[names(incomelevel)=="Bank's fiscal year:"] <- "WBCountry"
-names(incomelevel)[names(incomelevel)=="FY20"] <- "IncomeLevel"
+                         sheet="UKB_CountryNames", col_names=TRUE)
+# incomelevel <- incomelevel[!is.na(incomelevel$X__1),]
+# names(incomelevel)[names(incomelevel)=="X__1"] <- "CountryShort"
+# names(incomelevel)[names(incomelevel)=="UKB country"] <- "Country"
+# names(incomelevel)[names(incomelevel)=="Bank's fiscal year:"] <- "WBCountry"
+# names(incomelevel)[names(incomelevel)=="FY20"] <- "IncomeLevel"
+names(incomelevel)[names(incomelevel)=="meaning"] <- "Country"
+names(incomelevel)[names(incomelevel)=="World Bank Name"] <- "WBCountry"
 
-# Try and use grep to approx match (eg Bahamas = Bahamas, the)
-matches <- unlist(lapply(level1$Country, function(i) grep(i, incomelevel$WBCountry, fixed=TRUE)[1]))
-t1 <- as.character(level1$Country[!is.na(matches)])
-t2 <- incomelevel$WBCountry[matches[!is.na(matches)]]
-incomelevel$Country <- NA
-incomelevel$Country[matches[!is.na(matches)]] <- as.character(level1$Country[!is.na(matches)])
-# Manually match a couple of obvious/important ones
-incomelevel$Country[incomelevel$WBCountry=="Faeroe Islands"] <- "Faroe Islands"
-incomelevel$Country[incomelevel$WBCountry=="United States"] <- "USA"
-incomelevel$Country[incomelevel$WBCountry=="Guyana"] <- "The Guianas"
-incomelevel$Country[incomelevel$WBCountry=="Korea, Rep."] <- "South Korea"
-incomelevel$Country[incomelevel$WBCountry=="Korea, Dem. Rep."] <- "North Korea"
-incomelevel$Country[incomelevel$WBCountry=="Slovak Republic"] <- "Slovakia"
-incomelevel$Country[incomelevel$WBCountry=="São Tomé and Principe"] <- "Sao Tome and Principe"
-incomelevel$Country[incomelevel$WBCountry=="Kosovo"] <- "Republic of Kosovo"
-incomelevel$Country[incomelevel$WBCountry=="Kyrgyz Republic"] <- "Kyrgyzstan"
-incomelevel$Country[incomelevel$WBCountry=="Myanmar"] <- "Myanmar (Burma)"
-incomelevel$Country[incomelevel$WBCountry=="Macao SAR, China"] <- "Macau (Macao)"
-incomelevel$Country[incomelevel$WBCountry=="Côte d'Ivoire"] <- "Ivory Coast"
-incomelevel$Country[incomelevel$WBCountry=="Cabo Verde"] <- "Cape Verde"
-# Return to look at the Carribean
+# # Try and use grep to approx match (eg Bahamas = Bahamas, the)
+# matches <- unlist(lapply(level1$Country, function(i) grep(i, incomelevel$WBCountry, fixed=TRUE)[1]))
+# t1 <- as.character(level1$Country[!is.na(matches)])
+# t2 <- incomelevel$WBCountry[matches[!is.na(matches)]]
+# incomelevel$Country <- NA
+# incomelevel$Country[matches[!is.na(matches)]] <- as.character(level1$Country[!is.na(matches)])
+
+# # Manually match a couple of obvious/important ones
+# incomelevel$Country[incomelevel$WBCountry=="Faeroe Islands"] <- "Faroe Islands"
+# incomelevel$Country[incomelevel$WBCountry=="United States"] <- "USA"
+# incomelevel$Country[incomelevel$WBCountry=="Guyana"] <- "The Guianas"
+# incomelevel$Country[incomelevel$WBCountry=="Korea, Rep."] <- "South Korea"
+# incomelevel$Country[incomelevel$WBCountry=="Korea, Dem. Rep."] <- "North Korea"
+# incomelevel$Country[incomelevel$WBCountry=="Slovak Republic"] <- "Slovakia"
+# incomelevel$Country[incomelevel$WBCountry=="São Tomé and Principe"] <- "Sao Tome and Principe"
+# incomelevel$Country[incomelevel$WBCountry=="Kosovo"] <- "Republic of Kosovo"
+# incomelevel$Country[incomelevel$WBCountry=="Kyrgyz Republic"] <- "Kyrgyzstan"
+# incomelevel$Country[incomelevel$WBCountry=="Myanmar"] <- "Myanmar (Burma)"
+# incomelevel$Country[incomelevel$WBCountry=="Macao SAR, China"] <- "Macau (Macao)"
+# incomelevel$Country[incomelevel$WBCountry=="Côte d'Ivoire"] <- "Ivory Coast"
+# incomelevel$Country[incomelevel$WBCountry=="Cabo Verde"] <- "Cape Verde"
+# # Return to look at the Carribean
 
 # Merge on the new field
 countries <- merge(level1, incomelevel[,c("IncomeLevel", "WBCountry", "Country")], by="Country", all.x=TRUE)

@@ -118,7 +118,7 @@ names(veint)[names(veint)=="VeI_Ntreatments"] <- "NumberMedications"
 
 veint$BirthCountry[is.na(veint$BirthCountry)] <- "United Kingdom"
 veint$BirthContinent[is.na(veint$BirthContinent)] <- "Europe"
-veint$BirthCountryIncomeLevel[is.na(veint$BirthCountryIncomeLevel)] <- "H"
+veint$BirthCountryIncomeLevel[is.na(veint$BirthCountryIncomeLevel)] <- "HUK"
 covars <- merge(covars, veint[,c("ID", "BirthContinent", "BirthCountry", "BirthCountryIncomeLevel", 
                                  "NumberCancers", "NumberDiagnoses", "NumberOperations", "NumberMedications")],
                 by="ID", all=TRUE)

@@ -6,6 +6,12 @@ library(tidyr)
 library(reshape2)
 library(dplyr)
 library(lubridate)
+library(DiagrammeR)
+library(DiagrammeRsvg)
+library(magrittr)
+library(svglite)
+library(rsvg)
+library(png)
 
 #--------------------------------------------------------------------------------------------------------------
 data <- readRDS("K:\\TEU\\APOE on Dementia\\Data Management\\R_Dataframes_TLA\\38358\\Organised\\Hypertension\\HTN_raw.rds")
@@ -142,7 +148,10 @@ export_svg(DiagrammeR::grViz("K:\\TEU\\APOE on Dementia\\Statistical Analysis\\N
 
 # Collapse ethnic groups into broader categories
 data$ethnicity <- as.character(data$eth_group)
-data$ethnicity <- ifelse(data$ethnicity=="White", "White", "Non-white")
+data$ethnicity <- ifelse(data$ethnicity=="White", "White", 
+                         ifelse(data$ethnicity=="Prefer not to answer" | is.na(data$ethnicity), "Unknown",
+                                "Non-white"))
+data$ethnicity <- factor(data$ethnicity, levels=c("White", "Non-white", "Unknown"))
 # data$ethnicity[data$ethnicity=="Chinese"] <- "Asian"
 # data$ethnicity[data$ethnicity=="Asian or Asian British"] <- "Asian"
 # data$ethnicity[data$ethnicity=="Black or Black British"] <- "Black"
@@ -151,7 +160,7 @@ data$ethnicity <- ifelse(data$ethnicity=="White", "White", "Non-white")
 # data$ethnicity[data$ethnicity=="Do not know"] <- "Other"
 # data$ethnicity[data$ethnicity=="Mixed"] <- "Other"
 # data$ethnicity <- factor(data$ethnicity, levels=c("White", "Black", "Asian", "Other"))
-data$ethnicity <- factor(data$ethnicity, levels=c("White", "Non-white"))
+
 
 # # Categorise age of leaving education into primary, secondary or tertiary education
 # data$education[data$Edu_Age.0==-2 & !is.na(data$Edu_Age.0)] <- "None"
@@ -204,9 +213,10 @@ data$WaistCircCat <- dplyr::case_when(
   data$gender=="Female" & data$WaistCirc>=80 ~ "Overweight",
   data$gender=="Male" & data$WaistCirc>=102 ~ "Obese",
   data$gender=="Male" & data$WaistCirc>=94 ~ "Overweight",
+  is.na(data$WaistCirc) ~ "Unknown",
   TRUE ~ "Normal"
 )
-data$WaistCircCat <- factor(data$WaistCircCat, levels=c("Normal", "Overweight", "Obese"))
+data$WaistCircCat <- factor(data$WaistCircCat, levels=c("Normal", "Overweight", "Obese", "Unknown"))
 
 # Truncate alcohol consumption at upper 95th percentile
 upper95 <- quantile(data$weekly_alcunits, 0.95, na.rm=TRUE)
@@ -237,22 +247,28 @@ data$FamilyHist_CVD_ <- factor(as.numeric(data$FaH_CVD), levels=c(0,1), labels=c
 
 # Convert income level of birth country to a factor
 data$BirthCountryIncomeLevel[data$BirthCountryIncomeLevel %in% c("LM", "UM")] <- "M"
-data$BirthCountryIncomeLevel <- factor(data$BirthCountryIncomeLevel, levels=c("H", "M", "L"), labels=c("High income", "Middle income", "Low income"))
+data$BirthCountryIncomeLevel <- factor(data$BirthCountryIncomeLevel, levels=c("HUK", "H", "M", "L"), 
+                                       labels=c("UK", "Other high income", "Middle income", "Low income"))
 
 # Add hypertension severity indicator
 data$HTNdx_severity <- dplyr::case_when(
   data$SBP>=180 | data$DBP>=110 ~ "Stage 3",
-  between(data$SBP, 160, 179) | between(data$DBP, 100, 109) ~ "Stage 2",
-  between(data$SBP, 140, 159) | between(data$DBP, 90, 99) ~ "Stage 1",
+  between(data$SBP, 160, 180) | between(data$DBP, 100, 110) ~ "Stage 2",
+  between(data$SBP, 140, 160) | between(data$DBP, 90, 100) ~ "Stage 1",
   TRUE ~ "Normotensive"
 )
 data$HTNdx_severity <- factor(data$HTNdx_severity, levels=c("Normotensive", "Stage 1", "Stage 2", "Stage 3"))
 
+# HTN duration categories
+data$HTNdx_durcat <- as.character(cut(data$HTNdx_duration, breaks=c(0, 1, 2, 5, 10, 20, 100), right=FALSE))
+data$HTNdx_durcat[is.na(data$HTNdx_durcat)] <- "Unanswered"
+data$HTNdx_durcat <- factor(data$HTNdx_durcat, levels=c("[0,1)", "[1,2)", "[2,5)", "[5,10)", "[10,20)", "[20,100)", "Unanswered"),
+                            labels=c("Less than 1 year", "1 to 2 years", "2 to 5 years", 
+                                     "5 to 10 years", "10 to 20 years", "More than 20 years", "Unanswered")
+                            )
+
 # Indicator variable for missing hypertension duration
 # We set HTN duration to 0 (or mean, or anything) when it's missing, and interact it with the missingness indicator in the regression
-data$HTNdx_durcat <- cut(data$HTNdx_duration, breaks=c(0, 1, 2, 5, 10, 20, 100), right=FALSE)
-levels(data$HTNdx_durcat) <- c(levels(data$HTNdx_durcat), "Unanswered")
-data$HTNdx_durcat[is.na(data$HTNdx_durcat)] <- "Unanswered"
 data$HTNdx_durind <- as.numeric(is.na(data$HTNdx_duration))
 # data$HTNdx_duration[is.na(data$HTNdx_duration)] <- 0
 

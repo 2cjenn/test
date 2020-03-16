@@ -40,7 +40,7 @@ treated <- data[data$treated==TRUE & !is.na(data$treated),]
 
 tab1 <- descriptivetable(df=hypertensives, 
                          varlist=c("age", "gender", "BMIcat", "WaistCircCat", "ethnicity", "Smo_Status", "weekly_alcunits", "alc_binge_", "HTNdx_severity", "HTNdx_duration", "HTNdx_durcat", "hypmedsno", "townsend_depind", "income", "ISCED", "employment", "BirthCountryIncomeLevel", "BowelCancerScreening", "FamilyHist_CVD_", "PhA_METsWkAllAct", "METs_over150", "CVD_", "Diabetes_", "Asthma_or_COPD_", "Migraine_", "Depression_", "Back_pain_", "Other_chronic_comorbidities_"),
-                         contavg='mean')
+                         contavg='median')
 
 kable(tab1)
 
@@ -49,14 +49,14 @@ kable(tab1)
 # Figure 2. Hypertension prevalence, awareness, treatment and control among adults aged 40-69 years in the UKB, overall
 
 ```{r fig2, include=FALSE, echo=FALSE, results='asis'}
-ethnicity <- c("White", "Black", "Asian", "Other")
+ethnicity <- c("White", "Non-white", "Unknown")
 agegrp <- c("[40,50)", "[50,60)", "[60,70)")
 dflist <- c(list("Whole population"=data), 
             lapply(ethnicity, function(x) data[data$ethnicity==x,]),
             lapply(agegrp, function(x) data[data$agegrp==x,])
             )
 names(dflist) <- c("Whole population", paste0("UKB ", ethnicity, "\npopulation"), paste0("UKB population\naged ",agegrp))
-filenames <- list("Wholepop", "White", "Black", "Asian", "Other", "40_50", "50_60", "60_70")
+filenames <- list("Wholepop", "White", "nonWhite", "Unknown", "40_50", "50_60", "60_70")
 names(filenames) <- names(dflist)
 
 grlist <- list()
@@ -118,23 +118,7 @@ kable(tab3)
 
 ![Individuals of White ethnicity.](K:/TEU/APOE on Dementia/Statistical Analysis/NeoHypertension/RMarkdown/White.png)
 
-![Individuals of Black ethnicity.](K:/TEU/APOE on Dementia/Statistical Analysis/NeoHypertension/RMarkdown/Black.png)
+![Individuals of non-White ethnicity.](K:/TEU/APOE on Dementia/Statistical Analysis/NeoHypertension/RMarkdown/nonWhite.png)
 
-![Individuals of Asian ethnicity.](K:/TEU/APOE on Dementia/Statistical Analysis/NeoHypertension/RMarkdown/Asian.png)
-
-![Individuals of Other ethnicity.](K:/TEU/APOE on Dementia/Statistical Analysis/NeoHypertension/RMarkdown/Other.png)
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+![Individuals of unknown ethnicity.](K:/TEU/APOE on Dementia/Statistical Analysis/NeoHypertension/RMarkdown/unknown.png)
 

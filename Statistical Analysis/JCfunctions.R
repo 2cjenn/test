@@ -76,7 +76,7 @@ descriptivetable <- function(df, varlist, contavg='mean', assocvar=NULL){
       } else if (contavg=="median"){
         n <- round(median(df[[var]], na.rm=TRUE),2)
         IQR <- round(quantile(df[[var]], na.rm=TRUE),1)
-        pct <- paste0("(", IQR[4], "-", IQR[2], ")")
+        pct <- paste0("(", IQR[2], "-", IQR[4], ")")
         variable <- paste0("Median ", var, " (IQR)")
       }
       levels <- NA
