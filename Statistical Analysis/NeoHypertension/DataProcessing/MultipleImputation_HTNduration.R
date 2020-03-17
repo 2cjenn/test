@@ -14,7 +14,8 @@ library(mice)
 
 data <- readRDS(file="K:\\TEU\\APOE on Dementia\\Data Management\\R_Dataframes_TLA\\38358\\Organised\\Hypertension\\Neo\\HTN_excl.rds")
 
-varlist <- c("age", "controlled", "gender", "BMIcat", "Smo_Status", "GroupB", "GroupC", 
+varlist <- c("controlled", "age", "gender", "BMIcat", "Smo_Status", 
+             "CVD", "Diabetes", "Asthma_or_COPD", "Back_pain", "Depression", "Migraine", "Other_chronic_comorbidities", 
              "HTNdx_duration", "hypmedsno", "townsend_depind", "income", "ISCED", "employment", 
              "BirthCountryIncomeLevel", "BowelCancerScreening")
 data <- data[data$treated==TRUE & !is.na(data$treated),c("ID", varlist)]
@@ -22,5 +23,11 @@ data <- data[data$treated==TRUE & !is.na(data$treated),c("ID", varlist)]
 model <- glm(controlled~age + HTNdx_duration, data=data, family="binomial")
 model
 
-imputed_data <- mice(data, m=5, maxit=50, method="pmm", seed=500)
-summary(imputed_data)
+imputeset <- data[,-c(which(names(data) %in% c("controlled")))]
+imputeset <- data[,c("ID", "age", "gender", "controlled", "HTNdx_duration")]
+imputed_data <- mice(imputeset, m=5, maxit=50, method="pmm", seed=500)
+imputed_data2 <- mice(imputeset, m=5, maxit=5, method="pmm", seed=500)
+summary(imputed_data2)
+
+modelfit <- with(imputed_data2, glm(controlled ~ age + gender + HTNdx_duration, family="binomial"))
+summary(pool(modelfit))
