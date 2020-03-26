@@ -6,6 +6,11 @@
 **.pptx
 **.tex
 
+# Don't track the data - it's confidential and huge! #
+**.rds
+**.RData
+**.RDataTmp
+
 # But track the markdown style file, in case ever break it! #
 !RMarkdownStyle.docx
 !RMarkdownLandscape.docx
@@ -14,6 +19,8 @@
 **.db
 
 # Note excel and csv could be important mapping tables, so worth tracking these! #
+# Except this one which is data#
+ICD10.csv
 
 # Note .png and .jpg files would be a faff to recreate, so I guess track these? #
 
