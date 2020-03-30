@@ -1,0 +1,26 @@
+###########################################
+# Documents and outputs probably aren't worth tracking #
+###########################################
+**.docx
+**.pdf
+**.html
+**.pptx
+**.tex
+**.png
+**.jpg
+
+# Note excel and csv could be important mapping tables, so worth tracking these! #
+
+# Don't track the data - it's confidential and huge! #
+**.rds
+**.RData
+**.RDataTmp
+
+# But track the markdown style file, in case ever break it! #
+!common/RMarkdownStyle.docx
+!common/RMarkdownLandscape.docx
+
+###########################################
+# Some directories don't contain any code #
+###########################################
+.Rproj.user

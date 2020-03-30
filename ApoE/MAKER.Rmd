@@ -1,0 +1,47 @@
+---
+title: "Project Title Here"
+author: "Jennifer Collister"
+date: "27/03/2020"
+output: word_document
+
+references:
+  - id: layton
+    title: Happy collaboration with Rmd to docx
+    author:
+      - family: Layton
+        given: Richard
+      URL: https://rmarkdown.rstudio.com/articles_docx.html
+      type: web
+      
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+if(!"renv" %in% installed.packages()){
+  print("Installing renv")
+  install.packages("renv")
+}
+renv::init()
+```
+
+## Folder organisation
+
+References: https://www.stat.ubc.ca/~jenny/STAT545A/block19_codeFormattingOrganization.html#organization, https://stackoverflow.com/a/3031551, https://rmarkdown.rstudio.com/articles_docx.html
+
+* **data** This is where data from the outside world goes. If it required extensive cleaning, then the ready-to-analyze dataset will also be saved here.
+* **meta** For storing meta data, such as variable labels, project-specific mapping sheets, recoding information, etc.
+* **code** This is where R scripts go (and any other code).
+* **figs** This is where figures go.
+* **results** This is where the outputs of data aggregation, statistical modelling, inference, etc. go.
+* **prose** Holds key emails, internal documentation and explanations, interim reports of analyses, talks, manuscripts, final publications.
+* **rmd** This is where R Markdown files go.
+* **common** The common directory is for document elements that are re-used from project to project, e.g., business logo, LaTeX preambles, bibliography files, etc. R Markdown style reference files are in this directory. 
+
+Note: knitr is fairly stubborn about the working directory being that in which the file you're compiling lives. 
+This can be controlled / worked around, but just don't be surprised that this is a point of some friction. 
+You can expect to pay extra special attention to this if you are generating figures and/or caching.
+
+
+
+
+
