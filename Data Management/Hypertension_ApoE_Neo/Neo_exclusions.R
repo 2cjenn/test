@@ -146,47 +146,10 @@ export_svg(DiagrammeR::grViz("K:\\TEU\\APOE on Dementia\\Statistical Analysis\\N
 # Neo's specific variants of covariate variables
 #--------------------------------------------------------------------------------------------------------------
 
-# Collapse ethnic groups into broader categories
-data$ethnicity <- as.character(data$eth_group)
-data$ethnicity <- ifelse(data$ethnicity=="White", "White", 
-                         ifelse(data$ethnicity=="Prefer not to answer" | is.na(data$ethnicity), "Unknown",
-                                "Non-white"))
-data$ethnicity <- factor(data$ethnicity, levels=c("White", "Non-white", "Unknown"))
-# data$ethnicity[data$ethnicity=="Chinese"] <- "Asian"
-# data$ethnicity[data$ethnicity=="Asian or Asian British"] <- "Asian"
-# data$ethnicity[data$ethnicity=="Black or Black British"] <- "Black"
-# data$ethnicity[data$ethnicity=="Other ethnic group"] <- "Other"
-# data$ethnicity[data$ethnicity=="Prefer not to answer"] <- "Other"
-# data$ethnicity[data$ethnicity=="Do not know"] <- "Other"
-# data$ethnicity[data$ethnicity=="Mixed"] <- "Other"
-# data$ethnicity <- factor(data$ethnicity, levels=c("White", "Black", "Asian", "Other"))
 
 
-# # Categorise age of leaving education into primary, secondary or tertiary education
-# data$education[data$Edu_Age.0==-2 & !is.na(data$Edu_Age.0)] <- "None"
-# data$education[data$Edu_Age.0 %in% c(5:12) & !is.na(data$Edu_Age.0)] <- "Primary"
-# data$education[data$Edu_Age.0 %in% c(13:18) & !is.na(data$Edu_Age.0)] <- "Secondary"
-# data$education[data$Edu_Age.0>18 & !is.na(data$Edu_Age.0)] <- "Tertiary or higher"
-# data$education[data$Edu_Age.0==-1 | data$Edu_Age.0==-3 | is.na(data$Edu_Age.0)] <- "Unknown/unanswered"
-# data$education <- factor(data$education, levels=c("None", "Primary", "Secondary", "Tertiary or higher", "Unknown/unanswered"))
 
-# Convert UKB qualification categories into ISCED education categories
-data$ISCED <- dplyr::case_when(
-  data$edu_highest == "College or University degree" ~ "ISCED 5: First stage of tertiary education",
-  data$edu_highest == "NVQ or HND or HNC or equivalent" ~ "ISCED 5: First stage of tertiary education",
-  data$edu_highest == "Other professional qualifications eg: nursing, teaching" ~ "ISCED 4: Post-secondary non-tertiary education",
-  data$edu_highest == "A levels/AS levels or equivalent" ~ "ISCED 3: Upper secondary education",
-  data$edu_highest == "O levels/GCSEs or equivalent" ~ "ISCED 2: Lower secondary education",
-  data$edu_highest == "CSEs or equivalent" ~ "ISCED 2: Lower secondary education",
-  data$edu_highest == "None of the above" ~ "ISCED 1: Primary education",
-  data$edu_highest == "Prefer not to answer" ~ "Unanswered",
-  is.na(data$edu_highest) ~ "Unanswered"
-  )
 
-data$ISCED <- factor(data$ISCED, 
-                     levels=c("ISCED 5: First stage of tertiary education", "ISCED 4: Post-secondary non-tertiary education", 
-                              "ISCED 3: Upper secondary education", "ISCED 2: Lower secondary education",
-                              "ISCED 1: Primary education", "Unanswered")) # Excluding "Unanswered" from factor levels codes it as NA
 
 # Convert "missing" employment to "unemployed" so it doesn't interfere with Cox regression
 levels(data$employment) <- c(levels(data$employment), "Unemployed/retired/other")
@@ -198,36 +161,12 @@ data$employment <- factor(data$employment, levels=c("Managers and Senior Officia
                                                     "Sales and Customer Service Occupations", "Process, Plant and Machine Operatives",
                                                     "Elementary Occupations", "Other job (free text entry)", "Unemployed/retired/other"))
 
-# Categorise age into 10-yr groups
-data$agegrp <- cut(data$age, breaks=c(40, 50, 60, 70), right=FALSE)
-
-# Categorise BMI into labelled categories
-data$BMIcat <- as.character(cut(data$BMI, breaks=c(0, 18.5, 25, 30, 200), right=FALSE))
-data$BMIcat[is.na(data$BMIcat)] <- "Unknown"
-data$BMIcat <- factor(data$BMIcat, levels=c("[18.5,25)", "[0,18.5)", "[25,30)", "[30,200)", "Unknown"), 
-                      labels=c("Normal", "Underweight", "Overweight", "Obese", "Unknown"))
-
-# Categorise waist circ into labelled categories
-data$WaistCircCat <- dplyr::case_when(
-  data$gender=="Female" & data$WaistCirc>=88 ~ "Obese",
-  data$gender=="Female" & data$WaistCirc>=80 ~ "Overweight",
-  data$gender=="Male" & data$WaistCirc>=102 ~ "Obese",
-  data$gender=="Male" & data$WaistCirc>=94 ~ "Overweight",
-  is.na(data$WaistCirc) ~ "Unknown",
-  TRUE ~ "Normal"
-)
-data$WaistCircCat <- factor(data$WaistCircCat, levels=c("Normal", "Overweight", "Obese", "Unknown"))
-
-# Truncate alcohol consumption at upper 95th percentile
-upper95 <- quantile(data$weekly_alcunits, 0.95, na.rm=TRUE)
-data$weekly_alcunits[data$weekly_alcunits>upper95] <- upper95
-data$weekly_alcunits[is.na(data$weekly_alcunits)] <- 0
 
 
-# Define "binge" levels of alcohol consumption
-data$alc_binge[data$gender=="Female"] <- data[data$gender=="Female",]$weekly_alcunits>7 & !is.na(data[data$gender=="Female",]$weekly_alcunits)
-data$alc_binge[data$gender=="Male"] <- data[data$gender=="Male",]$weekly_alcunits>14 & !is.na(data[data$gender=="Male",]$weekly_alcunits)
-data$alc_binge_ <- factor(as.numeric(data$alc_binge), levels=c(0,1), labels=c("Safe alcohol use", "Harmful alcohol use"))
+
+
+
+
 
 # Indicator variable for whether physical activity > or <= 150 METs per day
 data$METs_over150 <- dplyr::case_when(
