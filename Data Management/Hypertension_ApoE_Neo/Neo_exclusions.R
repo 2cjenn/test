@@ -33,6 +33,11 @@ data$HTNdx_duration[(data$HTNdx_duration < 0 | data$HTNdx_duration > data$HBPAge
 data$selfrephyp <- (data$prevHBP==TRUE & !is.na(data$prevHBP)) | data$VIhyp==TRUE
 data$selfrephyp[is.na(data$prevHBP) & is.na(data$NumberDiagnoses)] <- NA
 
+# data$selfrephyp.sens <- data$VIhyp==TRUE
+# data$selfrephyp.sens[is.na(data$NumberDiagnoses)] <- NA
+# 
+# data$selfrephyp <- data$selfrephyp.sens
+
 # Single variable for self-reported meds
 # If participant answered the question in touchscreen questionnaire, use this
 # If they did not answer ("Do not know"/Prefer not to answer"/skipped question) then use the "probable BP meds"
@@ -64,6 +69,10 @@ data <- data[!is.na(data$SBP),]
 data <- data[!is.na(data$DBP),]
 data <- data[!is.na(data$selfrephyp),]
 data <- data[!is.na(data$selfrepmeds),]
+
+# Exclude individuals with implausible BP data
+data <- data[data$SBP >= 50 & data$SBP <= 300,]
+data <- data[data$DBP >= 30 & data$SDP <= 200,]
 
 excl$BP=nrow(data)
 
