@@ -268,6 +268,16 @@ data$HTNdx_severity <- dplyr::case_when(
 )
 data$HTNdx_severity <- factor(data$HTNdx_severity, levels=c("Normotensive", "Stage 1", "Stage 2", "Stage 3"))
 
+# Convert number of hypertensive medications to a categorical variables
+data$antiHTNmedsno <- dplyr::case_when(
+  data$hypmedsno==0 ~ "0",
+  data$hypmedsno==1 ~ "1",
+  data$hypmedsno==2 ~ "2",
+  data$hypmedsno>=3 ~ ">=3",
+  TRUE ~ as.character(data$hypmedsno)
+)
+data$antiHTNmedsno <- factor(data$antiHTNmedsno)
+
 # HTN duration categories
 data$HTNdx_durcat <- as.character(cut(data$HTNdx_duration, breaks=c(0, 1, 2, 5, 10, 20, 100), right=FALSE))
 data$HTNdx_durcat[is.na(data$HTNdx_durcat)] <- "Unanswered"
