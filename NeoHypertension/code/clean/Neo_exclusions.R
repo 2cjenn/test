@@ -161,15 +161,6 @@ data$ethnicity <- factor(data$ethnicity, levels=c("White", "Non-white", "Unknown
 # data$ethnicity[data$ethnicity=="Mixed"] <- "Other"
 # data$ethnicity <- factor(data$ethnicity, levels=c("White", "Black", "Asian", "Other"))
 
-
-# # Categorise age of leaving education into primary, secondary or tertiary education
-# data$education[data$Edu_Age.0==-2 & !is.na(data$Edu_Age.0)] <- "None"
-# data$education[data$Edu_Age.0 %in% c(5:12) & !is.na(data$Edu_Age.0)] <- "Primary"
-# data$education[data$Edu_Age.0 %in% c(13:18) & !is.na(data$Edu_Age.0)] <- "Secondary"
-# data$education[data$Edu_Age.0>18 & !is.na(data$Edu_Age.0)] <- "Tertiary or higher"
-# data$education[data$Edu_Age.0==-1 | data$Edu_Age.0==-3 | is.na(data$Edu_Age.0)] <- "Unknown/unanswered"
-# data$education <- factor(data$education, levels=c("None", "Primary", "Secondary", "Tertiary or higher", "Unknown/unanswered"))
-
 # Convert UKB qualification categories into ISCED education categories
 data$ISCED <- dplyr::case_when(
   data$edu_highest == "College or University degree" ~ "ISCED 5: First stage of tertiary education",
@@ -198,66 +189,13 @@ data$employment <- factor(data$employment, levels=c("Managers and Senior Officia
                                                     "Sales and Customer Service Occupations", "Process, Plant and Machine Operatives",
                                                     "Elementary Occupations", "Other job (free text entry)", "Unemployed/retired/other"))
 
-# Categorise age into 10-yr groups
-data$agegrp <- cut(data$age, breaks=c(40, 50, 60, 70), right=FALSE)
 
-# Categorise BMI into labelled categories
-data$BMIcat <- as.character(cut(data$BMI, breaks=c(0, 18.5, 25, 30, 200), right=FALSE))
-data$BMIcat[is.na(data$BMIcat)] <- "Unknown"
-data$BMIcat <- factor(data$BMIcat, levels=c("[18.5,25)", "[0,18.5)", "[25,30)", "[30,200)", "Unknown"), 
-                      labels=c("Normal", "Underweight", "Overweight", "Obese", "Unknown"))
-
-# Categorise waist circ into labelled categories
-data$WaistCircCat <- dplyr::case_when(
-  data$gender=="Female" & data$WaistCirc>=88 ~ "Obese",
-  data$gender=="Female" & data$WaistCirc>=80 ~ "Overweight",
-  data$gender=="Male" & data$WaistCirc>=102 ~ "Obese",
-  data$gender=="Male" & data$WaistCirc>=94 ~ "Overweight",
-  is.na(data$WaistCirc) ~ "Unknown",
-  TRUE ~ "Normal"
-)
-data$WaistCircCat <- factor(data$WaistCircCat, levels=c("Normal", "Overweight", "Obese", "Unknown"))
-
-# Truncate alcohol consumption at upper 95th percentile
-upper95 <- quantile(data$weekly_alcunits, 0.95, na.rm=TRUE)
-data$weekly_alcunits[data$weekly_alcunits>upper95] <- upper95
-data$weekly_alcunits[is.na(data$weekly_alcunits)] <- 0
-
-
-# Define "binge" levels of alcohol consumption
-data$alc_binge[data$gender=="Female"] <- data[data$gender=="Female",]$weekly_alcunits>7 & !is.na(data[data$gender=="Female",]$weekly_alcunits)
-data$alc_binge[data$gender=="Male"] <- data[data$gender=="Male",]$weekly_alcunits>14 & !is.na(data[data$gender=="Male",]$weekly_alcunits)
-data$alc_binge_ <- factor(as.numeric(data$alc_binge), levels=c(0,1), labels=c("Safe alcohol use", "Harmful alcohol use"))
-
-# Indicator variable for whether physical activity > or <= 150 METs per day
-data$METs_over150 <- dplyr::case_when(
-  is.na(data$PhA_METsWkAllAct) ~ "Unknown",
-  data$PhA_METsWkAllAct/7 > 150 ~ "Average daily METs > 150",
-  TRUE ~ "Average daily METs <= 150")
-data$METs_over150 <- factor(data$METs_over150, levels=c("Average daily METs <= 150", "Average daily METs > 150", "Unknown"))
-
-# Convert bowel cancer screening to a factor
-data$BowelCancerScreening <- as.character(data$BowelCancerScreening)
-data$BowelCancerScreening[data$BowelCancerScreening %in% c("Prefer not to answer", "Do not know") | is.na(data$BowelCancerScreening)] <- "Unanswered"
-data$BowelCancerScreening <- factor(data$BowelCancerScreening, levels=c("No", "Yes", "Unanswered"), 
-                                    labels=c("Not screened", "Screened for bowel cancer", "Unanswered"), ordered=FALSE)
-
-# Convert family history to a factor
-data$FamilyHist_CVD_ <- factor(as.numeric(data$FaH_CVD), levels=c(0,1), labels=c("No family history of CVD", "Family history of CVD"))
 
 # Convert income level of birth country to a factor
 data$BirthCountryIncomeLevel[data$BirthCountryIncomeLevel %in% c("LM", "UM")] <- "M"
 data$BirthCountryIncomeLevel <- factor(data$BirthCountryIncomeLevel, levels=c("HUK", "H", "M", "L"), 
                                        labels=c("UK", "Other high income", "Middle income", "Low income"))
 
-# Add hypertension severity indicator
-data$HTNdx_severity <- dplyr::case_when(
-  data$SBP>=180 | data$DBP>=110 ~ "Stage 3",
-  between(data$SBP, 160, 180) | between(data$DBP, 100, 110) ~ "Stage 2",
-  between(data$SBP, 140, 160) | between(data$DBP, 90, 100) ~ "Stage 1",
-  TRUE ~ "Normotensive"
-)
-data$HTNdx_severity <- factor(data$HTNdx_severity, levels=c("Normotensive", "Stage 1", "Stage 2", "Stage 3"))
 
 # HTN duration categories
 data$HTNdx_durcat <- as.character(cut(data$HTNdx_duration, breaks=c(0, 1, 2, 5, 10, 20, 100), right=FALSE))

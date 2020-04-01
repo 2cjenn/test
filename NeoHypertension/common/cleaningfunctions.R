@@ -8,9 +8,9 @@ FN_id <- function(x){x}
 
 FN_unorder <- function(x){factor(x, ordered=FALSE)}
 
-FN_reorderfactor <- function(levelorder){
+FN_reorderfactor <- function(levelorder, ordered=FALSE){
   function(x){
-    factor(x, levels=levelorder)
+    factor(x, levels=levelorder, ordered=ordered)
   }
 }
 
@@ -23,6 +23,7 @@ FN_labelfactor <- function(levels, labels, recodeNA=NULL){
       levels(y) <- unique(c(levels(y), recodeNA))
       y[is.na(y)] <- recodeNA
     }
+    return(y)
   }
 }
 
@@ -39,6 +40,14 @@ FN_MYtoDate <- function(day, monthField, yearField, format="%d%B%Y"){
 }
 
 
+FN_buckets <- function(breaks, labels=NULL, right=TRUE){
+  function(x){
+    cut(x, breaks=breaks, labels=labels, right=right)
+  }
+}
+
+
+
 ID <- list(name="ID",
            source="ID",
            mapper=FN_id,
@@ -46,9 +55,19 @@ ID <- list(name="ID",
            description="The unique participant identifier"
            )
 
+gender <- list(
+  name="BaC_Sex", 
+  source="BaC_Sex", 
+  mapper=FN_unorder, 
+  display_name="gender", 
+  description="Participant's self-reported gender"
+)
+
+
+
 ethnicity <- list(name="Eth_ethnicity",
                   source="Eth_ethnicity",
-                  mapper=FN_reorderfactor(levels=c("White", "British", "Irish", "Any other white background",
+                  mapper=FN_reorderfactor(levelorder=c("White", "British", "Irish", "Any other white background",
                                                    "Mixed", "White and Black Caribbean", "White and Black African",
                                                    "White and Asian", "Any other mixed background",
                                                    "Asian or Asian British", "Indian", "Pakistani", "Bangladeshi",
@@ -59,25 +78,6 @@ ethnicity <- list(name="Eth_ethnicity",
                   description="The participant's self-reported ethnicity"
                   )
 
-Neoethnicity <- list(name="Eth_ethnicgrp",
-                     source="Eth_ethnicity",
-                     mapper=function(x){
-                       ifelse(x %in% c("White", "British", "Irish", "Any other white background"), 
-                              "White",
-                              ifelse(x %in% c("Do not know", "Prefer not to answer") | is.na(x), 
-                                     "Unknown", 
-                                     "Non-white"
-                                     )
-                              )
-                     },
-                     display_name="ethnic_group",
-                     description="The participant's self-reported ethnicity"
-)
-ethnicity$ethnicity <- as.character(ethnicity$eth_group)
-ethnicity$ethnicity <- ifelse(ethnicity$ethnicity=="White", "White", 
-                              ifelse(ethnicity$ethnicity=="Prefer not to answer" | is.na(ethnicity$ethnicity), "Unknown",
-                                     "Non-white"))
-ethnicity$ethnicity <- factor(ethnicity$ethnicity, levels=c("White", "Non-white", "Unknown"))
 
 rsnlostfu <- list(name="BaC_RsnLostFU",
                   source="BaC_RsnLostFU",
@@ -86,21 +86,21 @@ rsnlostfu <- list(name="BaC_RsnLostFU",
                   description="The reported reason for loss to follow-up"
                   )
 
-dob <- list(name="TEU_DateOfBirth",
+dob <- list(name="TEU_BaC_DateOfBirth",
             source=c("BaC_BirthMonth", "BaC_BirthYear"),
             mapper=FN_MYtoDate(day=15, monthField="BaC_BirthMonth", yearField="BaC_BirthYear"),
             display_name="DateOfBirth",
             description="The patient's approximate date of birth, derived from self-reported month and year with date assumed to be 15th"
             )
 
-SBP <- list(name="TEU_SBP.avg",
+SBP <- list(name="TEU_BlP_SBP.avg",
             source=c("BlP_SBPAuto.0", "BlP_SBPAuto.1", "BlP_SBPMan.0", "BlP_SBPMan.1"),
             mapper=FN_average(colnames=c("BlP_SBPAuto.0", "BlP_SBPAuto.1", "BlP_SBPMan.0", "BlP_SBPMan.1")),
             display_name="SBP",
             description="The average systolic blood pressure from two measurements at baseline"
             )
 
-DBP <- list(name="TEU_DBP.avg",
+DBP <- list(name="TEU_BlP_DBP.avg",
             source=c("BlP_DBPAuto.0", "BlP_DBPAuto.1", "BlP_DBPMan.0", "BlP_DBPMan.1"),
             mapper=FN_average(colnames=c("BlP_DBPAuto.0", "BlP_DBPAuto.1", "BlP_DBPMan.0", "BlP_DBPMan.1")),
             display_name="DBP",
@@ -114,9 +114,144 @@ measuredhyp <- list(name="TEU_measuredHTN",
                     description="Whether the participant had hypertensive BP measured at baseline"
                     )
 
+alc_status <- list(
+  name="Alc_Status", 
+  source="Alc_Status", 
+  mapper=FN_reorderfactor(levelorder=c("Never", "Previous", "Current", "Prefer not to answer")), 
+  display_name="Alc_Status", 
+  description="Self-reported alcohol status"
+)
+
+smo_status <- list(
+  name="Smo_Status", 
+  source="Smo_Status", 
+  mapper=FN_reorderfactor(levelorder=c("Never", "Previous", "Current", "Prefer not to answer")), 
+  display_name="Smo_Status", 
+  description="Self-reported smoking status"
+)
 
 
-common <- list(ID, ethnicity, rsnlostfu, dob)
+householdincome <- list(
+  name="TEU_HoH_PreTaxInc", 
+  source=c("HoH_PreTaxInc.0", "HoH_PreTaxInc_P.0"), 
+  mapper=function(data){
+    y <- ifelse(is.na(data[["HoH_PreTaxInc.0"]]), 
+                as.character(data[["HoH_PreTaxInc_P.0"]]),
+                as.character(data[["HoH_PreTaxInc.0"]]))
+    y <- fct_collapse(y, 
+                      "Less than 18,000" = "Less than 18,000",
+                      "18,000 to 30,999" = c("18,000 to 30,999", "18,000 to 31,000"),
+                      "31,000 to 51,999" = c("31,000 to 51,999", "31,000 to 52,000"),
+                      "52,000 to 100,000" = "52,000 to 100,000",
+                      "Greater than 100,000" = "Greater than 100,000",
+                      "Do not know" = "Do not know",
+                      "Prefer not to know" = "Prefer not to know"
+      )
+    y <- factor(y, levels=c("Less than 18,000", "18,000 to 30,999",
+                                             "31,000 to 51,999", "52,000 to 100,000", "Greater than 100,000", 
+                                             "Do not know", "Prefer not to answer"))
+    return(y)
+  }, 
+  display_name="HouseholdIncome", 
+  description="Participant's pre-tax household income"
+)
+
+sleep <- list(
+  name="Sle_Duration", 
+  source="Sle_Duration", 
+  mapper=FN_id, 
+  display_name="SleepDuration_h", 
+  description="Participant's self-reported average sleep duration in hours"
+)
+
+BMIcat <-  list(
+  name="TEU_BSM_BMIcat", 
+  source="BSM_BMI", 
+  mapper=function(x){
+    y <- as.character(cut(x, breaks=c(0, 18.5, 25, 30, 200), right=FALSE))
+    y[is.na(y)] <- "Unknown"
+    y <- factor(y, levels=c("[18.5,25)", "[0,18.5)", "[25,30)", "[30,200)", "Unknown"), 
+                          labels=c("Normal", "Underweight", "Overweight", "Obese", "Unknown"))
+    return(y)
+  }, 
+  display_name="BMIcat", 
+  description="BMI category"
+)
+
+waistcirccat <- list(
+  name="TEU_BSM_WaistCircCat", 
+  source=c("BSM_Waist", "BaC_Sex"), 
+  mapper=function(data){
+    # Categorise waist circ into labelled categories
+    y <- dplyr::case_when(
+      data[["BaC_Sex"]]=="Female" & data[["BSM_Waist"]]>=88 ~ "Obese",
+      data[["BaC_Sex"]]=="Female" & data[["BSM_Waist"]] ~ "Overweight",
+      data[["BaC_Sex"]]=="Male" & data[["BSM_Waist"]] ~ "Obese",
+      data[["BaC_Sex"]]=="Male" & data[["BSM_Waist"]] ~ "Overweight",
+      is.na(data[["BSM_Waist"]]) ~ "Unknown",
+      TRUE ~ "Normal"
+    )
+    y <- factor(y, levels=c("Normal", "Overweight", "Obese", "Unknown"))
+    return(y)
+  }, 
+  display_name="WaistCirc", 
+  description="Categorised waist circumference"
+)
+
+weeklyMETs <- list(
+  name="PhA_METsWkAllAct", 
+  source="PhA_METsWkAllAct", 
+  mapper=FN_id, 
+  display_name="WeeklyMETs", 
+  description="Average weekly METs, derived from participant self-reported weekly exercise"
+)
+
+reacttime <- list(
+  name="CoF_RTTTimeID", 
+  source="CoF_RTTTimeID", 
+  mapper=FN_id, 
+  display_name="ReactionTime", 
+  description="Reaction time in a game of snap, in seconds"
+)
+
+highestqual <- list(
+  name="TEU_Edu_HighestQual", 
+  source=c("Edu_Qualif.0", "Edu_Qualif.1", "Edu_Qualif.2", "Edu_Qualif.3", "Edu_Qualif.4", "Edu_Qualif.5"), 
+  mapper=function(data){
+    y <- rep(NA, nrow(data))
+    for(qual in c("College or University degree",
+                  "NVQ or HND or HNC or equivalent",
+                  "Other professional qualifications eg: nursing, teaching",
+                  "A levels/AS levels or equivalent",
+                  "O levels/GCSEs or equivalent",
+                  "CSEs or equivalent",
+                  "None of the above")) {
+      y[is.na(y)] <- ifelse(
+        apply(data[is.na(y),grep("Edu_Qualif", colnames(data), fixed=TRUE)], 1, function(x) any(x == qual & !is.na(x))), 
+        qual, 
+        NA
+      )
+    }
+    y <- factor(y, levels=c("College or University degree", "NVQ or HND or HNC or equivalent", 
+                            "Other professional qualifications eg: nursing, teaching", 
+                            "A levels/AS levels or equivalent", "O levels/GCSEs or equivalent", 
+                            "CSEs or equivalent", "None of the above"))
+    return(y)
+  }, 
+  display_name="HighestQualification", 
+  description="Highest of a participant's self-reported educational qualifications"
+)
+
+
+
+
+
+common <- list(ID, ethnicity, rsnlostfu, dob, gender, 
+               alc_status, smo_status, 
+               householdincome, sleep,
+               BMIcat, waistcirccat, weeklyMETs,
+               reacttime,
+               higestqual)
 
 inpath <- readChar("./data/raw/filepath.txt", file.info("./data/raw/filepath.txt")$size)
 tables <- list("Alc_base", "ArS_base", "BaC", "BBC_base", "BlP_base", "BSM_base","CoF_base",
@@ -128,26 +263,30 @@ for(tabname in tables){
 }
 alldata <- Reduce(function(df1, df2) merge(df1, df2, by = "ID", all.x = TRUE), dfs)
 
-thing <- readRDS(paste0(inpath, "HMH_base", ".rds"))
 
-# Read in the baseline characteristics
-covars <- readRDS("./data/clean/basechar.rds")
+cols <- c("ID", "BaC_Sex", "BaC_RsnLostFU", "TEU_BaC_DateOfBirth", "TEU_Alc_WeeklyAlcUnits", "Sle_Duration")
 
-cols <- c("ID", "BaC_RsnLostFU", "TEU_DateOfBirth")
+# cols_TLA <- unique(sub("_.*", "", cols[-which(cols=="ID")]))
 
-cols_TLA <- unique(sub("_.*", "", cols[-which(cols=="ID")]))
-
-names(common) <- sapply(common, function(x) x$name)
-df <- covars
-for(colname in cols){
-  colinfo <- common[[colname]]
-  colfunc <- colinfo$mapper
-  if(length(colinfo$source)>1){
-    df[[colinfo$name]] <- colfunc(df)
-  } else {
-    df[[colinfo$name]] <- colfunc(df[[colinfo$source]])
+derive_variables <- function(indata, colnames){
+  names(common) <- sapply(common, function(x) x$name)
+  outdata <- indata
+  for(colname in cols){
+    colinfo <- common[[colname]]
+    colfunc <- colinfo$mapper
+    if(length(colinfo$source)>1){
+      outdata[[colinfo$name]] <- colfunc(indata)
+    } else {
+      outdata[[colinfo$name]] <- colfunc(indata[[colinfo$source]])
+    }
+    print(colinfo$name)
+    print(colinfo$description)
   }
-  print(colinfo$name)
-  print(colinfo$description)
+  outdata <- outdata[,cols]
+  return(outdata)
 }
-df <- df[,cols]
+
+data <- derive_variables(alldata, colnames=cols)
+
+data$test <- unclass(data$BaC_RsnLostFU)==1
+

@@ -27,3 +27,17 @@ names(data)[names(data)=="VeI_Ncancer.0"] <- "NumberCancers"
 names(data)[names(data)=="VeI_NNonCancer.0"] <- "NumberDiagnoses"
 names(data)[names(data)=="VeI_NOperation.0"] <- "NumberOperations"
 names(data)[names(data)=="VeI_Ntreatments"] <- "NumberMedications"
+
+names(body)[names(body)=="BSM_BMI"] <- "BMI"
+names(body)[names(body)=="BSM_Waist"] <- "WaistCirc"
+
+#--------------------------------------------------------------------------------------------------------------
+# TQ medical history: illness/disabilities and diabetes
+#--------------------------------------------------------------------------------------------------------------
+names(data)[names(data)=="HMH_IllDisab"] <- "illdisab"
+names(data)[names(data)=="HMH_Diabetes"] <- "diabetes"
+names(data)[names(data)=="HMH_HBPAge.0"] <- "HBPAge"
+names(data)[names(data)=="HMH_BowelSc"] <- "BowelCancerScreening"
+
+# Age at diagnosis of HTN is coded -1 or -3 for don't know or prefer not to answer
+medhist$HBPAge[medhist$HBPAge %in% c(-1,-3)] <- NA
