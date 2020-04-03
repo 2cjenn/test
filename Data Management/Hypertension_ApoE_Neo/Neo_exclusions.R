@@ -72,7 +72,7 @@ data <- data[!is.na(data$selfrepmeds),]
 
 # Exclude individuals with implausible BP data
 data <- data[data$SBP >= 50 & data$SBP <= 300,]
-data <- data[data$DBP >= 30 & data$SDP <= 200,]
+data <- data[data$DBP >= 30 & data$DBP <= 200,]
 
 excl$BP=nrow(data)
 
