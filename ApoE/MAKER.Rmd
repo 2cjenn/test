@@ -22,6 +22,8 @@ if(!"renv" %in% installed.packages()){
   install.packages("renv")
 }
 renv::init()
+
+cat("K:/TEU/CancerPRS/6thData_07Nov2019/R/TLA_tables/", file="./data/raw/filepath.txt")
 ```
 
 ## Folder organisation

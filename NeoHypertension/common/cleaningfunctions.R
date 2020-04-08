@@ -107,7 +107,7 @@ DBP <- list(name="TEU_BlP_DBP.avg",
             description="The average diastolic blood pressure from two measurements at baseline"
 )
 
-measuredhyp <- list(name="TEU_measuredHTN",
+measuredhyp <- list(name="TEU_BlP_measuredHTN",
                     source=c("TEU_SBP.avg", "TEU_DBP.avg"),
                     mapper=function(data){data[["TEU_SBP.avg"]]>=140 | data[["TEU_DBP.avg"]]>=90},
                     display_name="measuredHTN",
@@ -242,7 +242,44 @@ highestqual <- list(
   description="Highest of a participant's self-reported educational qualifications"
 )
 
+aidememoir <- list(
+  name="GAC_AideMem",
+  source="GAC_AideMem", 
+  mapper=FN_unorder,
+  display_name="AideMemoir",
+  description="Did the participant bring the requested aide-memoir with a note of their medications and previous operations?"
+)
 
+assesscentre <- list(
+  name="TEU_Rec_AssessCentre", 
+  source="Rec_AssessCentre", 
+  mapper=function(x){
+    map <- read.table("K:\\TEU\\CancerPRS\\Data_Dictionary\\Mappings\\coding10.tsv")
+    y <- merge(x, map)
+  }, 
+  display_name="AssessCentre", 
+  description="Which assessment centre did the participant attend"
+)
+
+
+country_residence <- list(
+  name="TEU_Rec_Country", 
+  source="Rec_AssessCentre", 
+  mapper=function(x){
+    y <- dplyr::case_when(
+      x %in% c(10003, 11001, 11002, 11006, 11007, 11008, 11009, 
+               11010, 11011, 11012, 11013, 11014, 11016, 11017, 
+               11018, 11020, 11021, 11024, 11025, 11026, 11027, 11028) ~ "England",
+      x %in% c(11004, 11005) ~ "Scotland",
+      x %in% c(11003, 11022, 11023) ~ "Wales",
+      TRUE ~ "Other"
+    )
+    if("Other" %in% y){warning("Unrecognised centre code")}
+    return(y)
+  }, 
+  display_name="CountryResidence", 
+  description="Which country does the participant live in"
+)
 
 
 
@@ -251,22 +288,21 @@ common <- list(ID, ethnicity, rsnlostfu, dob, gender,
                householdincome, sleep,
                BMIcat, waistcirccat, weeklyMETs,
                reacttime,
-               higestqual)
+               highestqual,
+               weeklyalcohol, alcohol)
 
 inpath <- readChar("./data/raw/filepath.txt", file.info("./data/raw/filepath.txt")$size)
-tables <- list("Alc_base", "ArS_base", "BaC", "BBC_base", "BlP_base", "BSM_base","CoF_base",
-            "Die_base", "Edu_base", "Emp_base", "Eth_base", "FaH_base", "GAC_base", "HMH_base",
-            "HoH_base", "PhA_base", "Rec_base", "Sle_base", "Smo_base", "Sun_base", "VeIcovars_base")
-dfs <- list()
-for(tabname in tables){
-  dfs[[tabname]] <- readRDS(paste0(inpath, tabname, ".rds"))
-}
-alldata <- Reduce(function(df1, df2) merge(df1, df2, by = "ID", all.x = TRUE), dfs)
+# tables <- list("Alc_base", "ArS_base", "BaC", "BBC_base", "BlP_base", "BSM_base","CoF_base",
+#             "Die_base", "Edu_base", "Emp_base", "Eth_base", "FaH_base", "GAC_base", "HMH_base",
+#             "HoH_base", "PhA_base", "Rec_base", "Sle_base", "Smo_base", "Sun_base", "VeIcovars_base")
+# dfs <- list()
+# for(tabname in tables){
+#   dfs[[tabname]] <- readRDS(paste0(inpath, tabname, ".rds"))
+# }
+# alldata <- Reduce(function(df1, df2) merge(df1, df2, by = "ID", all.x = TRUE), dfs)
+# saveRDS(alldata, paste0(inpath, "AllData", ".rds"))
+alldata <- readRDS(paste0(inpath, "AllData", ".rds"))
 
-
-cols <- c("ID", "BaC_Sex", "BaC_RsnLostFU", "TEU_BaC_DateOfBirth", "TEU_Alc_WeeklyAlcUnits", "Sle_Duration")
-
-# cols_TLA <- unique(sub("_.*", "", cols[-which(cols=="ID")]))
 
 derive_variables <- function(indata, colnames){
   names(common) <- sapply(common, function(x) x$name)
@@ -285,6 +321,9 @@ derive_variables <- function(indata, colnames){
   outdata <- outdata[,cols]
   return(outdata)
 }
+
+cols <- c("ID", "BaC_Sex", "BaC_RsnLostFU", "TEU_BaC_DateOfBirth", "TEU_Alc_WeeklyAlcUnits", "Sle_Duration",
+          "Alc_Status", "TEU_Alc_Status")
 
 data <- derive_variables(alldata, colnames=cols)
 
