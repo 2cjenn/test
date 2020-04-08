@@ -254,8 +254,10 @@ assesscentre <- list(
   name="TEU_Rec_AssessCentre", 
   source="Rec_AssessCentre", 
   mapper=function(x){
-    map <- read.table("K:\\TEU\\CancerPRS\\Data_Dictionary\\Mappings\\coding10.tsv")
-    y <- merge(x, map)
+    map <- read.table("K:\\TEU\\CancerPRS\\Data_Dictionary\\Mappings\\coding10.tsv",
+                      sep="\t", header=TRUE, quote="", comment.char="$", fill=FALSE)
+    y <- merge(x, map, by.x="x", by.y="coding", all.x=TRUE)
+    y <- y[["meaning"]]
   }, 
   display_name="AssessCentre", 
   description="Which assessment centre did the participant attend"
