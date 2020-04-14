@@ -11,8 +11,9 @@ library(dplyr)
 # Read in the raw data
 base <- readRDS("K:\\TEU\\APOE on Dementia\\Data Management\\R_Dataframes_TLA\\38358\\BaC.rds")
 rec <- readRDS("K:\\TEU\\APOE on Dementia\\Data Management\\R_Dataframes_TLA\\38358\\Rec_base.rds")
+gac <- readRDS("K:\\TEU\\APOE on Dementia\\Data Management\\R_Dataframes_TLA\\38358\\GAC_base.rds")
 
-basechar <- merge(base, rec, by="ID", all=TRUE)
+basechar <-merge(merge(base, rec, by="ID", all=TRUE), gac, by="ID", all=TRUE)
 
 # Convert dates to date format
 basechar$recdate <- as.Date(basechar$Rec_DateAssess, origin=as.Date("1970-01-01"))
@@ -27,6 +28,9 @@ basechar$gender <- factor(basechar$BaC_Sex, ordered=FALSE)
 
 names(basechar)[names(basechar)=="BaC_RsnLostFU"] <- "lfureason"
 names(basechar)[names(basechar)=="BaC_DeprivInd"] <- "townsend_depind"
+names(basechar)[names(basechar)=="GAC_AideMem"] <- "aide_memoir"
+names(basechar)[names(basechar)=="Rec_AssessCentre"] <- "assess_centre"
 
-saveRDS(basechar[,c("ID", "dob", "age", "gender", "recdate", "lfudate", "lfureason", "townsend_depind")], 
+saveRDS(basechar[,c("ID", "dob", "age", "gender", "lfudate", "lfureason", "townsend_depind", 
+                    "recdate", "assess_centre", "aide_memoir")], 
         file="K:\\TEU\\APOE on Dementia\\Data Management\\R_Dataframes_TLA\\38358\\Organised\\basechar.rds")
