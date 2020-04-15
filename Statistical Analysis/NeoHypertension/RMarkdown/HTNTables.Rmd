@@ -1,7 +1,7 @@
 ---
 title: "HTNtabulation"
 author: "Jennifer Collister"
-date: "25/02/2020"
+date: "14/04/2020"
 output: 
   word_document:
       reference_docx: "K:/TEU/APOE on Dementia/RMarkdownStyle.docx"
@@ -25,24 +25,28 @@ data <- readRDS(file="K:\\TEU\\APOE on Dementia\\Data Management\\R_Dataframes_T
 
 hypertensives <- data[data$evidenceHTN==TRUE & !is.na(data$evidenceHTN),]
 treated <- data[data$treated==TRUE & !is.na(data$treated),]
+
+treated$agegrp5 <- cut(treated$age,breaks=c(40, 45, 50, 55, 60, 65, 70), right=FALSE)
+treated$weekly_alccat <- cut(treated$weekly_alcunits, breaks=c(-1, 0, 5, 10, 20, 30),
+                      labels=c("None", "Less than 5 units", "5 to 10 units", "10 to 20 units", "More than 20 units"))
+
 ```
 
 ![Exclusion Flowchart.](K:/TEU/APOE on Dementia/Statistical Analysis/NeoHypertension/RMarkdown/ExclFlowchart.png)
 
-# Table 1. Characteristics of hypertensive participants, n = `r nrow(hypertensives)`.
+# Table 1. Characteristics of treated participants, n = `r nrow(treated)`, split by control status.
 
 ```{r table1, include=TRUE, echo=FALSE}
 
-
-# tab1 <- descriptivetable(df=hypertensives, 
-#                         varlist=c("gender", "agegrp", "age", "ethnicity", "ISCED", "employment", "SBP", "DBP"),
-#                         contavg='mean', assocvar="aware")
-
-tab1 <- descriptivetable(df=hypertensives, 
-                         varlist=c("age", "gender", "BMIcat", "WaistCircCat", "ethnicity", "Smo_Status", "weekly_alcunits", "alc_binge_", "HTNdx_severity", "HTNdx_duration", "HTNdx_durcat", "hypmedsno", "townsend_depind", "income", "ISCED", "employment", "BirthCountryIncomeLevel", "BowelCancerScreening", "FamilyHist_CVD_", "PhA_METsWkAllAct", "METs_over150", "CVD_", "Diabetes_", "Asthma_or_COPD_", "Migraine_", "Depression_", "Back_pain_", "Other_chronic_comorbidities_"),
+tab1 <- descriptivetable(df=treated[treated$controlled==TRUE,], 
+                         varlist=c("age", "gender", "BMIcat", "WaistCircCat", "ethnicity", "Smo_Status", "weekly_alcunits", "alc_binge_", "HTNdx_severity", "HTNdx_duration", "HTNdx_durcat", "antiHTNmedsno", "aide_memoir", "townsend_depind", "income", "ISCED", "employment", "BirthCountryIncomeLevel", "countryResidence", "BowelCancerScreening", "FamilyHist_CVD_", "PhA_METsWkAllAct", "METs_over150", "CVD_", "Diabetes_", "Asthma_or_COPD_", "Migraine_", "Depression_", "Back_pain_", "Other_chronic_comorbidities_"),
                          contavg='median')
 
-kable(tab1)
+tab2 <- descriptivetable(df=treated[treated$controlled==FALSE,], 
+                         varlist=c("age", "gender", "BMIcat", "WaistCircCat", "ethnicity", "Smo_Status", "weekly_alcunits", "alc_binge_", "HTNdx_severity", "HTNdx_duration", "HTNdx_durcat", "antiHTNmedsno", "aide_memoir", "townsend_depind", "income", "ISCED", "employment", "BirthCountryIncomeLevel", "countryResidence", "BowelCancerScreening", "FamilyHist_CVD_", "PhA_METsWkAllAct", "METs_over150", "CVD_", "Diabetes_", "Asthma_or_COPD_", "Migraine_", "Depression_", "Back_pain_", "Other_chronic_comorbidities_"),
+                         contavg='median')
+
+kable(cbind(tab1, tab2[,3:4]))
 
 ```
 
@@ -86,7 +90,7 @@ source("K:/TEU/APOE on Dementia/Statistical Analysis/JCfunctions.R")
 # treated$HTNdx_severity2[treated$HTNdx_severity2 %in% c("Stage 2", "Stage 3")] <- "Stage 2 or 3"
 # treated$HTNdx_severity2 <- factor(treated$HTNdx_severity2, levels=c("Normotensive", "Stage 1", "Stage 2 or 3"))
 
-varlist <- c("age", "gender", "BMIcat", "ethnicity", "Smo_Status", "weekly_alcunits", "alc_binge_", "HTNdx_durcat", "hypmedsno", "townsend_depind", "income", "ISCED", "employment", "BirthCountryIncomeLevel", "BowelCancerScreening", "FamilyHist_CVD_", "METs_over150", "CVD_", "Diabetes_", "Asthma_or_COPD_", "Migraine_", "Depression_", "Back_pain_", "Other_chronic_comorbidities_")
+varlist <- c("agegrp5", "gender", "BMIcat", "ethnicity", "Smo_Status", "weekly_alccat", "alc_binge_", "HTNdx_durcat", "antiHTNmedsno", "aide_memoir", "townsend_depind", "income", "ISCED", "employment", "BirthCountryIncomeLevel", "countryResidence", "BowelCancerScreening", "FamilyHist_CVD_", "METs_over150", "CVD_", "Diabetes_", "Asthma_or_COPD_", "Migraine_", "Depression_", "Back_pain_", "Other_chronic_comorbidities_")
 forlater <- c("PhA_METsWkAllAct", "HTNdx_duration")
 
 preparecoefflist <- function(df, varname){
