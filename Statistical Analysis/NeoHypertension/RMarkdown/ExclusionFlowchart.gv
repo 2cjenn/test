@@ -38,11 +38,11 @@ digraph dot {
   
   [1]: paste0('UKB participants','\nn = ', excl$initial)
   [2]: paste0('UK participants aged between 40 and 70\nn = ', excl$agerange)
-  [3]: paste0('Complete information on core variables\nn = ', excl$education)
+  [3]: paste0('Complete information on core variables\nn = ', excl$BP)
   [4]: paste0('Considered healthy\nn = ', excl$cancer)
   [5]: paste0('Evidence of hypertension\nn = ', excl$hypert)
   [6]: paste0(excl$initial-excl$agerange,' outside the age range of [40,70) years')
   [7]: paste0(excl$agerange-excl$BP,' missing BP data from baseline assessment')
-  [8]: paste0(excl$BP-excl$seriouscomorb,' serious comordbidities', '\n', excl$seriouscomorb-excl$cancer, ' with cancer')
+  [8]: paste0(excl$BP-excl$seriouscomorb,' serious comordbidities', '\n', excl$seriouscomorb-excl$cancer, ' with cancer (except skin cancer)')
   [9]: paste0(excl$cancer-excl$hypert,' no evidence of hypertension at baseline')
   
