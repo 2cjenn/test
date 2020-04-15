@@ -135,7 +135,9 @@ excl$seriouscomorb <- nrow(data)
 
 # And individuals with cancer (except for skin cancer?)
 # n = 483794 - 443782 = 40,012
-data <- data[data$NumberCancers==0 & !is.na(data$NumberCancers),]
+cancer <- readRDS("K:\\TEU\\APOE on Dementia\\Data Management\\R_Dataframes_TLA\\38358\\Organised\\Cancer_pts.rds")
+exceptskincancer <- cancer$ID[cancer$TL!="skin cancer"]
+data <- data[!data$ID %in% exceptskincancer,]
 
 excl$cancer <- nrow(data)
 
@@ -259,6 +261,17 @@ data$BirthCountryIncomeLevel[data$BirthCountryIncomeLevel %in% c("LM", "UM")] <-
 data$BirthCountryIncomeLevel <- factor(data$BirthCountryIncomeLevel, levels=c("HUK", "H", "M", "L"), 
                                        labels=c("UK", "Other high income", "Middle income", "Low income"))
 
+# Convert assessment centre code to a country
+data$countryResidence <- dplyr::case_when(
+  data$assess_centre %in% c(10003, 11001, 11002, 11006, 11007, 11008, 11009, 
+           11010, 11011, 11012, 11013, 11014, 11016, 11017, 
+           11018, 11020, 11021, 11024, 11025, 11026, 11027, 11028) ~ "England",
+  data$assess_centre %in% c(11004, 11005) ~ "Scotland",
+  data$assess_centre %in% c(11003, 11022, 11023) ~ "Wales",
+  TRUE ~ "Other"
+)
+data$countryResidence <- factor(data$countryResidence)
+
 # Add hypertension severity indicator
 data$HTNdx_severity <- dplyr::case_when(
   data$SBP>=180 | data$DBP>=110 ~ "Stage 3",
@@ -276,7 +289,11 @@ data$antiHTNmedsno <- dplyr::case_when(
   data$hypmedsno>=3 ~ ">=3",
   TRUE ~ as.character(data$hypmedsno)
 )
-data$antiHTNmedsno <- factor(data$antiHTNmedsno)
+data$antiHTNmedsno <- factor(data$antiHTNmedsno, levels=c("0", "1", "2", ">=3"))
+
+# The aide_memoir shouldn't be an ordered factor
+data$aide_memoir <- factor(data$aide_memoir, levels=c("Yes", "No"), ordered=FALSE,
+                           labels=c("Brought an aide-memoir", "Did not bring an aide-memoir"))
 
 # HTN duration categories
 data$HTNdx_durcat <- as.character(cut(data$HTNdx_duration, breaks=c(0, 1, 2, 5, 10, 20, 100), right=FALSE))
