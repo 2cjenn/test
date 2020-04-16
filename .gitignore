@@ -23,7 +23,8 @@
 ICD10.csv
 
 # Note .png and .jpg files would be a faff to recreate, so I guess track these? #
-
+# Nope changed my mind they're a faff to track
+**.png
 
 # Some directories don't contain any code #
 ###########################################

@@ -26,9 +26,6 @@ data <- readRDS(file="K:\\TEU\\APOE on Dementia\\Data Management\\R_Dataframes_T
 hypertensives <- data[data$evidenceHTN==TRUE & !is.na(data$evidenceHTN),]
 treated <- data[data$treated==TRUE & !is.na(data$treated),]
 
-treated$agegrp5 <- cut(treated$age,breaks=c(40, 45, 50, 55, 60, 65, 70), right=FALSE)
-treated$weekly_alccat <- cut(treated$weekly_alcunits, breaks=c(-1, 0, 5, 10, 20, 30),
-                      labels=c("None", "Less than 5 units", "5 to 10 units", "10 to 20 units", "More than 20 units"))
 
 ```
 
@@ -37,16 +34,26 @@ treated$weekly_alccat <- cut(treated$weekly_alcunits, breaks=c(-1, 0, 5, 10, 20,
 # Table 1. Characteristics of treated participants, n = `r nrow(treated)`, split by control status.
 
 ```{r table1, include=TRUE, echo=FALSE}
+varlist=c("age", "agegrp", "gender", "BMIcat", "ethnicity", "Smo_Status", "weekly_alcunits", "weekly_alccat", "alc_heavyuse_", "PhA_METsWkAllAct", "METs_over150", "HTNdx_durcat", "antiHTNmedsno", "townsend_quint", "income", "ISCED", "BirthCountryIncomeLevel", "countryResidence", "BowelCancerScreening", "FamilyHist_CVD_", "CVD_", "Diabetes_", "Asthma_or_COPD_", "Migraine_", "Depression_", "Other_chronic_comorbidities_")
 
 tab1 <- descriptivetable(df=treated[treated$controlled==TRUE,], 
-                         varlist=c("age", "gender", "BMIcat", "WaistCircCat", "ethnicity", "Smo_Status", "weekly_alcunits", "alc_binge_", "HTNdx_severity", "HTNdx_duration", "HTNdx_durcat", "antiHTNmedsno", "aide_memoir", "townsend_depind", "income", "ISCED", "employment", "BirthCountryIncomeLevel", "countryResidence", "BowelCancerScreening", "FamilyHist_CVD_", "PhA_METsWkAllAct", "METs_over150", "CVD_", "Diabetes_", "Asthma_or_COPD_", "Migraine_", "Depression_", "Back_pain_", "Other_chronic_comorbidities_"),
+                         varlist=varlist,
                          contavg='median')
 
 tab2 <- descriptivetable(df=treated[treated$controlled==FALSE,], 
-                         varlist=c("age", "gender", "BMIcat", "WaistCircCat", "ethnicity", "Smo_Status", "weekly_alcunits", "alc_binge_", "HTNdx_severity", "HTNdx_duration", "HTNdx_durcat", "antiHTNmedsno", "aide_memoir", "townsend_depind", "income", "ISCED", "employment", "BirthCountryIncomeLevel", "countryResidence", "BowelCancerScreening", "FamilyHist_CVD_", "PhA_METsWkAllAct", "METs_over150", "CVD_", "Diabetes_", "Asthma_or_COPD_", "Migraine_", "Depression_", "Back_pain_", "Other_chronic_comorbidities_"),
+                         varlist=varlist,
                          contavg='median')
 
-kable(cbind(tab1, tab2[,3:4]))
+fulltab <- cbind(tab1, tab2[,3:4])
+colnames <- rbind(
+  c("", "", 
+    paste0("Controlled, n=", nrow(treated[treated$controlled==TRUE,])), "", 
+    paste0("Uncontrolled, n=", nrow(treated[treated$controlled==FALSE,])), ""
+    ),
+  colnames(fulltab)
+)
+colnames(fulltab) <- NULL
+kable(rbind(colnames, fulltab))
 
 ```
 
@@ -81,17 +88,14 @@ for(dfname in names(dflist)){
 ```
 ![Whole population.](K:/TEU/APOE on Dementia/Statistical Analysis/NeoHypertension/RMarkdown/Wholepop.png)
 
-# Table 2
+# Table 2:
+
+<div custom-style="Todo">Test</div>
 
 ```{r logisticregression, include=TRUE, echo=FALSE}
 source("K:/TEU/APOE on Dementia/Statistical Analysis/JCfunctions.R")
 
-# treated$HTNdx_severity2 <- as.character(treated$HTNdx_severity)
-# treated$HTNdx_severity2[treated$HTNdx_severity2 %in% c("Stage 2", "Stage 3")] <- "Stage 2 or 3"
-# treated$HTNdx_severity2 <- factor(treated$HTNdx_severity2, levels=c("Normotensive", "Stage 1", "Stage 2 or 3"))
-
-varlist <- c("agegrp5", "gender", "BMIcat", "ethnicity", "Smo_Status", "weekly_alccat", "alc_binge_", "HTNdx_durcat", "antiHTNmedsno", "aide_memoir", "townsend_depind", "income", "ISCED", "employment", "BirthCountryIncomeLevel", "countryResidence", "BowelCancerScreening", "FamilyHist_CVD_", "METs_over150", "CVD_", "Diabetes_", "Asthma_or_COPD_", "Migraine_", "Depression_", "Back_pain_", "Other_chronic_comorbidities_")
-forlater <- c("PhA_METsWkAllAct", "HTNdx_duration")
+varlist=c("age", "agegrp", "gender", "BMIcat", "ethnicity", "Smo_Status", "weekly_alcunits", "alc_heavyuse_", "PhA_METsWkAllAct", "METs_over150", "HTNdx_durcat", "antiHTNmedsno", "townsend_quint", "income", "ISCED", "BirthCountryIncomeLevel", "countryResidence", "BowelCancerScreening", "FamilyHist_CVD_", "CVD_", "Diabetes_", "Asthma_or_COPD_", "Migraine_", "Depression_", "Other_chronic_comorbidities_")
 
 preparecoefflist <- function(df, varname){
   if(is.factor(df[[varname]])){
@@ -175,7 +179,11 @@ multi <- regressiontable(df=treated, varlist=varlist, regresstype="multivariable
 tab2 <- merge(merge(uni, adj, by=c("IDcol", "Coefficient", "Level"), sort=FALSE),
               multi, by=c("IDcol", "Coefficient", "Level"), sort=FALSE)
 tab2 <- tab2[,-which(names(tab2)=="IDcol")]
-kable(tab2, caption="Logistic regressions of various factors against hypertension control status, odds ratios are for successful BP control.")
+colnames <- rbind(c("","", "Unadjusted", "", "", "Age- and sex-adjusted", "", "", "Fully adjusted", "", ""),
+                  c("Coefficient", "Level", "OR", "95% CI", "p", "OR", "95% CI", "p", "OR", "95% CI", "p"))
+colnames(tab2) <- NULL
+kable(rbind(colnames, tab2), 
+      caption="Logistic regressions of various factors against hypertension control status, odds ratios are for successful BP control.")
 
 
 ```

@@ -44,8 +44,9 @@ household$income <- fct_collapse(household$income,
                                  "Do not know" = "Do not know",
                                  "Unanswered" = "Unanswered"
                                  )
-household$income <- factor(household$income, levels=c("Less than 18,000", "18,000 to 30,999",
-                                                      "31,000 to 51,999", "52,000 to 100,000", "Greater than 100,000", 
+household$income <- factor(household$income, levels=c("Greater than 100,000", "52,000 to 100,000",
+                                                      "31,000 to 51,999", "18,000 to 30,999",
+                                                      "Less than 18,000", 
                                                       "Do not know", "Unanswered"))                      
 
 covars <- merge(covars, household[,c("ID", "income", "HoH_HouseholdSize.0")], by="ID", all=TRUE)

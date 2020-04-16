@@ -70,11 +70,13 @@ data <- data[!is.na(data$DBP),]
 data <- data[!is.na(data$selfrephyp),]
 data <- data[!is.na(data$selfrepmeds),]
 
+excl$BPmiss=nrow(data)
+
 # Exclude individuals with implausible BP data
 data <- data[data$SBP >= 50 & data$SBP <= 300,]
 data <- data[data$DBP >= 30 & data$DBP <= 200,]
 
-excl$BP=nrow(data)
+excl$BPimp=nrow(data)
 
 #--------------------------------------------------------------------------------------------------------------
 # Generate hypertension category variables
@@ -235,10 +237,15 @@ data$weekly_alcunits[data$weekly_alcunits>upper95] <- upper95
 data$weekly_alcunits[is.na(data$weekly_alcunits)] <- 0
 
 
+# Categorise alcohol consumption
+data$weekly_alccat <- cut(data$weekly_alcunits, breaks=c(-1, 0, 5, 10, 20, 30),
+                             labels=c("None", "Less than 5 drinks", "5 to 10 drinks", "10 to 20 drinks", "More than 20 drinks"))
+
+
 # Define "binge" levels of alcohol consumption
-data$alc_binge[data$gender=="Female"] <- data[data$gender=="Female",]$weekly_alcunits>7 & !is.na(data[data$gender=="Female",]$weekly_alcunits)
-data$alc_binge[data$gender=="Male"] <- data[data$gender=="Male",]$weekly_alcunits>14 & !is.na(data[data$gender=="Male",]$weekly_alcunits)
-data$alc_binge_ <- factor(as.numeric(data$alc_binge), levels=c(0,1), labels=c("Safe alcohol use", "Harmful alcohol use"))
+data$alc_heavyuse[data$gender=="Female"] <- data[data$gender=="Female",]$weekly_alcunits>7 & !is.na(data[data$gender=="Female",]$weekly_alcunits)
+data$alc_heavyuse[data$gender=="Male"] <- data[data$gender=="Male",]$weekly_alcunits>14 & !is.na(data[data$gender=="Male",]$weekly_alcunits)
+data$alc_heavyuse_ <- factor(as.numeric(data$alc_heavyuse), levels=c(0,1), labels=c("No", "Yes"))
 
 # Indicator variable for whether physical activity > or <= 150 METs per day
 data$METs_over150 <- dplyr::case_when(
@@ -260,6 +267,19 @@ data$FamilyHist_CVD_ <- factor(as.numeric(data$FaH_CVD), levels=c(0,1), labels=c
 data$BirthCountryIncomeLevel[data$BirthCountryIncomeLevel %in% c("LM", "UM")] <- "M"
 data$BirthCountryIncomeLevel <- factor(data$BirthCountryIncomeLevel, levels=c("HUK", "H", "M", "L"), 
                                        labels=c("UK", "Other high income", "Middle income", "Low income"))
+
+# Convert Townsend deprivation index to quintiles (and a factor)
+quintiles <- quantile(data$townsend_depind, probs=seq(0, 1, 0.2), na.rm=TRUE)
+data$townsend_quint <- dplyr::case_when(
+  data$townsend_depind <= quintiles[2] ~ "Q1: Least deprived",
+  data$townsend_depind <= quintiles[3] ~ "Q2",
+  data$townsend_depind <= quintiles[4] ~ "Q3",
+  data$townsend_depind <= quintiles[5] ~ "Q4",
+  data$townsend_depind <= quintiles[6] ~ "Q5: Most deprived",
+  TRUE ~ "Unknown"
+)
+data$townsend_quint <- factor(data$townsend_quint, 
+                              levels=c("Q1: Least deprived", "Q2", "Q3", "Q4", "Q5: Most deprived", "Unknown"))
 
 # Convert assessment centre code to a country
 data$countryResidence <- dplyr::case_when(
@@ -302,12 +322,6 @@ data$HTNdx_durcat <- factor(data$HTNdx_durcat, levels=c("[0,1)", "[1,2)", "[2,5)
                             labels=c("Less than 1 year", "1 to 2 years", "2 to 5 years", 
                                      "5 to 10 years", "10 to 20 years", "More than 20 years", "Unanswered")
                             )
-
-# Indicator variable for missing hypertension duration
-# We set HTN duration to 0 (or mean, or anything) when it's missing, and interact it with the missingness indicator in the regression
-data$HTNdx_durind <- as.numeric(is.na(data$HTNdx_duration))
-# data$HTNdx_duration[is.na(data$HTNdx_duration)] <- 0
-
 
 # # Add mapping to comorbidities of interest
 # comorbidities <- readRDS("K:\\TEU\\APOE on Dementia\\Data Management\\R_Dataframes_TLA\\38358\\Organised\\Hypertension\\Neo\\VI_ComorbidityCategories.rds")

@@ -35,7 +35,7 @@ treated$weekly_alccat <- cut(treated$weekly_alcunits, breaks=c(-1, 0, 5, 10, 20,
 
 ![Exclusion Flowchart.](K:/TEU/APOE on Dementia/Statistical Analysis/NeoHypertension/RMarkdown/ExclFlowchart.png)
 
-# Table 1. Characteristics of hypertensive participants, n = `r nrow(hypertensives)`.
+# Table 1. Characteristics of hypertensive participants, n = `r nrow(treated)`.
 
 ```{r table1, include=TRUE, echo=FALSE}
 
