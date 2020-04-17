@@ -1,7 +1,7 @@
 ---
 title: "Data Dictionary"
 author: "Jennifer Collister"
-date: "11/03/2020"
+date: "17/04/2020"
 output: 
   word_document:
       reference_docx: "K:/TEU/APOE on Dementia/RMarkdownLandscape.docx"
@@ -24,12 +24,16 @@ dictpath <- "K:\\TEU\\APOE on Dementia\\Data Management\\DataDictionary\\DataDic
 
 ```
 
-# Core analysis
+# Data dictionary
 
 
 ```{r datameta, include=TRUE, echo=FALSE}
 
-core <- data[,c("ID", "evidenceHTN_", "aware_", "treated_", "controlled_", "ethnicity", "age", "gender", "ISCED", "BMIcat", "BMI", "recdate")]
+core <- data[,c("ID", "evidenceHTN_", "aware_", "treated_", "controlled_", "age", "agegrp", "gender", "ethnicity", 
+          "BMIcat", "Smo_Status", "weekly_alcunits", "weekly_alccat", "alc_heavyuse_", "PhA_METsWkAllAct", "METs_over150",
+          "townsend_quint", "income", "employment", "ISCED", "BirthCountryIncomeLevel", "countryResidence", "BowelCancerScreening",
+          "HTNdx_durcat", "antiHTNmedsno",  "FamilyHist_CVD_", 
+          "comorbNumber_", "recdate")]
 
 core_linker <- build_linker(core, master_dictionary=dictpath)
 
@@ -37,39 +41,13 @@ core_dict <- build_dict(my.data=core, linker=core_linker, option_description=NUL
 
 kable(core_dict)
 
-core_desc = "The variables required for the core analysis"
+core_desc <- "The variables required for the core analysis"
 
 coredata <- incorporate_attr(my.data=core, data.dictionary=core_dict, main_string=core_desc)
 
 ```
 
 
-# Expanded analysis
-
-
-```{r extradict, include=TRUE, echo=FALSE}
-
-extra <- data[,c("ID", 
-                 "GroupB", "GroupC", 
-                 "BirthCountryIncomeLevel", "income", "townsend_depind", "employment", "shiftwork",
-                 "Smo_Status", "alc_binge_", "METs_over150_", "PhA_METsWkAllAct", "Sle_Duration",
-                 "mean_reacttime",
-                 "HTNdx_duration", "HTNdx_severity",
-                 "FamilyHist_CVD_", 
-                 "WaistCirc"
-                 )]
-
-extra_linker <- build_linker(extra, master_dictionary=dictpath)
-
-extra_dict <- build_dict(my.data=extra, linker=extra_linker, option_description=NULL, prompt_varopts=FALSE, na.rm=TRUE)
-
-kable(extra_dict)
-
-extra_desc = "The variables required for the core analysis"
-
-extradata <- incorporate_attr(my.data=extra, data.dictionary=extra_dict, main_string=extra_desc)
-
-```
 
 
 
