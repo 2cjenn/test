@@ -23,9 +23,32 @@ options(knitr.kable.NA='')
 
 data <- readRDS(file="K:\\TEU\\APOE on Dementia\\Data Management\\R_Dataframes_TLA\\38358\\Organised\\Hypertension\\Neo\\HTN_excl.rds")
 
+
+# Comorbidities of interest
+comorbs <- readRDS("K:\\TEU\\APOE on Dementia\\Data Management\\R_Dataframes_TLA\\38358\\Organised\\Hypertension\\Neo\\VI_HTNcomorb.rds")
+colnames(comorbs) <- c("ID", paste0("VI_", colnames(comorbs)[-1]))
+comorbs_raw <- colnames(comorbs)[-1]
+comorbs_string <- paste0(colnames(comorbs)[-1], "_")
+
+data$comorbNumber <- rowSums(data[,comorbs_raw])
+data$comorbNumber_ <- dplyr::case_when(
+  data$comorbNumber==0 ~ "0",
+  data$comorbNumber==1 ~ "1",
+  data$comorbNumber==2 ~ "2",
+  data$comorbNumber>=3 ~ ">=3",
+  TRUE ~ "Error"
+)
+data$comorbNumber_<- factor(data$comorbNumber_, levels=c("0", "1", "2",">=3"))
+data$comorbNone <- data$comorbNumber==0
+
+
+# In this analysis, we want to consider two subsets: all hypertensives and all treated individuals
 hypertensives <- data[data$evidenceHTN==TRUE & !is.na(data$evidenceHTN),]
 treated <- data[data$treated==TRUE & !is.na(data$treated),]
 
+# Among the treated, those who did not list any HTN meds in VI are assumed to be taking unlisted meds
+treated$antiHTNmedsno <- factor(treated$antiHTNmedsno, levels=c("1", "2", ">=3", "0"),
+                                labels=c("1", "2", ">=3",  "Medication list unavailable"))
 
 ```
 
@@ -33,8 +56,14 @@ treated <- data[data$treated==TRUE & !is.na(data$treated),]
 
 # Table 1. Characteristics of treated participants, n = `r nrow(treated)`, split by control status.
 
+<div custom-style="Todo">To-do: Scale glasses/pints of alcohol to units - Neo to decide on source for appropriate scaling</div>
+
 ```{r table1, include=TRUE, echo=FALSE}
-varlist=c("age", "agegrp", "gender", "BMIcat", "ethnicity", "Smo_Status", "weekly_alcunits", "weekly_alccat", "alc_heavyuse_", "PhA_METsWkAllAct", "METs_over150", "HTNdx_durcat", "antiHTNmedsno", "townsend_quint", "income", "ISCED", "BirthCountryIncomeLevel", "countryResidence", "BowelCancerScreening", "FamilyHist_CVD_", "CVD_", "Diabetes_", "Asthma_or_COPD_", "Migraine_", "Depression_", "Other_chronic_comorbidities_")
+varlist=c("age", "agegrp", "gender", "ethnicity", 
+          "BMIcat", "Smo_Status", "weekly_alcunits", "weekly_alccat", "alc_heavyuse_", "PhA_METsWkAllAct", "METs_over150",
+          "townsend_quint", "income", "employment", "ISCED", "BirthCountryIncomeLevel", "countryResidence", "BowelCancerScreening",
+          "HTNdx_durcat", "antiHTNmedsno",  "FamilyHist_CVD_", 
+          "comorbNumber_", comorbs_string)
 
 tab1 <- descriptivetable(df=treated[treated$controlled==TRUE,], 
                          varlist=varlist,
@@ -45,29 +74,22 @@ tab2 <- descriptivetable(df=treated[treated$controlled==FALSE,],
                          contavg='median')
 
 fulltab <- cbind(tab1, tab2[,3:4])
-colnames <- rbind(
-  c("", "", 
+fulltab <- rbind(colnames(fulltab), fulltab)
+colnames(fulltab) <- c("", "", 
     paste0("Controlled, n=", nrow(treated[treated$controlled==TRUE,])), "", 
     paste0("Uncontrolled, n=", nrow(treated[treated$controlled==FALSE,])), ""
-    ),
-  colnames(fulltab)
-)
-colnames(fulltab) <- NULL
-kable(rbind(colnames, fulltab))
+    )
+kable(fulltab)
 
 ```
 
 # Figure 2. Hypertension prevalence, awareness, treatment and control among adults aged 40-69 years in the UKB, overall
 
 ```{r fig2, include=FALSE, echo=FALSE, results='asis'}
-ethnicity <- c("White", "Non-white", "Unknown")
-agegrp <- c("[40,50)", "[50,60)", "[60,70)")
-dflist <- c(list("Whole population"=data), 
-            lapply(ethnicity, function(x) data[data$ethnicity==x,]),
-            lapply(agegrp, function(x) data[data$agegrp==x,])
-            )
-names(dflist) <- c("Whole population", paste0("UKB ", ethnicity, "\npopulation"), paste0("UKB population\naged ",agegrp))
-filenames <- list("Wholepop", "White", "nonWhite", "Unknown", "40_50", "50_60", "60_70")
+
+dflist <- c(list("Whole population"=data))
+names(dflist) <- c("Whole population")
+filenames <- list("Wholepop")
 names(filenames) <- names(dflist)
 
 grlist <- list()
@@ -88,14 +110,20 @@ for(dfname in names(dflist)){
 ```
 ![Whole population.](K:/TEU/APOE on Dementia/Statistical Analysis/NeoHypertension/RMarkdown/Wholepop.png)
 
-# Table 2:
+# Table 2: Unadjusted (crude), age- and sex-adjusted, and fully adjusted (n=99719) logistic regression models of covariates of interest against hypertension control status.
 
-<div custom-style="Todo">Test</div>
+<div custom-style="Todo">To-do: Human-friendly variable names</div>
+
+<div custom-style="Todo">To-do: Multiple imputation for hypertension duration instead of categorical?</div>
 
 ```{r logisticregression, include=TRUE, echo=FALSE}
 source("K:/TEU/APOE on Dementia/Statistical Analysis/JCfunctions.R")
 
-varlist=c("age", "agegrp", "gender", "BMIcat", "ethnicity", "Smo_Status", "weekly_alcunits", "alc_heavyuse_", "PhA_METsWkAllAct", "METs_over150", "HTNdx_durcat", "antiHTNmedsno", "townsend_quint", "income", "ISCED", "BirthCountryIncomeLevel", "countryResidence", "BowelCancerScreening", "FamilyHist_CVD_", "CVD_", "Diabetes_", "Asthma_or_COPD_", "Migraine_", "Depression_", "Other_chronic_comorbidities_")
+varlist=c("agegrp", "gender", "ethnicity", 
+          "BMIcat", "Smo_Status", "weekly_alccat", "alc_heavyuse_", "METs_over150",
+          "townsend_quint", "income", "ISCED", "BirthCountryIncomeLevel", "countryResidence", "BowelCancerScreening",
+          "HTNdx_durcat", "antiHTNmedsno",  "FamilyHist_CVD_", 
+          "comorbNumber_", comorbs_string)
 
 preparecoefflist <- function(df, varname){
   if(is.factor(df[[varname]])){
@@ -179,26 +207,27 @@ multi <- regressiontable(df=treated, varlist=varlist, regresstype="multivariable
 tab2 <- merge(merge(uni, adj, by=c("IDcol", "Coefficient", "Level"), sort=FALSE),
               multi, by=c("IDcol", "Coefficient", "Level"), sort=FALSE)
 tab2 <- tab2[,-which(names(tab2)=="IDcol")]
-colnames <- rbind(c("","", "Unadjusted", "", "", "Age- and sex-adjusted", "", "", "Fully adjusted", "", ""),
-                  c("Coefficient", "Level", "OR", "95% CI", "p", "OR", "95% CI", "p", "OR", "95% CI", "p"))
-colnames(tab2) <- NULL
-kable(rbind(colnames, tab2), 
-      caption="Logistic regressions of various factors against hypertension control status, odds ratios are for successful BP control.")
+tab2 <- rbind(c("Coefficient", "Level", "OR", "95% CI", "p", "OR", "95% CI", "p", "OR", "95% CI", "p"),
+              tab2)
+colnames(tab2) <- c("","", "Unadjusted", "", "", "Age- and sex-adjusted", "", "", "Fully adjusted", "", "")
+kable(tab2, caption="Logistic regressions of various factors against hypertension control status, odds ratios are for successful BP control.")
 
 
 ```
 
-# Table 3: Hypertension prevalence awareness, treatment and control by comorbidity type, among hypertensives
+# Table 3: Prevalence of awareness, treatment and control among hypertensives, grouped by covariates of interest
+
+<div custom-style="Todo">To-do: Display all to same number of dp (ie 56.0 instead of 56)</div>
+
+<div custom-style="Todo">Note: As per Neo's changes in mapping sheet there are now 11 comorbidities of interest instead of the 8 requested in UKBTapela_HTN_ManuscriptResults_Feedback20200416</div>
 
 ```{r table3}
-comorbtype <- readRDS("K:\\TEU\\APOE on Dementia\\Data Management\\R_Dataframes_TLA\\38358\\Organised\\Hypertension\\Neo\\VIhypGroupBC_type.rds")
-comorbtypes <- names(comorbtype)[-1]
-GroupC_type <- comorbtypes[!comorbtypes %in% "CVD"]
-hypertensives$None <- rowSums("None"==hypertensives[,comorbtypes]) == length(comorbtypes)
 
-dflist <- c(list("None"=hypertensives[hypertensives$None==TRUE,]), 
-            list("CVD"=hypertensives[hypertensives$CVD=="CVD",]),
-            lapply(GroupC_type, function(x) hypertensives[hypertensives[[x]]==gsub("_", " ", x),])
+dflist <- c(list("Among all hypertensives"=hypertensives),
+            lapply(levels(hypertensives$agegrp), function(x) hypertensives[hypertensives$agegrp==x,]),
+            lapply(levels(hypertensives$ethnicity), function(x) hypertensives[hypertensives$ethnicity==x,]),
+            list("None"=hypertensives[hypertensives$comorbNone==TRUE,]), 
+            lapply(comorbs_raw, function(x) hypertensives[hypertensives[[x]]==1,])
             )
 tab3 <- c()
 for(df in dflist){
@@ -209,27 +238,20 @@ for(df in dflist){
   pct_aware <- round(100*nrow(df[df$aware==TRUE & !is.na(df$aware),])/nrow(df),1)
   pct_treat <- round(100*nrow(df[df$treated==TRUE & !is.na(df$treated),])/nrow(df[df$aware==TRUE & !is.na(df$aware),]),1)
   pct_control <- round(100*nrow(df[df$controlled==TRUE & !is.na(df$controlled),])/nrow(df[df$treated==TRUE & !is.na(df$treated),]),1)
-  tab3 <- rbind(tab3,(cbind(n, mean_age, paste0(mean_SBP,"/",mean_DBP), pct_aware, pct_treat, pct_control)))
+  total_pct_control <- round(100*nrow(df[df$controlled==TRUE & !is.na(df$controlled),])/nrow(df),1)
+  tab3 <- rbind(tab3,(cbind(n, mean_age, paste0(mean_SBP,"/",mean_DBP), 
+                            pct_aware, pct_treat, pct_control, total_pct_control)))
 }
-rownames(tab3) <- c("None", "CVD", gsub("_", " ", GroupC_type))
-colnames(tab3) <- c("n", "Mean age", "Mean SBP/DBP", "% Aware", "% Treated", "% Controlled")
+
+tab3 <- cbind(c("All hypertensives", levels(hypertensives$agegrp), levels(hypertensives$ethnicity),
+                    "None", gsub("_", " ", gsub("VI_", "", comorbs_raw))),
+              tab3)
+rownames(tab3) <- c("", "Age groups", "", "", "Ethnic groups", "", "", 
+                    "Comorbidities", "","", "", "", "", "", "", "",  "", "","")
+colnames(tab3) <- c("", "n", "Mean age", "Mean SBP/DBP", "% Aware", "% Treated", "% Controlled", "Total % Controlled")
 kable(tab3)
 
 ```
 
-# Figure 3. Hypertension prevalence, awareness, treatment and control among adults aged 40-69 years in the UKB, by age group
 
-![Individuals aged between 40 and 50.](K:/TEU/APOE on Dementia/Statistical Analysis/NeoHypertension/RMarkdown/40_50.png)
-
-![Individuals aged between 50 and 60.](K:/TEU/APOE on Dementia/Statistical Analysis/NeoHypertension/RMarkdown/50_60.png)
-
-![Individuals aged between 60 and 70.](K:/TEU/APOE on Dementia/Statistical Analysis/NeoHypertension/RMarkdown/60_70.png)
-
-# Figure 4. Hypertension prevalence, awareness, treatment and control among adults aged 40-69 years in the UKB, by ethnicity
-
-![Individuals of White ethnicity.](K:/TEU/APOE on Dementia/Statistical Analysis/NeoHypertension/RMarkdown/White.png)
-
-![Individuals of non-White ethnicity.](K:/TEU/APOE on Dementia/Statistical Analysis/NeoHypertension/RMarkdown/nonWhite.png)
-
-![Individuals of unknown ethnicity.](K:/TEU/APOE on Dementia/Statistical Analysis/NeoHypertension/RMarkdown/unknown.png)
 

@@ -303,7 +303,7 @@ data$HTNdx_severity <- factor(data$HTNdx_severity, levels=c("Normotensive", "Sta
 
 # Convert number of hypertensive medications to a categorical variables
 data$antiHTNmedsno <- dplyr::case_when(
-  data$hypmedsno==0 ~ "0",
+  data$hypmedsno==0 | is.na(data$hypmedsno) ~ "0",
   data$hypmedsno==1 ~ "1",
   data$hypmedsno==2 ~ "2",
   data$hypmedsno>=3 ~ ">=3",
@@ -323,23 +323,17 @@ data$HTNdx_durcat <- factor(data$HTNdx_durcat, levels=c("[0,1)", "[1,2)", "[2,5)
                                      "5 to 10 years", "10 to 20 years", "More than 20 years", "Unanswered")
                             )
 
-# # Add mapping to comorbidities of interest
-# comorbidities <- readRDS("K:\\TEU\\APOE on Dementia\\Data Management\\R_Dataframes_TLA\\38358\\Organised\\Hypertension\\Neo\\VI_ComorbidityCategories.rds")
-# data <- merge(data, comorbidities, by="ID", all.x=TRUE)
 
-# Add mapping to comorbidity groups B and C
-comorbgrps <- readRDS("K:\\TEU\\APOE on Dementia\\Data Management\\R_Dataframes_TLA\\38358\\Organised\\Hypertension\\Neo\\VIhypGroupBC.rds")
-data <- merge(data, comorbgrps, by="ID", all.x=TRUE)
-for(comorb in names(comorbgrps)[-1]){
+# Add mapping to comorbidities of interest
+comorbs <- readRDS("K:\\TEU\\APOE on Dementia\\Data Management\\R_Dataframes_TLA\\38358\\Organised\\Hypertension\\Neo\\VI_HTNcomorb.rds")
+colnames(comorbs) <- c("ID", paste0("VI_", colnames(comorbs)[-1]))
+data <- merge(data, comorbs, by="ID", all.x=TRUE)
+for(comorb in names(comorbs)[-1]){
+  data[[comorb]][is.na(data[[comorb]])] <- 0
+  data[[comorb]][data[[comorb]]>1] <- 1
   data[[paste0(comorb,"_")]] <- data[[comorb]]>0 & !is.na(data[[comorb]])
   data[[paste0(comorb,"_")]] <- factor(as.numeric(data[[paste0(comorb,"_")]]), levels=c(0,1), labels=c("No", "Yes"))
 }
 
-comorbtype <- readRDS("K:\\TEU\\APOE on Dementia\\Data Management\\R_Dataframes_TLA\\38358\\Organised\\Hypertension\\Neo\\VIhypGroupBC_type.rds")
-data <- merge(data, comorbtype, all.x=TRUE)
-for(col in names(comorbtype)[-1]){
-  data[[col]] <- data[[col]]>0 & !is.na(data[[col]])
-  data[[col]] <- factor(as.numeric(data[[col]]), levels=c(0,1), labels=c("None", gsub("_", " ", col)))
-}
 
 saveRDS(data, file="K:\\TEU\\APOE on Dementia\\Data Management\\R_Dataframes_TLA\\38358\\Organised\\Hypertension\\Neo\\HTN_excl.rds")
