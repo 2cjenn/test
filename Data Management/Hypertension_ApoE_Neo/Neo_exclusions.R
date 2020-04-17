@@ -335,5 +335,16 @@ for(comorb in names(comorbs)[-1]){
   data[[paste0(comorb,"_")]] <- factor(as.numeric(data[[paste0(comorb,"_")]]), levels=c(0,1), labels=c("No", "Yes"))
 }
 
+data$comorbNumber <- rowSums(data[,colnames(comorbs)[-1]])
+data$comorbNumber_ <- dplyr::case_when(
+  data$comorbNumber==0 ~ "0",
+  data$comorbNumber==1 ~ "1",
+  data$comorbNumber==2 ~ "2",
+  data$comorbNumber>=3 ~ ">=3",
+  TRUE ~ "Error"
+)
+data$comorbNumber_<- factor(data$comorbNumber_, levels=c("0", "1", "2",">=3"))
+data$comorbNone <- data$comorbNumber==0
+
 
 saveRDS(data, file="K:\\TEU\\APOE on Dementia\\Data Management\\R_Dataframes_TLA\\38358\\Organised\\Hypertension\\Neo\\HTN_excl.rds")

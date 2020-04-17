@@ -177,3 +177,80 @@ propped <- function(table, margin=NULL) {
   }
   return(tabsums)
 }
+
+
+preparecoefflist <- function(df, varname){
+  if(is.factor(df[[varname]])){
+    levels <- levels(df[[varname]])
+    variable <- c(varname,rep(NA, length(levels)-1))
+    coeffname <- paste0(varname,levels)
+  } else {
+    levels <- NA
+    variable <- varname
+    coeffname <- varname
+  }
+  return(data.frame(coeffname, variable, levels, stringsAsFactors=FALSE))
+}
+
+regressiontable <- function(df, varlist, regresstype){
+  coefflist <- list()
+  # Prepare the list of coefficients - variables and levels for factors or blanks for continuous
+  for(var in varlist){
+    coefflist[[var]] <- preparecoefflist(df=df, varname=var)
+  }
+  
+  if(regresstype=="univariable"){
+    modellist <- list()
+    for(var in varlist){
+      coeffnames <- coefflist[[var]]
+      
+      # Prepare the formula and pass it to the model
+      formula <- paste0("controlled ~ ", var)
+      model <- glm(formula, data=df, family="binomial")
+      
+      # Add the pretty-formatted outputs to the list
+      modellist[[var]] <- printlogresults(model, coeffnames, IDcol=TRUE)
+    }
+    # Vertically concatenate all the pretty outputs into one output table
+    outdf <- do.call(rbind, modellist)
+    
+  } else if (regresstype=="adjusted"){
+    modellist <- list()
+    adjvarlist <- c("age", "gender")
+    
+    # Run the regressions for age and gender separately to go on top of the table
+    for(adjvar in adjvarlist){
+      coeffnames <- preparecoefflist(df=df, varname=adjvar)
+      
+      formula <- paste0("controlled ~ ", paste(adjvarlist, collapse="+"))
+      model <- glm(formula, data=df, family="binomial")
+      
+      # Add the pretty-formatted outputs to the list
+      modellist[[adjvar]] <- printlogresults(model, coeffnames, IDcol=TRUE)
+    }
+    
+    # Putting age or gender in the regression twice would confuse it, so make sure they're not in the varlist
+    varlist <- varlist[!varlist %in% adjvarlist]
+    
+    for(var in varlist){
+      coeffnames <- coefflist[[var]]
+      
+      # Prepare the formula and pass it to the model
+      formula <- paste0("controlled ~ ", paste(adjvarlist, collapse="+"), "+", var)
+      model <- glm(formula, data=df, family="binomial")
+      
+      # Add the pretty-formatted outputs to the list
+      modellist[[var]] <- printlogresults(model, coeffnames, IDcol=TRUE)
+    }
+    outdf <- do.call(rbind, modellist)
+    
+  } else if (regresstype=="multivariable"){
+    coeffnames <- do.call(rbind, coefflist)
+    formula <- paste0("controlled ~ ", paste(varlist, collapse=" + "))
+    model <- glm(formula, data=df, family="binomial")
+    outdf <- printlogresults(model, coeffnames, IDcol=TRUE)
+  }
+  
+  rownames(outdf) <- NULL
+  return(outdf)
+}
