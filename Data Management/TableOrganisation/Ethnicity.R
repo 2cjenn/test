@@ -11,6 +11,7 @@ library(dplyr)
 # Read in the raw data
 ethnicity <- readRDS("K:\\TEU\\APOE on Dementia\\Data Management\\R_Dataframes_TLA\\38358\\Eth_base.rds")
 
+
 # Reorder the factor levels to make more sense
 ethnicity$Eth_Ethnicity <- factor(ethnicity$Eth_Ethnicity, levels=c("White", "British", "Irish", "Any other white background",
                                                                     "Mixed", "White and Black Caribbean", "White and Black African", 
@@ -38,5 +39,27 @@ ethnicity$eth_exact[ethnicity$eth_exact == "Black or Black British"] <- "Any oth
 ethnicity$eth_exact[is.na(ethnicity$eth_exact)] <- "Prefer not to answer"
 ethnicity$eth_exact <- factor(ethnicity$eth_exact)
 
-saveRDS(ethnicity[,c("ID", "Eth_Ethnicity", "eth_group", "eth_exact")], 
+#--------------------------------------------------------------------------------------------------------------
+# Add the genetic ethnic data
+gep <- readRDS("K:\\TEU\\APOE on Dementia\\Data Management\\R_Dataframes_TLA\\38358\\GeP.rds")
+
+# "Genetic ethnic group: Indicates samples who self-identified as "White British" according to Field 2100 
+# (ethnicity$Eth_Ethnicity) and have very similar genetic ancestry based on a principal components analysis of the genotypes"
+gep$genWhiteBrit <- as.character(gep$GeP_ethnic)
+# If there's no batch info for the individual, then we assume there's no genetic data for them
+gep$genWhiteBrit[is.na(gep$GeP_Batch.m0)] <- "No genetic data"
+# Anyone who has genetic data but is not classed as Caucasian is classed as other
+gep$genWhiteBrit[is.na(gep$genWhiteBrit)] <- "Other"
+# Label it "White British" instead of Caucasian - more true to definition
+gep$genWhiteBrit <- factor(gep$genWhiteBrit, levels=c("Caucasian", "Other", "No genetic data"),
+                            labels=c("White British", "Other", "No genetic data"), ordered=FALSE)
+
+
+# Merge into the regular ethnicity data set
+ethnicity <- merge(ethnicity, gep[,c("ID", "genWhiteBrit")], by="ID", all.x=TRUE)
+
+
+#--------------------------------------------------------------------------------------------------------------
+# save
+saveRDS(ethnicity[,c("ID", "Eth_Ethnicity", "eth_group", "eth_exact", "genWhiteBrit")], 
         file="K:\\TEU\\APOE on Dementia\\Data Management\\R_Dataframes_TLA\\38358\\Organised\\ethnicity.rds")
