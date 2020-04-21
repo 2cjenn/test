@@ -55,13 +55,16 @@ df_to_table <- function(tablist, overwrite) {
 
 # Print numbers and proportions for factors, median and IQR or mean and 95% CI for continuous variables
 # Optionally provide p-values from chi-squared (categorical) and t-test (continuous)
-descriptivetable <- function(df, varlist, contavg='mean', assocvar=NULL){
+descriptivetable <- function(df, varlist, contavg='mean', assocvar=NULL, pretty_names=NULL){
+  if(is.null(pretty_names)){
+    pretty_names <- setNames(varlist, varlist)
+  }
   outtable <- c()
   for(var in varlist){
     if(is.factor(df[[var]])){
       n <- table(df[[var]], useNA='ifany')
-      pct <- round(100*prop.table(n),2)
-      variable <- c(var, rep(NA, dim(n)-1))
+      pct <- format(round(100*prop.table(n),2), digits=1, nsmall=1)
+      variable <- c(pretty_names[[var]], rep(NA, dim(n)-1))
       levels <- names(n)
       if(!is.null(assocvar)){
         tab <- table(df[[assocvar]], df[[var]])
@@ -70,14 +73,14 @@ descriptivetable <- function(df, varlist, contavg='mean', assocvar=NULL){
       }
     } else {
       if(contavg=="mean"){
-        n <- round(mean(df[[var]], na.rm=TRUE),2)
-        pct <- round(sd(df[[var]], na.rm=TRUE),2)
-        variable <- paste0("Mean ", var, " (SD)")
+        n <- format(round(mean(df[[var]], na.rm=TRUE),2), digits=1, nsmall=1)
+        pct <- format(round(sd(df[[var]], na.rm=TRUE),2), digits=1, nsmall=1)
+        variable <- paste0("Mean ", pretty_names[[var]], " (SD)")
       } else if (contavg=="median"){
-        n <- round(median(df[[var]], na.rm=TRUE),2)
-        IQR <- round(quantile(df[[var]], na.rm=TRUE),1)
+        n <- format(round(median(df[[var]], na.rm=TRUE),2), digits=1, nsmall=1)
+        IQR <- format(round(quantile(df[[var]], na.rm=TRUE),1), digits=1, nsmall=1)
         pct <- paste0("(", IQR[2], "-", IQR[4], ")")
-        variable <- paste0("Median ", var, " (IQR)")
+        variable <- paste0("Median ", pretty_names[[var]], " (IQR)")
       }
       levels <- NA
       if(!is.null(assocvar)){
@@ -92,6 +95,7 @@ descriptivetable <- function(df, varlist, contavg='mean', assocvar=NULL){
     }
   }
   rownames(outtable) <- c()
+  colnames(outtable) <- c("Variable", "Levels (for categorical)", "n", "%")
   return(outtable)
 }
 
@@ -125,11 +129,11 @@ printlogresults <- function(model, coeffnames=NULL, IDcol=FALSE){
   # NOMVAR <- rownames(coeff)
   regression <- data.frame(
     coeffname=(rownames(coeff)),
-    OR=format(round(exp(coeff[,1]),3), nsmall=3), # OR
-    CI=paste0("(",format(round(exp(coeff[,1]-coeff[,2]),2), nsmall=2), ", ",
-              format(round(exp(coeff[,1]+coeff[,2]),2),nsmall=2),")"), # 95% CI
+    OR=format(round(exp(coeff[,1]),3), digits=3, nsmall=3), # OR
+    CI=paste0("(",format(round(exp(coeff[,1]-(1.96*coeff[,2])),2), digits=2, nsmall=2), ", ",
+              format(round(exp(coeff[,1]+(1.96*coeff[,2])),2), digits=2, nsmall=2),")"), # 95% CI
     # p=formatC(coeff[,4], format="e", digits=3), # p-value
-    p=ifelse(coeff[,4]<0.001, "<0.001", round(coeff[,4],3)), # p-value
+    p=ifelse(coeff[,4]<0.001, "<0.001", format(round(coeff[,4],3), digits=3, nsmall=3)), # p-value
     stringsAsFactors=FALSE
     )
   if(!is.null(coeffnames)){
@@ -138,14 +142,14 @@ printlogresults <- function(model, coeffnames=NULL, IDcol=FALSE){
     results <- results[match(coeffnames$coeffname, results$coeffname),]
     if(IDcol==TRUE){
       results <- results[,c("coeffname", "variable", "levels", "OR", "CI", "p")]
-      names(results) <- c("IDcol", "Coefficient", "Level", "Odds ratio", "95% CI", "p value")
+      names(results) <- c("IDcol", "Coefficient", "Level", "OR", "95% CI", "p")
     } else {
       results <- results[,c("variable", "levels", "OR", "CI", "p")]
-      names(results) <- c("Coefficient", "Level", "Odds ratio", "95% CI", "p value")
+      names(results) <- c("Coefficient", "Level", "OR", "95% CI", "p")
     }
   } else {
     results <- regression
-    names(results) <- c("Coefficient", "Odds ratio", "95% CI", "p value")
+    names(results) <- c("Coefficient", "OR", "95% CI", "p")
   }
   rownames(results) <- NULL
   # https://www.r-bloggers.com/regression-on-categorical-variables/
@@ -192,7 +196,7 @@ preparecoefflist <- function(df, varname){
   return(data.frame(coeffname, variable, levels, stringsAsFactors=FALSE))
 }
 
-regressiontable <- function(df, varlist, regresstype){
+regressiontable <- function(df, varlist, regresstype, adjvarlist=c("agegrp", "gender")){
   coefflist <- list()
   # Prepare the list of coefficients - variables and levels for factors or blanks for continuous
   for(var in varlist){
@@ -216,7 +220,6 @@ regressiontable <- function(df, varlist, regresstype){
     
   } else if (regresstype=="adjusted"){
     modellist <- list()
-    adjvarlist <- c("age", "gender")
     
     # Run the regressions for age and gender separately to go on top of the table
     for(adjvar in adjvarlist){

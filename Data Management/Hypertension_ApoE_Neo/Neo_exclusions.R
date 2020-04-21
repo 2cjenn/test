@@ -101,7 +101,7 @@ data$hypmedsno[data$treated==FALSE | is.na(data$treated)] <- 0
 data$controlled[data$treated==FALSE | is.na(data$treated)] <- NA
 
 # Center age on the minimum
-data$c_age <- data$age - 40
+data$c40_age <- data$age - 40
 
 # Make the key dichotomous variables into factors to improve readability of outputs
 data$prevHBP_ <- factor(as.numeric(data$prevHBP), levels=c(0,1), labels=c("Did not report prior HTN diagnosis (touchscreen)", "Self-reported prior HTN diagnosis in touchscreen questionnaire"))
@@ -165,41 +165,23 @@ data$ethnicity <- ifelse(data$ethnicity=="White", "White",
                          ifelse(data$ethnicity=="Prefer not to answer" | is.na(data$ethnicity), "Unknown",
                                 "Non-white"))
 data$ethnicity <- factor(data$ethnicity, levels=c("White", "Non-white", "Unknown"))
-# data$ethnicity[data$ethnicity=="Chinese"] <- "Asian"
-# data$ethnicity[data$ethnicity=="Asian or Asian British"] <- "Asian"
-# data$ethnicity[data$ethnicity=="Black or Black British"] <- "Black"
-# data$ethnicity[data$ethnicity=="Other ethnic group"] <- "Other"
-# data$ethnicity[data$ethnicity=="Prefer not to answer"] <- "Other"
-# data$ethnicity[data$ethnicity=="Do not know"] <- "Other"
-# data$ethnicity[data$ethnicity=="Mixed"] <- "Other"
-# data$ethnicity <- factor(data$ethnicity, levels=c("White", "Black", "Asian", "Other"))
-
-
-# # Categorise age of leaving education into primary, secondary or tertiary education
-# data$education[data$Edu_Age.0==-2 & !is.na(data$Edu_Age.0)] <- "None"
-# data$education[data$Edu_Age.0 %in% c(5:12) & !is.na(data$Edu_Age.0)] <- "Primary"
-# data$education[data$Edu_Age.0 %in% c(13:18) & !is.na(data$Edu_Age.0)] <- "Secondary"
-# data$education[data$Edu_Age.0>18 & !is.na(data$Edu_Age.0)] <- "Tertiary or higher"
-# data$education[data$Edu_Age.0==-1 | data$Edu_Age.0==-3 | is.na(data$Edu_Age.0)] <- "Unknown/unanswered"
-# data$education <- factor(data$education, levels=c("None", "Primary", "Secondary", "Tertiary or higher", "Unknown/unanswered"))
 
 # Convert UKB qualification categories into ISCED education categories
 data$ISCED <- dplyr::case_when(
-  data$edu_highest == "College or University degree" ~ "ISCED 5: First stage of tertiary education",
-  data$edu_highest == "NVQ or HND or HNC or equivalent" ~ "ISCED 5: First stage of tertiary education",
-  data$edu_highest == "Other professional qualifications eg: nursing, teaching" ~ "ISCED 4: Post-secondary non-tertiary education",
-  data$edu_highest == "A levels/AS levels or equivalent" ~ "ISCED 3: Upper secondary education",
-  data$edu_highest == "O levels/GCSEs or equivalent" ~ "ISCED 2: Lower secondary education",
-  data$edu_highest == "CSEs or equivalent" ~ "ISCED 2: Lower secondary education",
-  data$edu_highest == "None of the above" ~ "ISCED 1: Primary education",
+  data$edu_highest == "College or University degree" ~ "5: Tertiary",
+  data$edu_highest == "NVQ or HND or HNC or equivalent" ~ "5: Tertiary",
+  data$edu_highest == "Other professional qualifications eg: nursing, teaching" ~ "4: Post-secondary non-tertiary",
+  data$edu_highest == "A levels/AS levels or equivalent" ~ "2-3: Secondary",
+  data$edu_highest == "O levels/GCSEs or equivalent" ~ "2-3: Secondary",
+  data$edu_highest == "CSEs or equivalent" ~ "2-3: Secondary",
+  data$edu_highest == "None of the above" ~ "1: Primary",
   data$edu_highest == "Prefer not to answer" ~ "Unanswered",
   is.na(data$edu_highest) ~ "Unanswered"
   )
 
 data$ISCED <- factor(data$ISCED, 
-                     levels=c("ISCED 5: First stage of tertiary education", "ISCED 4: Post-secondary non-tertiary education", 
-                              "ISCED 3: Upper secondary education", "ISCED 2: Lower secondary education",
-                              "ISCED 1: Primary education", "Unanswered")) # Excluding "Unanswered" from factor levels codes it as NA
+                     levels=c("5: Tertiary", "4: Post-secondary non-tertiary", 
+                              "2-3: Secondary" , "1: Primary" , "Unanswered")) # Excluding "Unanswered" from factor levels codes it as NA
 
 # Convert "missing" employment to "unemployed" so it doesn't interfere with Cox regression
 levels(data$employment) <- c(levels(data$employment), "Unemployed/retired/other")
@@ -249,16 +231,15 @@ data$alc_heavyuse_ <- factor(as.numeric(data$alc_heavyuse), levels=c(0,1), label
 
 # Indicator variable for whether physical activity > or <= 150 METs per day
 data$METs_over150 <- dplyr::case_when(
-  is.na(data$PhA_METsWkAllAct) ~ "Unknown",
-  data$PhA_METsWkAllAct/7 > 150 ~ "Average daily METs > 150",
-  TRUE ~ "Average daily METs <= 150")
-data$METs_over150 <- factor(data$METs_over150, levels=c("Average daily METs <= 150", "Average daily METs > 150", "Unknown"))
+  data$PhA_METsWkAllAct/7 > 150 & !is.na(data$PhA_METsWkAllAct) ~ "High (METs > 150)",
+  data$PhA_METsWkAllAct/7 <= 150 & !is.na(data$PhA_METsWkAllAct) ~ "Low (METs <= 150)",
+  TRUE ~ "Unknown")
+data$METs_over150 <- factor(data$METs_over150, levels=c("Low (METs <= 150)", "High (METs > 150)", "Unknown"))
 
 # Convert bowel cancer screening to a factor
 data$BowelCancerScreening <- as.character(data$BowelCancerScreening)
 data$BowelCancerScreening[data$BowelCancerScreening %in% c("Prefer not to answer", "Do not know") | is.na(data$BowelCancerScreening)] <- "Unanswered"
-data$BowelCancerScreening <- factor(data$BowelCancerScreening, levels=c("No", "Yes", "Unanswered"), 
-                                    labels=c("Not screened", "Screened for bowel cancer", "Unanswered"), ordered=FALSE)
+data$BowelCancerScreening <- factor(data$BowelCancerScreening, levels=c("Yes", "No", "Unanswered"), ordered=FALSE)
 
 # Convert family history to a factor
 data$FamilyHist_CVD_ <- factor(as.numeric(data$FaH_CVD), levels=c(0,1), labels=c("No family history of CVD", "Family history of CVD"))

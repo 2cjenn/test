@@ -1,7 +1,7 @@
 ---
 title: "Prevalence and correlates of hypertension control among 250,000 middle-aged adults in the UK"
 author: "Jennifer Collister"
-date: "17/04/2020"
+date: "20/04/2020"
 output: 
   word_document:
       reference_docx: "K:/TEU/APOE on Dementia/RMarkdownStyle.docx"
@@ -27,8 +27,10 @@ data <- readRDS(file="K:\\TEU\\APOE on Dementia\\Data Management\\R_Dataframes_T
 # Comorbidities of interest
 comorbs <- readRDS("K:\\TEU\\APOE on Dementia\\Data Management\\R_Dataframes_TLA\\38358\\Organised\\Hypertension\\Neo\\VI_HTNcomorb.rds")
 colnames(comorbs) <- c("ID", paste0("VI_", colnames(comorbs)[-1]))
-comorbs_raw <- colnames(comorbs)[-1]
-comorbs_string <- paste0(colnames(comorbs)[-1], "_")
+print(colnames(comorbs)[-1])
+comorbs_raw <- c("VI_afib_or_aflutter", "VI_CVD", "VI_diabetes", "VI_asthma_or_COPD", "VI_migraine", "VI_epilepsy",
+                 "VI_anxiety_or_stress", "VI_depression_or_bipolar","VI_substance_use")
+comorbs_string <- paste0(comorbs_raw, "_")
 
 # In this analysis, we want to consider two subsets: all hypertensives and all treated individuals
 hypertensives <- data[data$evidenceHTN==TRUE & !is.na(data$evidenceHTN),]
@@ -38,6 +40,43 @@ treated <- data[data$treated==TRUE & !is.na(data$treated),]
 treated$antiHTNmedsno <- factor(treated$antiHTNmedsno, levels=c("1", "2", ">=3", "0"),
                                 labels=c("1", "2", ">=3",  "Medication list unavailable"))
 
+pretty_names <- list(agegrp = "Age group",
+                     gender = "Gender",
+                     ethnicity = "Ethnicity",
+                     BMIcat = "BMI (categorical)",
+                     Smo_Status = "Smoking status",
+                     weekly_alcunits = "Alcoholic drinks per week",
+                     weekly_alccat = "Alcoholic drinks per week (categorical)",
+                     PhA_METsWkAllAct = "Weekly physical activity, in METs",
+                     METs_over150 = "Sufficient physical activity",
+                     townsend_quint = "Townsend Deprivation Index, quintiles",
+                     income = "Household Income, GBP",
+                     employment = "Occupation type",
+                     ISCED = "Highest level of education (ISCED)",
+                     BirthCountryIncomeLevel = "Country of birth, by income level",
+                     countryResidence = "UK country of residence",
+                     BowelCancerScreening = "Ever screened for bowel cancer",
+                     HTNdx_durcat = "Duration of hypertension (categorical)",
+                     antiHTNmedsno = "Number of antihypertensive medications",
+                     FamilyHist_CVD_ = "Family history of CVD",
+                     comorbNumber_ = "No. of comorbidities",
+                     VI_afib_or_aflutter_ = "Arrhythmia (afib/flutter)",
+                     VI_anxiety_or_stress_ = "Anxiety",
+                     VI_asthma_or_COPD_ = "Asthma or COPD",
+                     VI_depression_or_bipolar_ = "Depression",
+                     VI_diabetes_ = "Diabetes",
+                     VI_epilepsy_ = "Epilepsy",
+                     VI_CVD_ = "Cardiovascular disease",
+                     VI_migraine_ = "Migraines",
+                     VI_substance_use_ = "Substance use"
+                     )
+prettyfunc <- function(x){
+  if(x %in% names(pretty_names)){
+     return(pretty_names[[x]])
+  } else {
+    return(x)
+  }
+}
 ```
 
 ![Exclusion Flowchart.](K:/TEU/APOE on Dementia/Statistical Analysis/NeoHypertension/RMarkdown/ExclFlowchart.png)
@@ -46,20 +85,25 @@ treated$antiHTNmedsno <- factor(treated$antiHTNmedsno, levels=c("1", "2", ">=3",
 
 <div custom-style="Todo">To-do: Scale glasses/pints of alcohol to units - Neo to decide on source for appropriate scaling</div>
 
+<div custom-style="Todo">To-do: Genetic ethnicity instead of self-reported</div>
+
 ```{r table1, include=TRUE, echo=FALSE}
-varlist=c("age", "agegrp", "gender", "ethnicity", 
+varlist=c("age", "agegrp", "gender", "ethnicity",
+          "townsend_quint", "income", "employment", "ISCED", "BirthCountryIncomeLevel", "countryResidence",
           "BMIcat", "Smo_Status", "weekly_alcunits", "weekly_alccat", "PhA_METsWkAllAct", "METs_over150",
-          "townsend_quint", "income", "employment", "ISCED", "BirthCountryIncomeLevel", "countryResidence", "BowelCancerScreening",
           "HTNdx_durcat", "antiHTNmedsno",  "FamilyHist_CVD_", 
-          "comorbNumber_", comorbs_string)
+          "comorbNumber_", comorbs_string,
+          "BowelCancerScreening")
 
 tab_c <- descriptivetable(df=treated[treated$controlled==TRUE,], 
                          varlist=varlist,
-                         contavg='median')
+                         contavg='median',
+                         pretty_names=pretty_names)
 
 tab_u <- descriptivetable(df=treated[treated$controlled==FALSE,], 
                          varlist=varlist,
-                         contavg='median')
+                         contavg='median',
+                         pretty_names=pretty_names)
 
 uni <- regressiontable(df=treated, varlist=varlist, regresstype="univariable")
 
@@ -70,11 +114,12 @@ colnames(tab1) <- c("", "",
     paste0("Uncontrolled, n=", nrow(treated[treated$controlled==FALSE,])), "",
     paste0("Overall, n=", nrow(treated)), ""
     )
+# tab1[,1] <- sapply(tab1[,1], prettyfunc)
 kable(tab1)
 
 ```
 
-# Figure 2. Prevalence of hypertension, and its awareness, treatment and control among adults aed 40-69 years in the UKB (n = `r nrow(data)`).
+# Figure 2. Prevalence of hypertension, and its awareness, treatment and control among adults aged 40-69 years in the UKB (n = `r nrow(data)`).
 
 ```{r fig2, include=FALSE, echo=FALSE, results='asis'}
 
@@ -101,11 +146,7 @@ for(dfname in names(dflist)){
 ```
 ![Whole population.](K:/TEU/APOE on Dementia/Statistical Analysis/NeoHypertension/RMarkdown/Wholepop.png)
 
-# Table 2: Prevalence of hypertnesion awareness, treatment and control among hypertensives, by socioeconomic characteristics and comorbidity type
-
-<div custom-style="Todo">To-do: Display all to same number of dp (ie 56.0 instead of 56)</div>
-
-<div custom-style="Todo">Note: As per Neo's changes in mapping sheet there are now 11 comorbidities of interest instead of the 8 requested in UKBTapela_HTN_ManuscriptResults_Feedback20200416</div>
+# Table 2: Prevalence of hypertension awareness, treatment and control among hypertensives, by socioeconomic characteristics and comorbidity type
 
 ```{r table2}
 
@@ -125,15 +166,15 @@ for(df in dflist){
   pct_treat <- round(100*nrow(df[df$treated==TRUE & !is.na(df$treated),])/nrow(df[df$aware==TRUE & !is.na(df$aware),]),1)
   pct_control <- round(100*nrow(df[df$controlled==TRUE & !is.na(df$controlled),])/nrow(df[df$treated==TRUE & !is.na(df$treated),]),1)
   total_pct_control <- round(100*nrow(df[df$controlled==TRUE & !is.na(df$controlled),])/nrow(df),1)
-  tab3 <- rbind(tab3,(cbind(n, mean_age, paste0(mean_SBP,"/",mean_DBP), 
+  tab2 <- rbind(tab2,(cbind(n, mean_age, paste0(mean_SBP,"/",mean_DBP), 
                             pct_aware, pct_treat, pct_control, total_pct_control)))
 }
 
 tab2 <- cbind(c("All hypertensives", levels(hypertensives$agegrp), levels(hypertensives$ethnicity),
-                    "None", gsub("_", " ", gsub("VI_", "", comorbs_raw))),
+                    "None", sapply(comorbs_string, prettyfunc)),
               tab2)
 rownames(tab2) <- c("", "Age groups", "", "", "Ethnic groups", "", "", 
-                    "Comorbidities", "","", "", "", "", "", "", "",  "", "","")
+                    "Comorbidities", "", "", "", "", "", "",  "", "","")
 colnames(tab2) <- c("", "n", "Mean age", "Mean SBP/DBP", "% Aware", "% Treated", "% Controlled", "Total % Controlled")
 kable(tab2)
 
@@ -141,27 +182,64 @@ kable(tab2)
 
 # Table 3: Multivariable logistic regression identifying factors associated with hypertension control (BP < 140/90 mmHg), among UK adults on antihypertensive treatment (n=`r nrow(treated)`)
 
-<div custom-style="Todo">To-do: Human-friendly variable names</div>
+<div custom-style="Todo">To-do: Quadratic age is strongly significant, need to check out residuals</div>
+
+<div custom-style="Todo">To-do: Investigate METs further - Neo to send definition?</div>
+
+<div custom-style="Todo">To-do: Investigate possibility of correlation between Townsend/income/education/employment</div>
+
+<div custom-style="Todo">To-do: Add employment back in when David sends condensed categories</div>
+
+<div custom-style="Todo">To-do: Remove "unknown"/"unanswered" - from regression or from results table?</div>
 
 
 ```{r table3, include=TRUE, echo=FALSE}
 
-varlist=c("agegrp", "gender", "ethnicity", 
+varlist=c("agegrp", "gender", "ethnicity",
+          "townsend_quint", "income", "ISCED", "BirthCountryIncomeLevel", "countryResidence",
           "BMIcat", "Smo_Status", "weekly_alccat", "METs_over150",
-          "townsend_quint", "income", "ISCED", "BirthCountryIncomeLevel", "countryResidence", "BowelCancerScreening",
           "antiHTNmedsno",  "FamilyHist_CVD_",
-          "comorbNumber_", comorbs_string)
-# mod1 <- glm()
+          "comorbNumber_", comorbs_string,
+           "BowelCancerScreening")
 
-adj <- regressiontable(df=treated, varlist=varlist, regresstype="adjusted")
+adj <- regressiontable(df=treated, varlist=varlist, regresstype="adjusted", adjvarlist=c("agegrp", "gender"))
 multi <- regressiontable(df=treated, varlist=varlist, regresstype="multivariable")
-tab2 <- merge(adj, multi, by=c("IDcol", "Coefficient", "Level"), sort=FALSE)
-tab2 <- tab2[,-which(names(tab2)=="IDcol")]
-tab2 <- rbind(c("Coefficient", "Level", "OR", "95% CI", "p", "OR", "95% CI", "p"),
-              tab2)
-colnames(tab2) <- c("","", "Age- and sex-adjusted", "", "", "Fully adjusted", "", "")
-kable(tab2, caption="Logistic regressions of various factors against hypertension control status, odds ratios are for successful BP control.")
-
+tab3 <- merge(adj, multi, by=c("IDcol", "Coefficient", "Level"), sort=FALSE)
+tab3 <- tab3[,-which(names(tab3)=="IDcol")]
+tab3 <- rbind(c("Coefficient", "Level", "OR", "95% CI", "p", "OR", "95% CI", "p"),
+              tab3)
+colnames(tab3) <- c("","", "Age- and sex-adjusted", "", "", "Fully adjusted", "", "")
+tab3[,1] <- sapply(tab3[,1], prettyfunc)
+kable(tab3, caption="Logistic regressions of various factors against hypertension control status, odds ratios are for successful BP control.")
 
 ```
+
+```{r explorequadage, include=FALSE, echo=FALSE}
+
+treated$age2 <- (treated$c40_age)^2
+
+varlist1=c("agegrp", "gender", "ethnicity",
+          "townsend_quint", "income", "ISCED", "BirthCountryIncomeLevel", "countryResidence",
+          "BMIcat", "Smo_Status", "weekly_alccat", "METs_over150",
+          "antiHTNmedsno",  "FamilyHist_CVD_",
+          "comorbNumber_", comorbs_string,
+           "BowelCancerScreening")
+varlist2=c("agegrp", "gender", "ethnicity",
+          "townsend_quint", "ISCED", "BirthCountryIncomeLevel", "countryResidence",
+          "BMIcat", "Smo_Status", "weekly_alccat", "METs_over150",
+          "antiHTNmedsno",  "FamilyHist_CVD_",
+          "comorbNumber_", comorbs_string,
+           "BowelCancerScreening")
+model1 <- glm(formula=paste0("controlled ~ ",paste0(varlist1, collapse="+")), data=treated, family="binomial")
+model2 <- glm(formula=paste0("controlled ~ ",paste0(varlist2, collapse="+")), data=treated, family="binomial")
+anova(model1, model2, test="Chisq")
+
+# printlogresults(model)
+
+model1 <- glm(controlled ~ c40_age, data=treated, family="binomial")
+model2 <- glm(controlled ~ c40_age + age2, data=treated, family="binomial")
+anova(model1, model2, test="Chisq")
+```
+
+
 
