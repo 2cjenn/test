@@ -33,3 +33,9 @@ Stats Email/
 Study Dissemination/
 Z Misc/
 .Rproj.user
+
+# Ignore the renv directories#
+##############################
+**/renv/library/
+**/renv/python/
+**/renv/staging/
