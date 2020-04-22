@@ -221,7 +221,7 @@ data$weekly_alcunits[is.na(data$weekly_alcunits)] <- 0
 
 # Categorise alcohol consumption
 data$weekly_alccat <- cut(data$weekly_alcunits, breaks=c(-1, 0, 5, 10, 20, 30),
-                             labels=c("None", "Less than 5 drinks", "5 to 10 drinks", "10 to 20 drinks", "More than 20 drinks"))
+                             labels=c("None reported", "Less than 5 units", "5 to 10 units", "10 to 20 units", "More than 20 units"))
 
 
 # Define "binge" levels of alcohol consumption
@@ -230,11 +230,11 @@ data$alc_heavyuse[data$gender=="Male"] <- data[data$gender=="Male",]$weekly_alcu
 data$alc_heavyuse_ <- factor(as.numeric(data$alc_heavyuse), levels=c(0,1), labels=c("No", "Yes"))
 
 # Indicator variable for whether physical activity > or <= 150 METs per day
-data$METs_over150 <- dplyr::case_when(
-  data$PhA_METsWkAllAct/7 > 150 & !is.na(data$PhA_METsWkAllAct) ~ "High (METs > 150)",
-  data$PhA_METsWkAllAct/7 <= 150 & !is.na(data$PhA_METsWkAllAct) ~ "Low (METs <= 150)",
+data$METs_over600 <- dplyr::case_when(
+  data$PhA_METsWkAllAct > 600 & !is.na(data$PhA_METsWkAllAct) ~ "High (METs > 600)",
+  data$PhA_METsWkAllAct <= 600 & !is.na(data$PhA_METsWkAllAct) ~ "Low (METs <= 600)",
   TRUE ~ "Unknown")
-data$METs_over150 <- factor(data$METs_over150, levels=c("Low (METs <= 150)", "High (METs > 150)", "Unknown"))
+data$METs_over600 <- factor(data$METs_over150, levels=c("High (METs > 600)", "Low (METs <= 600)", "Unknown"))
 
 # Convert bowel cancer screening to a factor
 data$BowelCancerScreening <- as.character(data$BowelCancerScreening)
@@ -253,10 +253,10 @@ data$BirthCountryIncomeLevel <- factor(data$BirthCountryIncomeLevel, levels=c("H
 quintiles <- quantile(data$townsend_depind, probs=seq(0, 1, 0.2), na.rm=TRUE)
 data$townsend_quint <- dplyr::case_when(
   data$townsend_depind <= quintiles[2] ~ "Q1: Least deprived",
-  data$townsend_depind <= quintiles[3] ~ "Q2",
-  data$townsend_depind <= quintiles[4] ~ "Q3",
-  data$townsend_depind <= quintiles[5] ~ "Q4",
-  data$townsend_depind <= quintiles[6] ~ "Q5: Most deprived",
+  data$townsend_depind > quintiles[2] & data$townsend_depind <= quintiles[3] ~ "Q2",
+  data$townsend_depind > quintiles[3] & data$townsend_depind <= quintiles[4] ~ "Q3",
+  data$townsend_depind > quintiles[4] & data$townsend_depind <= quintiles[5] ~ "Q4",
+  data$townsend_depind > quintiles[5] & data$townsend_depind <= quintiles[6] ~ "Q5: Most deprived",
   TRUE ~ "Unknown"
 )
 data$townsend_quint <- factor(data$townsend_quint, 

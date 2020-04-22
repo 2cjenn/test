@@ -20,12 +20,33 @@ smoking$Smo_Status[is.na(smoking$Smo_Status)] <- "Unanswered"
 #--------------------------------------------------------------------------------------------------------------
 # Alcohol
 alcohol <- readRDS("K:\\TEU\\APOE on Dementia\\Data Management\\R_Dataframes_TLA\\38358\\Alc_base.rds")
-alcohol$Alc_Status <- factor(alcohol$Alc_Status, levels=c("Never", "Previous", "Current", "Prefer not to answer"), ordered=FALSE)
+alcohol$Alc_Status <- factor(alcohol$Alc_Status, levels=c("Never", "Previous", "Current", "Prefer not to answer"), 
+                             ordered=FALSE)
+alcohol$Alc_Freq <- factor(alcohol$Alc_Freq, levels=c("Never", "Special occasions only", "One to three times a month",
+                                                      "Once or twice a week", "Three or four times a week",
+                                                      "Daily or almost daily",  "Prefer not to answer"),
+                           ordered=FALSE)
 
 for(var in c("Alc_RedWineWk", "Alc_WhiteWineWk", "Alc_BeerCiderWk", "Alc_SpiritsWk", "Alc_FortWineWk", "Alc_OtherAlcWk")){
-  alcohol[[var]] <- ifelse(alcohol[[var]]<0|is.na(alcohol[[var]]), 0, alcohol[[var]])
+  # alcohol[[var]] <- ifelse(alcohol[[var]]<0|is.na(alcohol[[var]]), 0, alcohol[[var]])
+  alcohol[[var]][alcohol$Alc_Freq %in% c("Never", "Special occasions only", "One to three times a month")] <- 0
+  alcohol[[var]][alcohol[[var]]<0|is.na(alcohol[[var]])] <- 0
 }
-alcohol$weekly_alcunits <- alcohol$Alc_RedWineWk + alcohol$Alc_WhiteWineWk + alcohol$Alc_BeerCiderWk + alcohol$Alc_SpiritsWk + alcohol$Alc_FortWineWk + alcohol$Alc_OtherAlcWk
+# https://www.nhs.uk/live-well/alcohol-support/calculating-alcohol-units/
+# strength (ABV) x volume (ml) ÷ 1,000 = units
+alcohol$weekly_alcunits <- 
+  #	Red wine (1 glass, 125ml, ABV 12% = 1.5 units) 
+  (1.5 * alcohol$Alc_RedWineWk) + 
+  # White wine, champagne (1 glass, 125ml, ABV 12% = 1.5 units) 
+  (1.5 * alcohol$Alc_WhiteWineWk) + 
+  #	Fortified wines: e.g. sherry, port (1 measure, 50ml, ABV 20% = 1 unit)
+  (1.0 * alcohol$Alc_FortWineWk) + 
+  #	Beer, cider including bitter, lager, stout, ale, Guinness (1 pint, 568ml, ABV 3.6% = 2 units) 
+  (2.0 * alcohol$Alc_BeerCiderWk) +
+  #	Spirits, liquors (1 measure or shot, 25ml, ABV 40% = 1 unit) 
+  (1.0 * alcohol$Alc_SpiritsWk) +
+  #	For "other" types of alcohol, will use alcopops as proxy ( 1 drink, 275ml, ABV 5.5% = 1.5 units)
+  (1.5 * alcohol$Alc_OtherAlcWk)
 
 covars <- merge(smoking[,c("ID", "Smo_Status", "Smo_TobaccoCurr", "Smo_TobaccoPast")], 
                 alcohol[,c("ID", "Alc_Status", "Alc_Freq", "weekly_alcunits")], by="ID", all=TRUE)

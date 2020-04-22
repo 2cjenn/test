@@ -196,7 +196,7 @@ preparecoefflist <- function(df, varname){
   return(data.frame(coeffname, variable, levels, stringsAsFactors=FALSE))
 }
 
-regressiontable <- function(df, varlist, regresstype, adjvarlist=c("agegrp", "gender")){
+regressiontable <- function(df, outcome, varlist, regresstype, adjvarlist=c("agegrp", "gender")){
   coefflist <- list()
   # Prepare the list of coefficients - variables and levels for factors or blanks for continuous
   for(var in varlist){
@@ -209,7 +209,7 @@ regressiontable <- function(df, varlist, regresstype, adjvarlist=c("agegrp", "ge
       coeffnames <- coefflist[[var]]
       
       # Prepare the formula and pass it to the model
-      formula <- paste0("controlled ~ ", var)
+      formula <- paste0(outcome, " ~ ", var)
       model <- glm(formula, data=df, family="binomial")
       
       # Add the pretty-formatted outputs to the list
@@ -225,7 +225,7 @@ regressiontable <- function(df, varlist, regresstype, adjvarlist=c("agegrp", "ge
     for(adjvar in adjvarlist){
       coeffnames <- preparecoefflist(df=df, varname=adjvar)
       
-      formula <- paste0("controlled ~ ", paste(adjvarlist, collapse="+"))
+      formula <- paste0(outcome, " ~ ", paste(adjvarlist, collapse="+"))
       model <- glm(formula, data=df, family="binomial")
       
       # Add the pretty-formatted outputs to the list
@@ -239,7 +239,7 @@ regressiontable <- function(df, varlist, regresstype, adjvarlist=c("agegrp", "ge
       coeffnames <- coefflist[[var]]
       
       # Prepare the formula and pass it to the model
-      formula <- paste0("controlled ~ ", paste(adjvarlist, collapse="+"), "+", var)
+      formula <- paste0(outcome, " ~ ", paste(adjvarlist, collapse="+"), "+", var)
       model <- glm(formula, data=df, family="binomial")
       
       # Add the pretty-formatted outputs to the list
@@ -249,7 +249,7 @@ regressiontable <- function(df, varlist, regresstype, adjvarlist=c("agegrp", "ge
     
   } else if (regresstype=="multivariable"){
     coeffnames <- do.call(rbind, coefflist)
-    formula <- paste0("controlled ~ ", paste(varlist, collapse=" + "))
+    formula <- paste0(outcome, " ~ ", paste(varlist, collapse=" + "))
     model <- glm(formula, data=df, family="binomial")
     outdf <- printlogresults(model, coeffnames, IDcol=TRUE)
   }

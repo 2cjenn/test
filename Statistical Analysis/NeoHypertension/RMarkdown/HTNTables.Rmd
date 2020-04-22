@@ -43,12 +43,13 @@ treated$antiHTNmedsno <- factor(treated$antiHTNmedsno, levels=c("1", "2", ">=3",
 pretty_names <- list(agegrp = "Age group",
                      gender = "Gender",
                      ethnicity = "Ethnicity",
+                     genWhiteBrit = "Genetically categorised as White British",
                      BMIcat = "BMI (categorical)",
                      Smo_Status = "Smoking status",
-                     weekly_alcunits = "Alcoholic drinks per week",
-                     weekly_alccat = "Alcoholic drinks per week (categorical)",
+                     weekly_alcunits = "Alcohol units per week",
+                     weekly_alccat = "Alcohol units per week (categorical)",
                      PhA_METsWkAllAct = "Weekly physical activity, in METs",
-                     METs_over150 = "Sufficient physical activity",
+                     METs_over600 = "Sufficient physical activity",
                      townsend_quint = "Townsend Deprivation Index, quintiles",
                      income = "Household Income, GBP",
                      employment = "Occupation type",
@@ -88,7 +89,7 @@ prettyfunc <- function(x){
 <div custom-style="Todo">To-do: Genetic ethnicity instead of self-reported</div>
 
 ```{r table1, include=TRUE, echo=FALSE}
-varlist=c("age", "agegrp", "gender", "ethnicity",
+varlist=c("age", "agegrp", "gender", "genWhiteBrit", "ethnicity",
           "townsend_quint", "income", "employment", "ISCED", "BirthCountryIncomeLevel", "countryResidence",
           "BMIcat", "Smo_Status", "weekly_alcunits", "weekly_alccat", "PhA_METsWkAllAct", "METs_over150",
           "HTNdx_durcat", "antiHTNmedsno",  "FamilyHist_CVD_", 
@@ -105,7 +106,8 @@ tab_u <- descriptivetable(df=treated[treated$controlled==FALSE,],
                          contavg='median',
                          pretty_names=pretty_names)
 
-uni <- regressiontable(df=treated, varlist=varlist, regresstype="univariable")
+uni <- regressiontable(df=treated, outcome="controlled", varlist=varlist, 
+                       regresstype="univariable")
 
 tab1 <- cbind(tab_c, tab_u[,3:4], as.matrix(uni)[,4:5])
 tab1 <- rbind(colnames(tab1), tab1)
@@ -195,15 +197,17 @@ kable(tab2)
 
 ```{r table3, include=TRUE, echo=FALSE}
 
-varlist=c("agegrp", "gender", "ethnicity",
+varlist=c("agegrp", "gender", "genWhiteBrit", #"ethnicity",
           "townsend_quint", "income", "ISCED", "BirthCountryIncomeLevel", "countryResidence",
           "BMIcat", "Smo_Status", "weekly_alccat", "METs_over150",
           "antiHTNmedsno",  "FamilyHist_CVD_",
-          "comorbNumber_", comorbs_string,
+          "comorbNumber_", comorbs_string[-which()],
            "BowelCancerScreening")
 
-adj <- regressiontable(df=treated, varlist=varlist, regresstype="adjusted", adjvarlist=c("agegrp", "gender"))
-multi <- regressiontable(df=treated, varlist=varlist, regresstype="multivariable")
+adj <- regressiontable(df=treated, outcome="controlled", varlist=varlist, 
+                       regresstype="adjusted", adjvarlist=c("agegrp", "gender"))
+multi <- regressiontable(df=treated, outcome="controlled", varlist=varlist, 
+                         regresstype="multivariable")
 tab3 <- merge(adj, multi, by=c("IDcol", "Coefficient", "Level"), sort=FALSE)
 tab3 <- tab3[,-which(names(tab3)=="IDcol")]
 tab3 <- rbind(c("Coefficient", "Level", "OR", "95% CI", "p", "OR", "95% CI", "p"),
@@ -239,6 +243,24 @@ anova(model1, model2, test="Chisq")
 model1 <- glm(controlled ~ c40_age, data=treated, family="binomial")
 model2 <- glm(controlled ~ c40_age + age2, data=treated, family="binomial")
 anova(model1, model2, test="Chisq")
+```
+
+```{r correlation, include=FALE, echo=FALSE}
+library(corrplot)
+
+ses <- treated[,c("townsend_depind", "townsend_quint", "income", "ISCED", "employment")]
+ses$townsend_quint <- as.numeric(unclass(ses$townsend_quint))
+ses$income <- as.numeric(unclass(ses$income))
+ses$ISCED <- as.numeric(unclass(ses$ISCED))
+ses$employment <- as.numeric(unclass(ses$employment))
+
+res <- cor(ses, method = "spearman", use = "complete.obs")
+res
+corrplot(res, type = "upper", order = "hclust", 
+         tl.col = "black", tl.srt = 45)
+
+pairs(ses)
+
 ```
 
 
