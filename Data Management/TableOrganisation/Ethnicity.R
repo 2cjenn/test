@@ -56,10 +56,10 @@ gep$genWhiteBrit <- factor(gep$genWhiteBrit, levels=c("Caucasian", "Other", "No 
 
 
 # Merge into the regular ethnicity data set
-ethnicity <- merge(ethnicity, gep[,c("ID", "genWhiteBrit")], by="ID", all.x=TRUE)
+ethnicity <- merge(ethnicity, gep[,c("ID", "genWhiteBrit", "GeP_ethnic", "GeP_Batch.m0")], by="ID", all.x=TRUE)
 
 
 #--------------------------------------------------------------------------------------------------------------
 # save
-saveRDS(ethnicity[,c("ID", "Eth_Ethnicity", "eth_group", "eth_exact", "genWhiteBrit")], 
+saveRDS(ethnicity[,c("ID", "Eth_Ethnicity", "eth_group", "eth_exact", "genWhiteBrit", "GeP_ethnic", "GeP_Batch.m0")], 
         file="K:\\TEU\\APOE on Dementia\\Data Management\\R_Dataframes_TLA\\38358\\Organised\\ethnicity.rds")

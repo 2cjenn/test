@@ -162,9 +162,10 @@ export_svg(DiagrammeR::grViz("K:\\TEU\\APOE on Dementia\\Statistical Analysis\\N
 # Collapse ethnic groups into broader categories
 data$ethnicity <- as.character(data$eth_group)
 data$ethnicity <- ifelse(data$ethnicity=="White", "White", 
-                         ifelse(data$ethnicity=="Prefer not to answer" | is.na(data$ethnicity), "Unknown",
-                                "Non-white"))
-data$ethnicity <- factor(data$ethnicity, levels=c("White", "Non-white", "Unknown"))
+                         ifelse(data$ethnicity=="Do not know", "Do not know",
+                                ifelse(data$ethnicity=="Prefer not to answer" | is.na(data$ethnicity), "Unanswered",
+                                       "Non-white")))
+data$ethnicity <- factor(data$ethnicity, levels=c("White", "Non-white", "Do not know", "Unanswered"))
 
 # Convert UKB qualification categories into ISCED education categories
 data$ISCED <- dplyr::case_when(
@@ -193,14 +194,30 @@ data$employment <- factor(data$employment, levels=c("Managers and Senior Officia
                                                     "Sales and Customer Service Occupations", "Process, Plant and Machine Operatives",
                                                     "Elementary Occupations", "Other job (free text entry)", "Unemployed/retired/other"))
 
+data$employcat <- dplyr::case_when(
+  data$employment %in% c("Managers and Senior Officials", "Professional Occupations",
+                         "Associate Professional and Technical Occupations",
+                         "Administrative and Secretarial Occupations") ~ "White collar",
+  data$employment == "Skilled Trades Occupations" ~ "Skilled trades",
+  data$employment %in% c("Personal Service Occupations",
+                         "Sales and Customer Service Occupations") ~ "Services",
+  data$employment %in% c("Process, Plant and Machine Operatives",
+                         "Elementary Occupations") ~ "Blue collar",
+  data$employment == "Other job (free text entry)" ~ "Other",
+  data$employment == "Unemployed/retired/other" ~ "Unemployed/retired/unanswered",
+  TRUE ~ "Error?"
+)
+data$employcat <- factor(data$employcat, levels=c("White collar", "Skilled trades", "Services", "Blue collar",
+                                                  "Other", "Unemployed/retired/unanswered"), ordered=FALSE)
+
 # Categorise age into 10-yr groups
 data$agegrp <- cut(data$age, breaks=c(40, 50, 60, 70), right=FALSE)
 
 # Categorise BMI into labelled categories
 data$BMIcat <- as.character(cut(data$BMI, breaks=c(0, 18.5, 25, 30, 200), right=FALSE))
-data$BMIcat[is.na(data$BMIcat)] <- "Unknown"
-data$BMIcat <- factor(data$BMIcat, levels=c("[18.5,25)", "[0,18.5)", "[25,30)", "[30,200)", "Unknown"), 
-                      labels=c("Normal", "Underweight", "Overweight", "Obese", "Unknown"))
+data$BMIcat[is.na(data$BMIcat)] <- "Unanswered"
+data$BMIcat <- factor(data$BMIcat, levels=c("[18.5,25)", "[0,18.5)", "[25,30)", "[30,200)", "Unanswered"), 
+                      labels=c("Normal", "Underweight", "Overweight", "Obese", "Unanswered"))
 
 # Categorise waist circ into labelled categories
 data$WaistCircCat <- dplyr::case_when(
@@ -208,10 +225,10 @@ data$WaistCircCat <- dplyr::case_when(
   data$gender=="Female" & data$WaistCirc>=80 ~ "Overweight",
   data$gender=="Male" & data$WaistCirc>=102 ~ "Obese",
   data$gender=="Male" & data$WaistCirc>=94 ~ "Overweight",
-  is.na(data$WaistCirc) ~ "Unknown",
+  is.na(data$WaistCirc) ~ "Unanswered",
   TRUE ~ "Normal"
 )
-data$WaistCircCat <- factor(data$WaistCircCat, levels=c("Normal", "Overweight", "Obese", "Unknown"))
+data$WaistCircCat <- factor(data$WaistCircCat, levels=c("Normal", "Overweight", "Obese", "Unanswered"))
 
 # Truncate alcohol consumption at upper 95th percentile
 upper95 <- quantile(data$weekly_alcunits, 0.95, na.rm=TRUE)
@@ -220,8 +237,9 @@ data$weekly_alcunits[is.na(data$weekly_alcunits)] <- 0
 
 
 # Categorise alcohol consumption
-data$weekly_alccat <- cut(data$weekly_alcunits, breaks=c(-1, 0, 5, 10, 20, 30),
-                             labels=c("None reported", "Less than 5 units", "5 to 10 units", "10 to 20 units", "More than 20 units"))
+data$weekly_alccat <- cut(data$weekly_alcunits, breaks=c(-1, 0, 5, 10, 20, 30, 100),
+                             labels=c("None reported", "Less than 5 units", "5 to 10 units", 
+                                      "10 to 20 units", "20 to 30 units", "More than 30 units"))
 
 
 # Define "binge" levels of alcohol consumption
@@ -233,13 +251,14 @@ data$alc_heavyuse_ <- factor(as.numeric(data$alc_heavyuse), levels=c(0,1), label
 data$METs_over600 <- dplyr::case_when(
   data$PhA_METsWkAllAct > 600 & !is.na(data$PhA_METsWkAllAct) ~ "High (METs > 600)",
   data$PhA_METsWkAllAct <= 600 & !is.na(data$PhA_METsWkAllAct) ~ "Low (METs <= 600)",
-  TRUE ~ "Unknown")
-data$METs_over600 <- factor(data$METs_over150, levels=c("High (METs > 600)", "Low (METs <= 600)", "Unknown"))
+  TRUE ~ "Unanswered")
+data$METs_over600 <- factor(data$METs_over600, levels=c("High (METs > 600)", "Low (METs <= 600)", "Unanswered"))
 
 # Convert bowel cancer screening to a factor
 data$BowelCancerScreening <- as.character(data$BowelCancerScreening)
-data$BowelCancerScreening[data$BowelCancerScreening %in% c("Prefer not to answer", "Do not know") | is.na(data$BowelCancerScreening)] <- "Unanswered"
-data$BowelCancerScreening <- factor(data$BowelCancerScreening, levels=c("Yes", "No", "Unanswered"), ordered=FALSE)
+data$BowelCancerScreening[data$BowelCancerScreening %in% c("Prefer not to answer") | is.na(data$BowelCancerScreening)] <- "Unanswered"
+data$BowelCancerScreening[data$BowelCancerScreening %in% c("Do not know")] <- "Do not know"
+data$BowelCancerScreening <- factor(data$BowelCancerScreening, levels=c("Yes", "No", "Do not know", "Unanswered"), ordered=FALSE)
 
 # Convert family history to a factor
 data$FamilyHist_CVD_ <- factor(as.numeric(data$FaH_CVD), levels=c(0,1), labels=c("No family history of CVD", "Family history of CVD"))
@@ -257,10 +276,10 @@ data$townsend_quint <- dplyr::case_when(
   data$townsend_depind > quintiles[3] & data$townsend_depind <= quintiles[4] ~ "Q3",
   data$townsend_depind > quintiles[4] & data$townsend_depind <= quintiles[5] ~ "Q4",
   data$townsend_depind > quintiles[5] & data$townsend_depind <= quintiles[6] ~ "Q5: Most deprived",
-  TRUE ~ "Unknown"
+  TRUE ~ "Unanswered"
 )
 data$townsend_quint <- factor(data$townsend_quint, 
-                              levels=c("Q1: Least deprived", "Q2", "Q3", "Q4", "Q5: Most deprived", "Unknown"))
+                              levels=c("Q1: Least deprived", "Q2", "Q3", "Q4", "Q5: Most deprived", "Unanswered"))
 
 # Convert assessment centre code to a country
 data$countryResidence <- dplyr::case_when(
