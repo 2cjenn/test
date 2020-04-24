@@ -248,11 +248,11 @@ data$alc_heavyuse[data$gender=="Male"] <- data[data$gender=="Male",]$weekly_alcu
 data$alc_heavyuse_ <- factor(as.numeric(data$alc_heavyuse), levels=c(0,1), labels=c("No", "Yes"))
 
 # Indicator variable for whether physical activity > or <= 150 METs per day
-data$METs_over600 <- dplyr::case_when(
-  data$PhA_METsWkAllAct > 600 & !is.na(data$PhA_METsWkAllAct) ~ "High (METs > 600)",
-  data$PhA_METsWkAllAct <= 600 & !is.na(data$PhA_METsWkAllAct) ~ "Low (METs <= 600)",
+data$METs_over1200 <- dplyr::case_when(
+  data$PhA_METsWkAllAct > 1200 & !is.na(data$PhA_METsWkAllAct) ~ "High (METs > 1200)",
+  data$PhA_METsWkAllAct <= 1200 & !is.na(data$PhA_METsWkAllAct) ~ "Low (METs <= 1200)",
   TRUE ~ "Unanswered")
-data$METs_over600 <- factor(data$METs_over600, levels=c("High (METs > 600)", "Low (METs <= 600)", "Unanswered"))
+data$METs_over1200 <- factor(data$METs_over1200, levels=c("High (METs > 1200)", "Low (METs <= 1200)", "Unanswered"))
 
 # Convert bowel cancer screening to a factor
 data$BowelCancerScreening <- as.character(data$BowelCancerScreening)

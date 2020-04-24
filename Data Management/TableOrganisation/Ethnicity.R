@@ -22,13 +22,26 @@ ethnicity$Eth_Ethnicity <- factor(ethnicity$Eth_Ethnicity, levels=c("White", "Br
                                                                     "Chinese", "Other ethnic group", "Do not know", "Prefer not to answer"))
 
 # Individuals that didn't answer the subgroup question get moved to the relevant "other" for their group
-ethnicity$eth_group <- ethnicity$Eth_Ethnicity
-ethnicity$eth_group[ethnicity$Eth_Ethnicity %in% c("White", "British", "Irish", "Any other white background")] <- "White"
-ethnicity$eth_group[ethnicity$Eth_Ethnicity %in% c("Mixed", "White and Black Caribbean", "White and Black African", "White and Asian", "Any other mixed background")] <- "Mixed"
-ethnicity$eth_group[ethnicity$Eth_Ethnicity %in% c("Asian or Asian British", "Indian", "Pakistani", "Bangladeshi", "Any other Asian background")] <- "Asian or Asian British"
-ethnicity$eth_group[ethnicity$Eth_Ethnicity %in% c("Black or Black British", "Caribbean", "African", "Any other Black background")] <- "Black or Black British"
-ethnicity$eth_group[is.na(ethnicity$Eth_Ethnicity)] <- "Prefer not to answer"
-ethnicity$eth_group <- factor(ethnicity$eth_group)
+ethnicity$eth_group <- dplyr::case_when(
+  ethnicity$Eth_Ethnicity %in% c("White", "British", "Irish", 
+                                 "Any other white background") ~ "White",
+  ethnicity$Eth_Ethnicity %in% c("Mixed", "White and Black Caribbean", 
+                               "White and Black African", "White and Asian", 
+                               "Any other mixed background") ~ "Mixed",
+  ethnicity$Eth_Ethnicity %in% c("Asian or Asian British", "Indian", 
+                                 "Pakistani", "Bangladeshi", 
+                                 "Any other Asian background") ~ "Asian",
+  ethnicity$Eth_Ethnicity == "Chinese" ~ "Chinese",
+  ethnicity$Eth_Ethnicity %in% c("Black or Black British", "Caribbean", 
+                                 "African", "Any other Black background") ~ "Black",
+  ethnicity$Eth_Ethnicity == "Other ethnic group" ~ "Other",
+  ethnicity$Eth_Ethnicity == "Do not know" ~ "Do not know",
+  ethnicity$Eth_Ethnicity == "Prefer not to answer" ~ "Unanswered",
+  is.na(ethnicity$Eth_Ethnicity) ~ "Unanswered",
+  TRUE ~ "Error")
+ethnicity$eth_group <- factor(ethnicity$eth_group, ordered=FALSE,
+                              levels=c("White", "Black", "Asian", "Chinese", "Mixed", 
+                                       "Other", "Do not know", "Unanswered"))
 
 # Top level categorisation
 ethnicity$eth_exact <- ethnicity$Eth_Ethnicity
@@ -63,3 +76,4 @@ ethnicity <- merge(ethnicity, gep[,c("ID", "genWhiteBrit", "GeP_ethnic", "GeP_Ba
 # save
 saveRDS(ethnicity[,c("ID", "Eth_Ethnicity", "eth_group", "eth_exact", "genWhiteBrit", "GeP_ethnic", "GeP_Batch.m0")], 
         file="K:\\TEU\\APOE on Dementia\\Data Management\\R_Dataframes_TLA\\38358\\Organised\\ethnicity.rds")
+
