@@ -28,20 +28,20 @@ ethnicity$eth_group <- dplyr::case_when(
   ethnicity$Eth_Ethnicity %in% c("Mixed", "White and Black Caribbean", 
                                "White and Black African", "White and Asian", 
                                "Any other mixed background") ~ "Mixed",
-  ethnicity$Eth_Ethnicity %in% c("Asian or Asian British", "Indian", 
-                                 "Pakistani", "Bangladeshi", 
-                                 "Any other Asian background") ~ "Asian",
-  ethnicity$Eth_Ethnicity == "Chinese" ~ "Chinese",
+  ethnicity$Eth_Ethnicity %in% c("Indian", "Pakistani", "Bangladeshi"
+                                 ) ~ "S. Asian",
   ethnicity$Eth_Ethnicity %in% c("Black or Black British", "Caribbean", 
                                  "African", "Any other Black background") ~ "Black",
-  ethnicity$Eth_Ethnicity == "Other ethnic group" ~ "Other",
+  ethnicity$Eth_Ethnicity %in% c("Other ethnic group","Asian or Asian British", 
+                                 "Any other Asian background", "Chinese") ~ "Other",
   ethnicity$Eth_Ethnicity == "Do not know" ~ "Do not know",
   ethnicity$Eth_Ethnicity == "Prefer not to answer" ~ "Unanswered",
   is.na(ethnicity$Eth_Ethnicity) ~ "Unanswered",
   TRUE ~ "Error")
 ethnicity$eth_group <- factor(ethnicity$eth_group, ordered=FALSE,
-                              levels=c("White", "Black", "Asian", "Chinese", "Mixed", 
+                              levels=c("White", "Black", "S. Asian", "Mixed", 
                                        "Other", "Do not know", "Unanswered"))
+
 
 # Top level categorisation
 ethnicity$eth_exact <- ethnicity$Eth_Ethnicity
@@ -74,6 +74,7 @@ ethnicity <- merge(ethnicity, gep[,c("ID", "genWhiteBrit", "GeP_ethnic", "GeP_Ba
 
 #--------------------------------------------------------------------------------------------------------------
 # save
-saveRDS(ethnicity[,c("ID", "Eth_Ethnicity", "eth_group", "eth_exact", "genWhiteBrit", "GeP_ethnic", "GeP_Batch.m0")], 
+saveRDS(ethnicity[,c("ID", "Eth_Ethnicity", "eth_group", "eth_exact", 
+                     "genWhiteBrit", "GeP_ethnic", "GeP_Batch.m0")], 
         file="K:\\TEU\\APOE on Dementia\\Data Management\\R_Dataframes_TLA\\38358\\Organised\\ethnicity.rds")
 

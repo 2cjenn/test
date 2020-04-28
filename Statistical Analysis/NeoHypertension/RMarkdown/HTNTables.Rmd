@@ -1,7 +1,7 @@
 ---
 title: "Prevalence and correlates of hypertension control among 250,000 middle-aged adults in the UK"
 author: "Jennifer Collister"
-date: "24/04/2020"
+date: "27/04/2020"
 output: 
   word_document:
       reference_docx: "K:/TEU/APOE on Dementia/RMarkdownStyle.docx"
@@ -29,7 +29,7 @@ comorbs <- readRDS("K:\\TEU\\APOE on Dementia\\Data Management\\R_Dataframes_TLA
 colnames(comorbs) <- c("ID", paste0("VI_", colnames(comorbs)[-1]))
 print(colnames(comorbs)[-1])
 comorbs_raw <- c("VI_afib_or_aflutter", "VI_CVD", "VI_diabetes", "VI_asthma_or_COPD", "VI_migraine", "VI_epilepsy",
-                 "VI_anxiety_or_stress", "VI_depression_or_bipolar")
+                 "VI_anxiety_or_stress", "VI_depression_or_bipolar", "VI_Osteoarthritis", "VI_Other_joint_disorder")
 comorbs_string <- paste0(comorbs_raw, "_")
 
 # In this analysis, we want to consider two subsets: all hypertensives and all treated individuals
@@ -71,7 +71,9 @@ pretty_names <- list(agegrp = "Age group",
                      VI_epilepsy_ = "Epilepsy",
                      VI_CVD_ = "Cardiovascular disease",
                      VI_migraine_ = "Migraines",
-                     VI_substance_use_ = "Substance use"
+                     VI_substance_use_ = "Substance use",
+                     VI_Osteoarthritis_ = "Osteoarthritis",
+                     VI_Other_joint_disorder_ = "Other joint disorder"
                      )
 prettyfunc <- function(x){
   if(x %in% names(pretty_names)){
