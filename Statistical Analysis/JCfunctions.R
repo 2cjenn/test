@@ -82,7 +82,7 @@ descriptivetable <- function(df, varlist, contavg='mean', assocvar=NULL, pretty_
         pct <- paste0("(", IQR[2], "-", IQR[4], ")")
         variable <- paste0("Median ", pretty_names[[var]], " (IQR)")
       } else if(contavg=="n"){
-        n <- nrow(df[!is.na(df$var),])
+        n <- nrow(df[!is.na(df[[var]]),])
         pct <- NA
         variable <- pretty_names[[var]]
       }
