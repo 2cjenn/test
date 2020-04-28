@@ -81,6 +81,10 @@ descriptivetable <- function(df, varlist, contavg='mean', assocvar=NULL, pretty_
         IQR <- format(round(quantile(df[[var]], na.rm=TRUE),1), digits=1, nsmall=1)
         pct <- paste0("(", IQR[2], "-", IQR[4], ")")
         variable <- paste0("Median ", pretty_names[[var]], " (IQR)")
+      } else if(contavg=="n"){
+        n <- nrow(df[!is.na(df$var),])
+        pct <- NA
+        variable <- pretty_names[[var]]
       }
       levels <- NA
       if(!is.null(assocvar)){
