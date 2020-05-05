@@ -207,8 +207,12 @@ data$employcat <- dplyr::case_when(
   data$employment == "Unemployed/retired/other" ~ "Unemployed/retired/unanswered",
   TRUE ~ "Error?"
 )
-data$employcat <- factor(data$employcat, levels=c("White collar", "Skilled trades", "Services", "Blue collar",
-                                                  "Other", "Unemployed/retired/unanswered"), ordered=FALSE)
+data$employcat <- factor(data$employcat, 
+                         levels=c("White collar", "Skilled trades", "Services", 
+                                  "Blue collar", "Other", "Unemployed/retired/unanswered"), 
+                         labels=c("Professional and Administrative", "Skilled trades", "Services", 
+                                  "Manual and Industrial", "Other", "Unemployed/retired/unanswered"),
+                         ordered=FALSE)
 
 # Categorise age into 10-yr groups
 data$agegrp <- cut(data$age, breaks=c(40, 50, 60, 70), right=FALSE)
@@ -217,7 +221,7 @@ data$agegrp <- cut(data$age, breaks=c(40, 50, 60, 70), right=FALSE)
 data$BMIcat <- as.character(cut(data$BMI, breaks=c(0, 18.5, 25, 30, 200), right=FALSE))
 data$BMIcat[is.na(data$BMIcat)] <- "Unanswered"
 data$BMIcat <- factor(data$BMIcat, levels=c("[18.5,25)", "[0,18.5)", "[25,30)", "[30,200)", "Unanswered"), 
-                      labels=c("Normal", "Underweight", "Overweight", "Obese", "Unanswered"))
+                      labels=c("Normal (ref)", "Underweight", "Overweight", "Obese", "Unanswered"))
 
 # Categorise waist circ into labelled categories
 data$WaistCircCat <- dplyr::case_when(

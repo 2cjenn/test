@@ -1,7 +1,7 @@
 ---
 title: "Prevalence and correlates of hypertension control among 250,000 middle-aged adults in the UK"
 author: "Jennifer Collister"
-date: "27/04/2020"
+date: "05/05/2020"
 output: 
   word_document:
       reference_docx: "K:/TEU/APOE on Dementia/RMarkdownStyle.docx"
@@ -110,10 +110,9 @@ prettyfunc <- function(x){
 
 # Table 1. Characteristics of treated hypertensives, by blood pressure control status (n = `r nrow(treated)`).
 
-<div custom-style="Note">Old and new self-reported ethnicity groupings in descriptive table, only new version in regression</div>
 
 ```{r table1, include=TRUE, echo=FALSE}
-varlist=c("age", "agegrp", "gender", "ethnicity", "eth_group", "PRS",
+varlist=c("age", "agegrp", "gender", "eth_group",
           "townsend_quint", "income", "employcat", "ISCED", "BirthCountryIncomeLevel", "countryResidence",
           "BMIcat", "Smo_Status", "weekly_alcunits", "weekly_alccat", "PhA_METsWkAllAct", "METs_over1200",
           "HTNdx_durcat", "antiHTNmedsno",  "FamilyHist_CVD_", 
@@ -208,28 +207,28 @@ kable(tab2)
 
 ```
 
-# Table 3: Multivariable logistic regression identifying factors associated with hypertension control (BP < 140/90 mmHg), among white UK adults on antihypertensive treatment (n=`r nrow(white_trt)`)
+# Table 3: Multivariable logistic regression identifying factors associated with hypertension control (BP < 140/90 mmHg), among UK adults on antihypertensive treatment (n=`r nrow(treated)`)
 
 <div custom-style="Todo">Reminder: Manually re-order BMI categories</div>
 
 ```{r table3, include=TRUE, echo=FALSE}
 
-varlist=c("agegrp", "gender", #"eth_group",
+varlist=c("agegrp", "gender", "eth_group",
           "townsend_quint", "income", "employcat", "ISCED", "BirthCountryIncomeLevel", "countryResidence",
           "BMIcat", "Smo_Status", "weekly_alccat", "METs_over1200",
           "antiHTNmedsno",  "FamilyHist_CVD_",
           "comorbNumber_", "VI_CVD_",
            "BowelCancerScreening")
 
-n <- data.frame(descriptivetable(df=white_trt, 
+n <- data.frame(descriptivetable(df=treated, 
                          varlist=varlist,
                          contavg='median',
                          pretty_names=pretty_names),
                 stringsAsFactors = FALSE)
 
-adj <- regressiontable(df=white_trt, outcome="controlled", varlist=varlist, 
+adj <- regressiontable(df=treated, outcome="controlled", varlist=varlist, 
                        regresstype="adjusted", adjvarlist=c("agegrp", "gender"))
-multi <- regressiontable(df=white_trt, outcome="controlled", varlist=varlist, 
+multi <- regressiontable(df=treated, outcome="controlled", varlist=varlist, 
                          regresstype="multivariable")
 tab3 <- merge(adj, multi, by=c("IDcol", "Coefficient", "Level"), sort=FALSE)
 # Add n column
@@ -287,47 +286,6 @@ colnames(tab4) <- c("","","", "Age- and sex-adjusted", "", "", "Fully adjusted",
 
 tab4[,1] <- sapply(tab4[,1], prettyfunc)
 kable(tab4, caption="Logistic regressions of individual comorbidities against hypertension control status, odds ratios are for successful BP control.")
-
-```
-
-
-Among white individuals receiving treatment for hypertension  (n=`r nrow(white_trt)`), is PRS predictive of successful control?
-
-```{r prs_regress, include=TRUE, echo=FALSE}
-
-varlist=c("agegrp", "gender", "PRS_quint", pclist, #"eth_group",
-          "townsend_quint", "income", "employcat", "ISCED", "BirthCountryIncomeLevel", "countryResidence",
-          "BMIcat", "Smo_Status", "weekly_alccat", "METs_over1200",
-          "antiHTNmedsno",  "FamilyHist_CVD_",
-          "comorbNumber_", "VI_CVD_",
-           "BowelCancerScreening")
-
-n <- data.frame(descriptivetable(df=white_trt, 
-                         varlist=varlist,
-                         contavg='n',
-                         pretty_names=pretty_names),
-                stringsAsFactors = FALSE)
-
-adj <- regressiontable(df=white_trt, outcome="controlled", varlist=varlist, 
-                       regresstype="adjusted", adjvarlist=c("agegrp", "gender"))
-multi <- regressiontable(df=white_trt, outcome="controlled", varlist=varlist, 
-                         regresstype="multivariable")
-tab3 <- merge(adj, multi, by=c("IDcol", "Coefficient", "Level"), sort=FALSE)
-# Add n column
-tab3$n <- n$n
-
-# Hide "unanswered"/"unknown"/"do not know" categories
-tab3 <- tab3[-which(tab3$Level %in% c("Unknown", "Unanswered", "Do not know", "Prefer not to answer")),]
-rownames(tab3) <- NULL
-
-tab3 <- tab3[,c("Coefficient", "Level", "n", "OR.x", "95% CI.x", "p.x", "OR.y", "95% CI.y", "p.y")]
-tab3 <- rbind(c("Coefficient", "Level", "n", "OR", "95% CI", "p", "OR", "95% CI", "p"),
-              tab3)
-colnames(tab3) <- c("","","", "Age- and sex-adjusted", "", "", "Fully adjusted", "", "")
-
-
-tab3[,1] <- sapply(tab3[,1], prettyfunc)
-kable(tab3, caption="Logistic regressions of various factors against hypertension control status, odds ratios are for successful BP control. Note: Number of individuals in levels of a factor may not add up to total n because 'Do not know' and 'Prefer not to answer' categories have been removed from results table")
 
 ```
 
