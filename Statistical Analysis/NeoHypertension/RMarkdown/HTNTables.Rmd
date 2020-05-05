@@ -208,31 +208,28 @@ kable(tab2)
 
 ```
 
-# Table 3: Multivariable logistic regression identifying factors associated with hypertension control (BP < 140/90 mmHg), among UK adults on antihypertensive treatment (n=`r nrow(treated)`)
+# Table 3: Multivariable logistic regression identifying factors associated with hypertension control (BP < 140/90 mmHg), among white UK adults on antihypertensive treatment (n=`r nrow(white_trt)`)
 
 <div custom-style="Todo">Reminder: Manually re-order BMI categories</div>
 
-<div custom-style="Todo">To-do: Remove "unknown"/"unanswered" - from regression or from results table?</div>
-
-
 ```{r table3, include=TRUE, echo=FALSE}
 
-varlist=c("agegrp", "gender", "eth_group",
+varlist=c("agegrp", "gender", #"eth_group",
           "townsend_quint", "income", "employcat", "ISCED", "BirthCountryIncomeLevel", "countryResidence",
           "BMIcat", "Smo_Status", "weekly_alccat", "METs_over1200",
           "antiHTNmedsno",  "FamilyHist_CVD_",
           "comorbNumber_", "VI_CVD_",
            "BowelCancerScreening")
 
-n <- data.frame(descriptivetable(df=treated, 
+n <- data.frame(descriptivetable(df=white_trt, 
                          varlist=varlist,
                          contavg='median',
                          pretty_names=pretty_names),
                 stringsAsFactors = FALSE)
 
-adj <- regressiontable(df=treated, outcome="controlled", varlist=varlist, 
+adj <- regressiontable(df=white_trt, outcome="controlled", varlist=varlist, 
                        regresstype="adjusted", adjvarlist=c("agegrp", "gender"))
-multi <- regressiontable(df=treated, outcome="controlled", varlist=varlist, 
+multi <- regressiontable(df=white_trt, outcome="controlled", varlist=varlist, 
                          regresstype="multivariable")
 tab3 <- merge(adj, multi, by=c("IDcol", "Coefficient", "Level"), sort=FALSE)
 # Add n column
@@ -253,7 +250,7 @@ kable(tab3, caption="Logistic regressions of various factors against hypertensio
 
 ```
 
-# Individual comorbidities
+# Table 4: Multivariable logistic regression coefficients for individual comorbidities
 
 ```{r table4, include=TRUE, echo=FALSE}
 
@@ -293,23 +290,12 @@ kable(tab4, caption="Logistic regressions of individual comorbidities against hy
 
 ```
 
-# Among white individuals, is PRS predictive of evidence of hypertension?
 
-```{r prs_htn, include=TRUE, echo=FALSE}
-
-varlist <- c("agegrp", "gender", "PRS_quint", pclist)
-multi <- regressiontable(df=white, outcome="evidenceHTN", varlist=varlist, 
-                         regresstype="multivariable")
-
-kable(multi[,c(-1)])
-
-```
-
-Among white individuals receiving treatment for hypertension, is PRS predictive of successful control?
+Among white individuals receiving treatment for hypertension  (n=`r nrow(white_trt)`), is PRS predictive of successful control?
 
 ```{r prs_regress, include=TRUE, echo=FALSE}
 
-varlist=c("agegrp", "gender", "PRS_quint", pclist,
+varlist=c("agegrp", "gender", "PRS_quint", pclist, #"eth_group",
           "townsend_quint", "income", "employcat", "ISCED", "BirthCountryIncomeLevel", "countryResidence",
           "BMIcat", "Smo_Status", "weekly_alccat", "METs_over1200",
           "antiHTNmedsno",  "FamilyHist_CVD_",
