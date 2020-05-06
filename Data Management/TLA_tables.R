@@ -16,7 +16,8 @@ setwd(dirname(rstudioapi::getActiveDocumentContext()$path))
 # fileloc <- "K:\\TEU\\CancerPRS\\6thData_07Nov2019\\R\\20200219\\ukb38358.R"
 # fileloc <- "J:\\UKB\\38358\\R\\20200408_54\\ukb38358.R"
 # fileloc <- "J:\\UKB\\38358\\R\\20200408_111\\ukb38358.R"
-fileloc <- "J:\\UKB\\38358\\R\\20200420_22006\\ukb38358.R"
+# fileloc <- "J:\\UKB\\38358\\R\\20200420_22006\\ukb38358.R"
+fileloc <- "J:\\UKB\\38358\\R\\Heterozygosity\\ukb38358.R"
 
 # First make sure the biobank data has been loaded, if not then load it
 if(exists("bd") && is.data.frame(get("bd"))) {

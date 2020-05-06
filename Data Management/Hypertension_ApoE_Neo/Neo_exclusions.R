@@ -207,8 +207,12 @@ data$employcat <- dplyr::case_when(
   data$employment == "Unemployed/retired/other" ~ "Unemployed/retired/unanswered",
   TRUE ~ "Error?"
 )
-data$employcat <- factor(data$employcat, levels=c("White collar", "Skilled trades", "Services", "Blue collar",
-                                                  "Other", "Unemployed/retired/unanswered"), ordered=FALSE)
+data$employcat <- factor(data$employcat, 
+                         levels=c("White collar", "Skilled trades", "Services", 
+                                  "Blue collar", "Other", "Unemployed/retired/unanswered"), 
+                         labels=c("Professional and Administrative", "Skilled trades", "Services", 
+                                  "Manual and Industrial", "Other", "Unemployed/retired/unanswered"),
+                         ordered=FALSE)
 
 # Categorise age into 10-yr groups
 data$agegrp <- cut(data$age, breaks=c(40, 50, 60, 70), right=FALSE)
@@ -217,7 +221,7 @@ data$agegrp <- cut(data$age, breaks=c(40, 50, 60, 70), right=FALSE)
 data$BMIcat <- as.character(cut(data$BMI, breaks=c(0, 18.5, 25, 30, 200), right=FALSE))
 data$BMIcat[is.na(data$BMIcat)] <- "Unanswered"
 data$BMIcat <- factor(data$BMIcat, levels=c("[18.5,25)", "[0,18.5)", "[25,30)", "[30,200)", "Unanswered"), 
-                      labels=c("Normal", "Underweight", "Overweight", "Obese", "Unanswered"))
+                      labels=c("Normal (ref)", "Underweight", "Overweight", "Obese", "Unanswered"))
 
 # Categorise waist circ into labelled categories
 data$WaistCircCat <- dplyr::case_when(
@@ -345,6 +349,21 @@ data$comorbNumber_ <- dplyr::case_when(
 )
 data$comorbNumber_<- factor(data$comorbNumber_, levels=c("0", "1", "2",">=3"))
 data$comorbNone <- data$comorbNumber==0
+
+# Construct a single PRS for BP by averaging the PRS for SBP and DBP
+data$PRS <- rowMeans(data[,c("PRS_DBP", "PRS_SBP")])
+
+quintiles <- quantile(data$PRS, probs=seq(0, 1, 0.2), na.rm=TRUE)
+data$PRS_quint <- dplyr::case_when(
+  data$PRS <= quintiles[2] ~ "Q1: Lowest score",
+  data$PRS > quintiles[2] & data$PRS <= quintiles[3] ~ "Q2",
+  data$PRS > quintiles[3] & data$PRS <= quintiles[4] ~ "Q3",
+  data$PRS > quintiles[4] & data$PRS <= quintiles[5] ~ "Q4",
+  data$PRS > quintiles[5] & data$PRS <= quintiles[6] ~ "Q5: Highest score",
+  TRUE ~ "Unanswered"
+)
+data$PRS_quint <- factor(data$PRS_quint, 
+                              levels=c("Q3", "Q1: Lowest score", "Q2", "Q4", "Q5: Highest score", "Unanswered"))
 
 
 saveRDS(data, file="K:\\TEU\\APOE on Dementia\\Data Management\\R_Dataframes_TLA\\38358\\Organised\\Hypertension\\Neo\\HTN_excl.rds")
