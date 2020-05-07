@@ -92,7 +92,7 @@ descriptivetable <- function(df, varlist, contavg='mean', assocvar=NULL, pretty_
       } else if (contavg=="median"){
         n <- pretty_dp(median(df[[var]], na.rm=TRUE), dp=1)
         IQR <- pretty_dp(quantile(df[[var]], na.rm=TRUE), dp=1)
-        pct <- pretty_confint(IQR[2], IQR[4], dp=1)
+        pct <- paste0("(", IQR[2], "-", IQR[4], ")")
         variable <- paste0("Median ", pretty_names[[var]], " (IQR)")
       } else if(contavg=="n"){
         n <- nrow(df[!is.na(df[[var]]),])
