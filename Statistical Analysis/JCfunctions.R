@@ -261,3 +261,12 @@ regressiontable <- function(df, outcome, varlist, regresstype, adjvarlist=c("age
   rownames(outdf) <- NULL
   return(outdf)
 }
+
+pretty_dp <- function(x, dp, pct=FALSE){
+  if(pct==TRUE){x <- 100*x}
+  format(round(x, dp), digits=dp, nsmall=dp)
+}
+
+pretty_confint <- function(lci, uci, dp, pct=FALSE){
+  paste0("(", pretty_dp(x=lci, dp=dp, pct=pct), ", ", pretty_dp(x=uci, dp=dp, pct=pct), ")")
+}
