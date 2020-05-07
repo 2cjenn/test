@@ -1,5 +1,18 @@
 library(stringr)
 
+pretty_dp <- function(x, dp, pct=FALSE){
+  if(pct==TRUE){x <- 100*x}
+  format(round(x, dp), digits=dp, nsmall=dp)
+}
+
+pretty_confint <- function(lci, uci, dp, pct=FALSE){
+  paste0("(", pretty_dp(x=lci, dp=dp, pct=pct), ", ", pretty_dp(x=uci, dp=dp, pct=pct), ")")
+}
+
+pretty_pval <- function(p, cutoff=0.001, string="<0.001", dp=3){
+  ifelse(p<cutoff, string, pretty_dp(p, dp))
+}
+
 code_filter <- function(df, diagcolname, datecolname=NULL, ncols, codelist, codelength=NA, separator=".", first=FALSE) {
   if (is.na(codelength)) {
     codelength <- nchar(codelist[1])
@@ -63,7 +76,7 @@ descriptivetable <- function(df, varlist, contavg='mean', assocvar=NULL, pretty_
   for(var in varlist){
     if(is.factor(df[[var]])){
       n <- table(df[[var]], useNA='ifany')
-      pct <- format(round(100*prop.table(n),2), digits=1, nsmall=1)
+      pct <- pretty_dp(100*prop.table(n), dp=1)
       variable <- c(pretty_names[[var]], rep(NA, dim(n)-1))
       levels <- names(n)
       if(!is.null(assocvar)){
@@ -73,13 +86,13 @@ descriptivetable <- function(df, varlist, contavg='mean', assocvar=NULL, pretty_
       }
     } else {
       if(contavg=="mean"){
-        n <- format(round(mean(df[[var]], na.rm=TRUE),2), digits=1, nsmall=1)
-        pct <- format(round(sd(df[[var]], na.rm=TRUE),2), digits=1, nsmall=1)
+        n <- pretty_dp(mean(df[[var]], na.rm=TRUE), dp=1)
+        pct <- pretty_dp(sd(df[[var]], na.rm=TRUE), dp=1)
         variable <- paste0("Mean ", pretty_names[[var]], " (SD)")
       } else if (contavg=="median"){
-        n <- format(round(median(df[[var]], na.rm=TRUE),2), digits=1, nsmall=1)
-        IQR <- format(round(quantile(df[[var]], na.rm=TRUE),1), digits=1, nsmall=1)
-        pct <- paste0("(", IQR[2], "-", IQR[4], ")")
+        n <- pretty_dp(median(df[[var]], na.rm=TRUE), dp=1)
+        IQR <- pretty_dp(quantile(df[[var]], na.rm=TRUE), dp=1)
+        pct <- pretty_confint(IQR[2], IQR[4], dp=1)
         variable <- paste0("Median ", pretty_names[[var]], " (IQR)")
       } else if(contavg=="n"){
         n <- nrow(df[!is.na(df[[var]]),])
@@ -89,7 +102,7 @@ descriptivetable <- function(df, varlist, contavg='mean', assocvar=NULL, pretty_
       levels <- NA
       if(!is.null(assocvar)){
         tt <- t.test(df[[var]][df[[assocvar]]==TRUE], df[[var]][df[[assocvar]]==FALSE])
-        pval <- ifelse(tt$p.value<0.001, "<0.001", round(tt$p.value,3))
+        pval <- pretty_pval(tt$p.value)
       }
     }
     if(!is.null(assocvar)){
@@ -133,11 +146,11 @@ printlogresults <- function(model, coeffnames=NULL, IDcol=FALSE){
   # NOMVAR <- rownames(coeff)
   regression <- data.frame(
     coeffname=(rownames(coeff)),
-    OR=format(round(exp(coeff[,1]),3), digits=3, nsmall=3), # OR
-    CI=paste0("(",format(round(exp(coeff[,1]-(1.96*coeff[,2])),2), digits=2, nsmall=2), ", ",
-              format(round(exp(coeff[,1]+(1.96*coeff[,2])),2), digits=2, nsmall=2),")"), # 95% CI
-    # p=formatC(coeff[,4], format="e", digits=3), # p-value
-    p=ifelse(coeff[,4]<0.001, "<0.001", format(round(coeff[,4],3), digits=3, nsmall=3)), # p-value
+    OR=pretty_dp(exp(coeff[,1]), dp=3), # OR
+    CI=pretty_confint(exp(coeff[,1]-(1.96*coeff[,2])),
+                      exp(coeff[,1]+(1.96*coeff[,2])),
+                      dp=2), # 95% CI
+    p=pretty_pval(coeff[,4]), # p-value
     stringsAsFactors=FALSE
     )
   if(!is.null(coeffnames)){
@@ -262,11 +275,4 @@ regressiontable <- function(df, outcome, varlist, regresstype, adjvarlist=c("age
   return(outdf)
 }
 
-pretty_dp <- function(x, dp, pct=FALSE){
-  if(pct==TRUE){x <- 100*x}
-  format(round(x, dp), digits=dp, nsmall=dp)
-}
 
-pretty_confint <- function(lci, uci, dp, pct=FALSE){
-  paste0("(", pretty_dp(x=lci, dp=dp, pct=pct), ", ", pretty_dp(x=uci, dp=dp, pct=pct), ")")
-}
