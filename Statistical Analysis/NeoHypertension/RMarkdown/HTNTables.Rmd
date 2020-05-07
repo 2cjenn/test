@@ -1,7 +1,7 @@
 ---
 title: "Prevalence and correlates of hypertension control among 250,000 middle-aged adults in the UK"
 author: "Jennifer Collister"
-date: "05/05/2020"
+date: "07/05/2020"
 output: 
   word_document:
       reference_docx: "K:/TEU/APOE on Dementia/RMarkdownStyle.docx"
@@ -17,6 +17,7 @@ library(magrittr)
 library(svglite)
 library(rsvg)
 library(png)
+library(DescTools)
 
 source("K:/TEU/APOE on Dementia/Statistical Analysis/JCfunctions.R")
 options(knitr.kable.NA='')
@@ -129,15 +130,20 @@ tab_u <- descriptivetable(df=treated[treated$controlled==FALSE,],
                          contavg='median',
                          pretty_names=pretty_names)
 
+tab_o <- descriptivetable(df=treated, 
+                         varlist=varlist,
+                         contavg='median',
+                         pretty_names=pretty_names)
+
 uni <- regressiontable(df=treated, outcome="controlled", varlist=varlist, 
                        regresstype="univariable")
 
-tab1 <- cbind(tab_c, tab_u[,3:4], as.matrix(uni)[,4:5])
+tab1 <- cbind(tab_c, tab_u[,3:4], tab_o[,3:4], as.matrix(uni)[,4:5])
 tab1 <- rbind(colnames(tab1), tab1)
 colnames(tab1) <- c("", "", 
     paste0("Controlled, n=", nrow(treated[treated$controlled==TRUE,])), "", 
     paste0("Uncontrolled, n=", nrow(treated[treated$controlled==FALSE,])), "",
-    paste0("Overall, n=", nrow(treated)), ""
+    paste0("Overall, n=", nrow(treated)), "", "", ""
     )
 # tab1[,1] <- sapply(tab1[,1], prettyfunc)
 kable(tab1)
@@ -188,11 +194,16 @@ for(df in dflist){
   mean_age <- round(mean(df$age),1)
   mean_SBP <- round(mean(df$SBP),1)
   mean_DBP <- round(mean(df$DBP),1)
-  pct_control <- round(100*nrow(df[df$controlled==TRUE & !is.na(df$controlled),])/nrow(df[df$treated==TRUE & !is.na(df$treated),]),1)
-  tab2 <- rbind(tab2,(cbind(n, mean_age, paste0(mean_SBP,"/",mean_DBP), pct_control)))
+  control <- prop.test(x=nrow(df[df$controlled==TRUE & !is.na(df$controlled),]),
+                           n=nrow(df), alternative="two.sided", conf.level=0.95)
+  pct_control <- format(round(100 * control$estimate,2), digits=1, nsmall=1)
+  ci_control <- paste0("(", format(round(100 * control$conf.int[1],2), digits=1, nsmall=1), ", ", 
+                       format(round(100 * control$conf.int[2],2), digits=1, nsmall=1), ")")
+  tab2 <- rbind(tab2,(cbind(n, mean_age, paste0(mean_SBP,"/",mean_DBP), pct_control, ci_control)))
 }
 
-tab2 <- cbind(c("All hypertensives", levels(treated$agegrp), levels(treated$eth_group),
+tab2 <- cbind(c("All treated hypertensives", levels(treated$agegrp), 
+                levels(treated$gender), levels(treated$eth_group),
                     "None", sapply(comorbs_string, prettyfunc)),
               tab2)
 rownames(tab2) <- c("", 
@@ -200,7 +211,7 @@ rownames(tab2) <- c("",
                     "Gender", rep("", (nlevels(treated$gender)-1)),
                     "Ethnic groups", rep("", (nlevels(treated$eth_group)-1)), 
                     "Comorbidities", rep("", length(comorbs_string)))
-colnames(tab2) <- c("", "n", "Mean age", "Mean SBP/DBP", "% Controlled")
+colnames(tab2) <- c("", "n", "Mean age", "Mean SBP/DBP", "% Controlled", "95% CI Controlled")
 kable(tab2)
 
 ```
