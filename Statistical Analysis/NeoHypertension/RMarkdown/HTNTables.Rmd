@@ -148,9 +148,9 @@ kable(tab1)
 
 ```{r fig2, include=TRUE, echo=FALSE, results='asis'}
 
-dflist <- c(list("Whole population"=data))
-names(dflist) <- c("Whole population")
-filenames <- list("Wholepop")
+dflist <- c(list("Whole population"=data, "Females"=data[data$gender=="Female",], "Males"=data[data$gender=="Male",]))
+# names(dflist) <- c("Whole population")
+filenames <- list("Wholepop", "Females", "Males")
 names(filenames) <- names(dflist)
 
 grlist <- list()
@@ -165,21 +165,22 @@ for(dfname in names(dflist)){
     nlist[[variable]] <- tab
     pctlist[[variable]] <- pct
   }
-  export_svg(DiagrammeR::grViz("K:\\TEU\\APOE on Dementia\\Statistical Analysis\\NeoHypertension\\RMarkdown\\HTNtree.gv")) %>% charToRaw %>% rsvg %>% png::writePNG(paste0(filenames[[dfname]],'.png'))
+  export_svg(DiagrammeR::grViz("K:\\TEU\\APOE on Dementia\\Statistical Analysis\\NeoHypertension\\RMarkdown\\HTNtree.gv")) %>% charToRaw %>% rsvg %>% png::writePNG(paste0('K:/TEU/APOE on Dementia/Statistical Analysis/NeoHypertension/RMarkdown/',filenames[[dfname]],'.png'))
 }
 
 ```
 ![Whole population.](K:/TEU/APOE on Dementia/Statistical Analysis/NeoHypertension/RMarkdown/Wholepop.png)
 
-# Table 2: Prevalence of hypertension awareness, treatment and control among hypertensives, by socioeconomic characteristics and comorbidity type
+# Table 2: Prevalence of hypertension control among treated hypertensives, by socioeconomic characteristics and comorbidity type
 
 ```{r table2, include=TRUE, echo=FALSE}
 
-dflist <- c(list("Among all hypertensives"=hypertensives),
-            lapply(levels(hypertensives$agegrp), function(x) hypertensives[hypertensives$agegrp==x,]),
-            lapply(levels(hypertensives$eth_group), function(x) hypertensives[hypertensives$eth_group==x,]),
-            list("None"=hypertensives[hypertensives$comorbNone==TRUE,]), 
-            lapply(comorbs_raw, function(x) hypertensives[hypertensives[[x]]==1,])
+dflist <- c(list("Among all treated hypertensives"=treated),
+            lapply(levels(treated$agegrp), function(x) treated[treated$agegrp==x,]),
+            lapply(levels(treated$gender), function(x) treated[treated$gender==x,]),
+            lapply(levels(treated$eth_group), function(x) treated[treated$eth_group==x,]),
+            list("None"=treated[treated$comorbNone==TRUE,]), 
+            lapply(comorbs_raw, function(x) treated[treated[[x]]==1,])
             )
 tab2 <- c()
 for(df in dflist){
@@ -187,22 +188,19 @@ for(df in dflist){
   mean_age <- round(mean(df$age),1)
   mean_SBP <- round(mean(df$SBP),1)
   mean_DBP <- round(mean(df$DBP),1)
-  pct_aware <- round(100*nrow(df[df$aware==TRUE & !is.na(df$aware),])/nrow(df),1)
-  pct_treat <- round(100*nrow(df[df$treated==TRUE & !is.na(df$treated),])/nrow(df[df$aware==TRUE & !is.na(df$aware),]),1)
   pct_control <- round(100*nrow(df[df$controlled==TRUE & !is.na(df$controlled),])/nrow(df[df$treated==TRUE & !is.na(df$treated),]),1)
-  total_pct_control <- round(100*nrow(df[df$controlled==TRUE & !is.na(df$controlled),])/nrow(df),1)
-  tab2 <- rbind(tab2,(cbind(n, mean_age, paste0(mean_SBP,"/",mean_DBP), 
-                            pct_aware, pct_treat, pct_control, total_pct_control)))
+  tab2 <- rbind(tab2,(cbind(n, mean_age, paste0(mean_SBP,"/",mean_DBP), pct_control)))
 }
 
-tab2 <- cbind(c("All hypertensives", levels(hypertensives$agegrp), levels(hypertensives$eth_group),
+tab2 <- cbind(c("All hypertensives", levels(treated$agegrp), levels(treated$eth_group),
                     "None", sapply(comorbs_string, prettyfunc)),
               tab2)
 rownames(tab2) <- c("", 
-                    "Age groups", rep("", (nlevels(hypertensives$agegrp)-1)), 
-                    "Ethnic groups", rep("", (nlevels(hypertensives$eth_group)-1)), 
+                    "Age groups", rep("", (nlevels(treated$agegrp)-1)), 
+                    "Gender", rep("", (nlevels(treated$gender)-1)),
+                    "Ethnic groups", rep("", (nlevels(treated$eth_group)-1)), 
                     "Comorbidities", rep("", length(comorbs_string)))
-colnames(tab2) <- c("", "n", "Mean age", "Mean SBP/DBP", "% Aware", "% Treated", "% Controlled", "Total % Controlled")
+colnames(tab2) <- c("", "n", "Mean age", "Mean SBP/DBP", "% Controlled")
 kable(tab2)
 
 ```
@@ -217,7 +215,7 @@ varlist=c("agegrp", "gender", "eth_group",
           "townsend_quint", "income", "employcat", "ISCED", "BirthCountryIncomeLevel", "countryResidence",
           "BMIcat", "Smo_Status", "weekly_alccat", "METs_over1200",
           "antiHTNmedsno",  "FamilyHist_CVD_",
-          "comorbNumber_", "VI_CVD_",
+          "comorbNumber_",
            "BowelCancerScreening")
 
 n <- data.frame(descriptivetable(df=treated, 
