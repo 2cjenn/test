@@ -150,6 +150,8 @@ excl$cancer <- nrow(data)
 # excl$limitfunc <- nrow(data)
 
 excl$hypert <- nrow(data[data$evidenceHTN==TRUE,])
+excl$aware <- nrow(data[data$aware==TRUE & !is.na(data$aware),])
+excl$treat <- nrow(data[data$treated==TRUE & !is.na(data$treated),])
 
 # Create exclusion flowchart
 export_svg(DiagrammeR::grViz("K:\\TEU\\APOE on Dementia\\Statistical Analysis\\NeoHypertension\\RMarkdown\\ExclusionFlowchart.gv")

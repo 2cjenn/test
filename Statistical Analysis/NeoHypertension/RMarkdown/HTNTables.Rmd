@@ -109,46 +109,7 @@ prettyfunc <- function(x){
 
 ![Exclusion Flowchart.](K:/TEU/APOE on Dementia/Statistical Analysis/NeoHypertension/RMarkdown/ExclFlowchart.png)
 
-# Table 1. Characteristics of treated hypertensives, by blood pressure control status (n = `r nrow(treated)`).
 
-
-```{r table1, include=TRUE, echo=FALSE}
-varlist=c("age", "agegrp", "gender", "eth_group",
-          "townsend_quint", "income", "employcat", "ISCED", "BirthCountryIncomeLevel", "countryResidence",
-          "BMIcat", "Smo_Status", "weekly_alcunits", "weekly_alccat", "PhA_METsWkAllAct", "METs_over1200",
-          "HTNdx_durcat", "antiHTNmedsno",  "FamilyHist_CVD_", 
-          "comorbNumber_", comorbs_string,
-          "BowelCancerScreening")
-
-tab_c <- descriptivetable(df=treated[treated$controlled==TRUE,], 
-                         varlist=varlist,
-                         contavg='median',
-                         pretty_names=pretty_names)
-
-tab_u <- descriptivetable(df=treated[treated$controlled==FALSE,], 
-                         varlist=varlist,
-                         contavg='median',
-                         pretty_names=pretty_names)
-
-tab_o <- descriptivetable(df=treated, 
-                         varlist=varlist,
-                         contavg='median',
-                         pretty_names=pretty_names)
-
-uni <- regressiontable(df=treated, outcome="controlled", varlist=varlist, 
-                       regresstype="univariable")
-
-tab1 <- cbind(tab_c, tab_u[,3:4], tab_o[,3:4], as.matrix(uni)[,4:5])
-tab1 <- rbind(colnames(tab1), tab1)
-colnames(tab1) <- c("", "", 
-    paste0("Controlled, n=", nrow(treated[treated$controlled==TRUE,])), "", 
-    paste0("Uncontrolled, n=", nrow(treated[treated$controlled==FALSE,])), "",
-    paste0("Overall, n=", nrow(treated)), "", "", ""
-    )
-# tab1[,1] <- sapply(tab1[,1], prettyfunc)
-kable(tab1)
-
-```
 
 # Figure 2. Prevalence of hypertension, and its awareness, treatment and control among adults aged 40-69 years in the UKB (n = `r nrow(data)`).
 
@@ -175,43 +136,91 @@ for(dfname in names(dflist)){
 }
 
 ```
-![Whole population.](K:/TEU/APOE on Dementia/Statistical Analysis/NeoHypertension/RMarkdown/Wholepop.png)
+![](K:/TEU/APOE on Dementia/Statistical Analysis/NeoHypertension/RMarkdown/Wholepop.png)
 
-# Table 2: Prevalence of hypertension control among treated hypertensives, by socioeconomic characteristics and comorbidity type
+# Table 1: Prevalence of hypertension control among treated hypertensives, by socioeconomic characteristics and comorbidity type
 
-```{r table2, include=TRUE, echo=FALSE}
+```{r table1, include=TRUE, echo=FALSE}
 
-dflist <- c(list("Among all treated hypertensives"=treated),
-            lapply(levels(treated$agegrp), function(x) treated[treated$agegrp==x,]),
-            lapply(levels(treated$gender), function(x) treated[treated$gender==x,]),
-            lapply(levels(treated$eth_group), function(x) treated[treated$eth_group==x,]),
-            list("None"=treated[treated$comorbNone==TRUE,]), 
-            lapply(comorbs_raw, function(x) treated[treated[[x]]==1,])
-            )
-tab2 <- c()
-for(df in dflist){
+desctable2 <- function(df){
   n <- nrow(df)
-  mean_age <- round(mean(df$age),1)
-  mean_SBP <- round(mean(df$SBP),1)
-  mean_DBP <- round(mean(df$DBP),1)
+  median_age <- pretty_dp(median(df$age),1)
+  median_SBP <- pretty_dp(median(df$SBP),1)
+  median_DBP <- pretty_dp(median(df$DBP),1)
   control <- prop.test(x=nrow(df[df$controlled==TRUE & !is.na(df$controlled),]),
                            n=nrow(df), alternative="two.sided", conf.level=0.95)
-  pct_control <- format(round(100 * control$estimate,2), digits=1, nsmall=1)
-  ci_control <- paste0("(", format(round(100 * control$conf.int[1],2), digits=1, nsmall=1), ", ", 
-                       format(round(100 * control$conf.int[2],2), digits=1, nsmall=1), ")")
-  tab2 <- rbind(tab2,(cbind(n, mean_age, paste0(mean_SBP,"/",mean_DBP), pct_control, ci_control)))
+  pct_control <- pretty_dp(control$estimate, dp=1, pct=TRUE)
+  ci_control <- pretty_confint(control$conf.int[1], control$conf.int[2], dp=1, pct=TRUE)
+  
+  table <- cbind(n, median_age, paste0(median_SBP,"/",median_DBP), pct_control, ci_control)
+  return(table)
 }
 
-tab2 <- cbind(c("All treated hypertensives", levels(treated$agegrp), 
-                levels(treated$gender), levels(treated$eth_group),
-                    "None", sapply(comorbs_string, prettyfunc)),
-              tab2)
-rownames(tab2) <- c("", 
-                    "Age groups", rep("", (nlevels(treated$agegrp)-1)), 
-                    "Gender", rep("", (nlevels(treated$gender)-1)),
-                    "Ethnic groups", rep("", (nlevels(treated$eth_group)-1)), 
-                    "Comorbidities", rep("", length(comorbs_string)))
-colnames(tab2) <- c("", "n", "Mean age", "Mean SBP/DBP", "% Controlled", "95% CI Controlled")
+treated$wholepop <- factor(1, levels=c(1), labels=c("All treated hypertensives"))
+varlist=c("wholepop", "agegrp", "gender", "eth_group",
+          "townsend_quint", "income", "employcat", "ISCED", "BirthCountryIncomeLevel", "countryResidence",
+          "BMIcat", "Smo_Status", "weekly_alccat", "METs_over1200",
+          "HTNdx_durcat", "antiHTNmedsno",  "FamilyHist_CVD_", 
+          "comorbNumber_",
+          "BowelCancerScreening")
+
+tab1 <- c()
+for(var in varlist){
+  for(level in levels(treated[[var]])){
+    newrow <- desctable2(treated[treated[var]==level,])
+    tab1 <- rbind(tab1, cbind(level, newrow))
+  }
+}
+for(comorb in comorbs_string){
+  newrow <- desctable2(treated[treated[comorb]=="Yes",])
+  tab1 <- rbind(tab1, cbind(prettyfunc(comorb), newrow))
+}
+
+rownames(tab1) <- c(unlist(sapply(varlist, function(x) c(prettyfunc(x), rep("", (nlevels(treated[[x]])-1))))),
+                    "Comorbidities", rep("", length(comorbs_string)-1))
+
+colnames(tab1) <- c("", "n", "Median age", "Median SBP/DBP", "% Controlled", "95% CI Controlled")
+kable(tab1)
+
+```
+
+# Table 2. Characteristics of treated hypertensives, by blood pressure control status (n = `r nrow(treated)`).
+
+
+```{r table2, include=TRUE, echo=FALSE}
+varlist=c("age", "agegrp", "gender", "eth_group",
+          "townsend_quint", "income", "employcat", "ISCED", "BirthCountryIncomeLevel", "countryResidence",
+          "BMIcat", "Smo_Status", "weekly_alcunits", "weekly_alccat", "PhA_METsWkAllAct", "METs_over1200",
+          "HTNdx_durcat", "antiHTNmedsno",  "FamilyHist_CVD_", 
+          "comorbNumber_", comorbs_string,
+          "BowelCancerScreening")
+
+tab_c <- descriptivetable(df=treated[treated$controlled==TRUE,], 
+                         varlist=varlist,
+                         contavg='median',
+                         pretty_names=pretty_names)
+
+tab_u <- descriptivetable(df=treated[treated$controlled==FALSE,], 
+                         varlist=varlist,
+                         contavg='median',
+                         pretty_names=pretty_names)
+
+tab_o <- descriptivetable(df=treated, 
+                         varlist=varlist,
+                         contavg='median',
+                         pretty_names=pretty_names)
+
+uni <- regressiontable(df=treated, outcome="controlled", varlist=varlist, 
+                       regresstype="univariable")
+
+tab2 <- cbind(tab_c, tab_u[,3:4], tab_o[,3:4], as.matrix(uni)[,4:5])
+tab2 <- rbind(colnames(tab2), tab2)
+colnames(tab1) <- c("", "", 
+    paste0("Controlled, n=", nrow(treated[treated$controlled==TRUE,])), "", 
+    paste0("Uncontrolled, n=", nrow(treated[treated$controlled==FALSE,])), "",
+    paste0("Overall, n=", nrow(treated)), "", "", ""
+    )
+
 kable(tab2)
 
 ```
@@ -268,6 +277,7 @@ varlist=c("agegrp", "gender", "eth_group",
           "antiHTNmedsno",  "FamilyHist_CVD_",
           comorbs_string,
           "BowelCancerScreening")
+prettylist <- sapply(varlist, prettyfunc)
 
 n <- data.frame(descriptivetable(df=treated, 
                          varlist=varlist,
@@ -294,7 +304,7 @@ tab4 <- rbind(c("Coefficient", "Level", "n", "OR", "95% CI", "p", "OR", "95% CI"
 colnames(tab4) <- c("","","", "Age- and sex-adjusted", "", "", "Fully adjusted", "", "")
 
 tab4[,1] <- sapply(tab4[,1], prettyfunc)
-kable(tab4, caption="Logistic regressions of individual comorbidities against hypertension control status, odds ratios are for successful BP control.")
+kable(tab4, caption=paste0("Logistic regressions of individual comorbidities against hypertension control status, odds ratios are for successful BP control. The fully adjusted model contains the following variables: ", paste(prettylist, collapse=", "), ". Note that these are all the covariates from Table 3 except for number of comorbidities. The OR for all other covariates remained similar to those in Table 3 when adding these individual comorbidities."))
 
 ```
 

@@ -34,13 +34,12 @@ ethnicity$eth_group <- dplyr::case_when(
                                  "African", "Any other Black background") ~ "Black",
   ethnicity$Eth_Ethnicity %in% c("Other ethnic group","Asian or Asian British", 
                                  "Any other Asian background", "Chinese") ~ "Other",
-  ethnicity$Eth_Ethnicity == "Do not know" ~ "Do not know",
-  ethnicity$Eth_Ethnicity == "Prefer not to answer" ~ "Unanswered",
+  ethnicity$Eth_Ethnicity %in% c("Do not know", "Prefer not to answer") ~ "Unanswered",
   is.na(ethnicity$Eth_Ethnicity) ~ "Unanswered",
   TRUE ~ "Error")
 ethnicity$eth_group <- factor(ethnicity$eth_group, ordered=FALSE,
                               levels=c("White", "Black", "S. Asian", "Mixed", 
-                                       "Other", "Do not know", "Unanswered"))
+                                       "Other", "Unanswered"))
 
 
 # Top level categorisation
