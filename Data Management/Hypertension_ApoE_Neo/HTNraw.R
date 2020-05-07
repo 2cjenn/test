@@ -21,6 +21,9 @@ cogfunc <- readRDS("K:\\TEU\\APOE on Dementia\\Data Management\\R_Dataframes_TLA
 covars <- readRDS("K:\\TEU\\APOE on Dementia\\Data Management\\R_Dataframes_TLA\\38358\\Organised\\covars.rds")
 rubric <- readRDS("K:\\TEU\\APOE on Dementia\\Data Management\\R_Dataframes_TLA\\38358\\Organised\\Hypertension\\Neo\\HTNMedsRubric.rds")
 
+prs <- readRDS("K:\\TEU\\UKB_Genetic_Data\\BP675\\converted_data\\HTN_PRS.rds")
+pc <- readRDS("K:\\TEU\\APOE on Dementia\\Data Management\\R_Dataframes_TLA\\38358\\Organised\\principalcomponents.rds")
+
 # Combine the baseline characteristics with the ethnicities
 data <- merge(basechar, ethnicity, by="ID", all=TRUE)
 # And with the dates of death
@@ -41,6 +44,11 @@ data <- merge(data, cogfunc, by="ID", all=TRUE)
 data <- merge(data, covars, by="ID", all=TRUE)
 # Merge with the "probable BP meds" variable from the rubric
 data <- merge(data, rubric[,c("ID", "hypmedsno", "HTN_probablemeds")], by="ID", all.x=TRUE)
+
+
+# Merge with the calculated PRS scores for SBP and DBP
+data <- merge(data, prs, by="ID", all.x=TRUE)
+data <- merge(data, pc, by="ID", all.x=TRUE)
 
 saveRDS(data, file="K:\\TEU\\APOE on Dementia\\Data Management\\R_Dataframes_TLA\\38358\\Organised\\Hypertension\\HTN_raw.rds")
 
