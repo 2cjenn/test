@@ -3,7 +3,7 @@ digraph dot {
   
   # define the global styles of the nodes. We can override these in box if we wish
   node [shape = rectangle, style = filled, fillcolor = Azure, fontname=Calibri];
-  wholepop; agerange; corevars; notsick; hypert; ex_agerange; ex_corevars; ex_reallysick; ex_normotens
+  wholepop; agerange; corevars; notsick; treated; ex_agerange; ex_corevars; ex_reallysick; ex_untreat
   
   node [shape=point, width=0, height=0]
   i1 i2 i3 i4
@@ -12,12 +12,12 @@ digraph dot {
   agerange [label='@@2']
   corevars [label='@@3']
   notsick [label='@@4']
-  hypert [label='@@5']
+  treated [label='@@5']
   
   ex_agerange [label='@@6']
   ex_corevars [label='@@7']
   ex_reallysick [label='@@8']
-  ex_normotens [label='@@9']
+  ex_untreat [label='@@9']
   
   wholepop -> i1 [arrowhead='none']
   i1 -> agerange 
@@ -26,13 +26,13 @@ digraph dot {
   corevars -> i3 [arrowhead='none']
   i3 -> notsick 
   notsick -> i4 [arrowhead='none']
-  i4 -> hypert
+  i4 -> treated
   
   edge [arrowhead='none']
   i1 -> ex_agerange; {rank=same i1 ex_agerange}
   i2 -> ex_corevars; {rank=same i2 ex_corevars}
   i3 -> ex_reallysick; {rank=same i3 ex_reallysick}
-  i4 -> ex_normotens; {rank=same i4 ex_normotens}
+  i4 -> ex_untreat; {rank=same i4 ex_untreat}
   
   }
   
@@ -40,9 +40,9 @@ digraph dot {
   [2]: paste0('UK participants aged between 40 and 70\nn = ', excl$agerange)
   [3]: paste0('Complete information on core variables\nn = ', excl$BPimp)
   [4]: paste0('Considered healthy\nn = ', excl$cancer)
-  [5]: paste0('Evidence of hypertension\nn = ', excl$hypert)
+  [5]: paste0('Treated hypertensives\nn = ', excl$treat)
   [6]: paste0(excl$initial-excl$agerange,' outside the age range of [40,70) years')
   [7]: paste0(excl$agerange-excl$BPmiss,' missing BP data from baseline assessment', '\n', excl$BPmiss-excl$BPimp, ' implausible BP data from baseline assessment')
   [8]: paste0(excl$BPimp-excl$seriouscomorb,' serious comordbidities', '\n', excl$seriouscomorb-excl$cancer, ' with cancer (except skin cancer)')
-  [9]: paste0(excl$cancer-excl$hypert,' no evidence of hypertension at baseline')
+  [9]: paste0(excl$cancer-excl$hypert,' no evidence of hypertension at baseline', '\n', excl$hypert-excl$aware,' unaware of hypertension at baseline', '\n', excl$aware-excl$treat,' not treated for hypertension at baseline')
   

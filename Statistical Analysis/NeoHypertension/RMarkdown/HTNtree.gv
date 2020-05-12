@@ -4,16 +4,18 @@ digraph dot {
   # define the global styles of the nodes. We can override these in box if we wish
   node [shape = rectangle, style = filled, fillcolor = Azure, fontname=Calibri]
   
-  wholepop [label='@@1']
-  HTN [label='@@2']
-  noHTN [label='@@3']
-  aware [label='@@4']
-  unaware [label='@@5']
-  treated [label='@@6']
-  untreated [label='@@7']
-  controlled [label='@@8']
-  uncontrolled [label='@@9']
+  fulldata [label='@@1']
+  wholepop [label='@@2']
+  HTN [label='@@3']
+  noHTN [label='@@4']
+  aware [label='@@5']
+  unaware [label='@@6']
+  treated [label='@@7']
+  untreated [label='@@8']
+  controlled [label='@@9']
+  uncontrolled [label='@@10']
   
+  fulldata -> wholepop
   wholepop -> {HTN noHTN}
   HTN -> {aware unaware}
   aware -> {treated untreated}
@@ -21,13 +23,14 @@ digraph dot {
   
   }
   
-  [1]: paste0(dfname,'\nn = ', nlist$wholepop)
-  [2]: paste0('Hypertensive\nn = ', nlist$evidenceHTN[[2]] , '\n(', pctlist$evidenceHTN[[2]],'%)')
-  [3]: paste0('Normotensive\nn = ', nlist$evidenceHTN[[1]] , '\n(', pctlist$evidenceHTN[[1]], '%)')
-  [4]: paste0('Aware\nn = ', nlist$aware[[2]] , '\n(', pctlist$aware[[2]], '%)')
-  [5]: paste0('Unaware\nn = ', nlist$aware[[1]] , '\n(', pctlist$aware[[1]], '%)')
-  [6]: paste0('Treated\nn = ', nlist$treated[[2]] , '\n(', pctlist$treated[[2]], '%)')
-  [7]: paste0('Untreated\nn = ', nlist$treated[[1]] , '\n(', pctlist$treated[[1]], '%)')
-  [8]: paste0('Controlled\nn = ', nlist$controlled[[2]] , '\n(', pctlist$controlled[[2]], '%)')
-  [9]: paste0('Uncontrolled\nn = ', nlist$controlled[[1]] , '\n(', pctlist$controlled[[1]], '%)')
+  [1]: 'Consenting\nUKB population\nn = 502506'
+  [2]: paste0('Healthy population\nwith complete information\non core variables\nn = ', nlist$wholepop)
+  [3]: paste0('Evidence of\nhypertension\nn = ', nlist$evidenceHTN[[2]] , '\n(', pctlist$evidenceHTN[[2]],'%)')
+  [4]: paste0('No evidence of\nhypertension\nn = ', nlist$evidenceHTN[[1]] , '\n(', pctlist$evidenceHTN[[1]], '%)')
+  [5]: paste0('Aware\nn = ', nlist$aware[[2]] , '\n(', pctlist$aware[[2]], '%)')
+  [6]: paste0('Unaware\nn = ', nlist$aware[[1]] , '\n(', pctlist$aware[[1]], '%)')
+  [7]: paste0('Treated\nn = ', nlist$treated[[2]] , '\n(', pctlist$treated[[2]], '%)')
+  [8]: paste0('Untreated\nn = ', nlist$treated[[1]] , '\n(', pctlist$treated[[1]], '%)')
+  [9]: paste0('Controlled\nn = ', nlist$controlled[[2]] , '\n(', pctlist$controlled[[2]], '%)')
+  [10]: paste0('Uncontrolled\nn = ', nlist$controlled[[1]] , '\n(', pctlist$controlled[[1]], '%)')
   
