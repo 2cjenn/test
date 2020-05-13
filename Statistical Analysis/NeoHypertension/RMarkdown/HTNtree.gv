@@ -32,5 +32,5 @@ digraph dot {
   [7]: paste0('Treated\nn = ', nlist$treated[[2]] , '\n(', pctlist$treated[[2]], '%)')
   [8]: paste0('Untreated\nn = ', nlist$treated[[1]] , '\n(', pctlist$treated[[1]], '%)')
   [9]: paste0('Controlled\nn = ', nlist$controlled[[2]] , '\n(', pctlist$controlled[[2]], '%)')
-  [10]: paste0('Uncontrolled\nn = ', nlist$controlled[[1]] , '\n(', pctlist$controlled[[1]], '%)')
+  [10]: paste0('Sub-optimally\ntreated\nn = ', nlist$controlled[[1]] , '\n(', pctlist$controlled[[1]], '%)')
   

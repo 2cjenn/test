@@ -1,7 +1,7 @@
 ---
 title: "Prevalence and correlates of hypertension control among almost 100,000 middle-aged adults receiving treatment for hypertension in the UK"
 author: "Jennifer Collister"
-date: "12/05/2020"
+date: "13/05/2020"
 output: 
   word_document:
       reference_docx: "K:/TEU/APOE on Dementia/RMarkdownStyle.docx"
@@ -21,6 +21,10 @@ library(DescTools)
 library(ggplot2)
 library(forcats)
 library(gridExtra)
+library(scales)
+library(plyr)
+library(dplyr)
+library(reshape2)
 
 source("K:/TEU/APOE on Dementia/Statistical Analysis/JCfunctions.R")
 options(knitr.kable.NA='')
@@ -310,130 +314,4 @@ tab4[,1] <- sapply(tab4[,1], prettyfunc)
 kable(tab4, caption=paste0("Logistic regressions of individual comorbidities against hypertension control status, odds ratios are for successful BP control. The fully adjusted model contains the following variables: ", paste(prettylist, collapse=", "), ". Note that these are all the covariates from Table 3 except for number of comorbidities. The OR for all other covariates remained similar to those in Table 3 when adding these individual comorbidities."))
 
 ```
-
-# Supplementary Figure 3?
-
-```{r fig3, include=TRUE, echo=FALSE}
-
-# Create a factor variable for the BP categories we want to colourcode
-treated$plot_color <- dplyr::case_when(
-  treated$SBP >= 140 & treated$DBP < 90 ~ "Uncontrolled - High SBP",
-  treated$SBP < 140 & treated$DBP >= 90 ~ "Uncontrolled - High DBP",
-  treated$SBP >= 140 & treated$DBP >= 90 ~ "Uncontrolled - Both high",
-  treated$SBP < 140 & treated$DBP < 90 ~ "BP successfully controlled"
-)
-treated$plot_color <- factor(treated$plot_color, levels=c("BP successfully controlled", "Uncontrolled - High DBP", "Uncontrolled - High SBP", "Uncontrolled - Both high"))
-
-# Scatterplot showing distribution of SBP and DBP values among participants
-ggplot(data = treated, aes(DBP, SBP, color = plot_color)) +
-  geom_point(size=1) +
-  labs(x="DBP, mmHg", y="SBP, mmHg", 
-       title="Scatterplot of blood pressure among\ntreated participants",
-       color="BP control category") +
-  geom_vline(xintercept = 90, linetype="dotted") +
-  geom_hline(yintercept = 140, linetype="dotted") +
-  scale_color_manual(values = c("BP successfully controlled" = "green",
-                               "Uncontrolled - High DBP" = "yellow", 
-                                "Uncontrolled - High SBP" = "orange",
-                                "Uncontrolled - Both high" = "red"))
-
-
-# Stacked barplot to show proportion in each category
-counts <- table(treated$plot_color, treated$controlled_)
-count_df <- data.frame(counts)
-colnames(count_df) <- c("colour", "status", "count")
-ggplot(data=count_df, aes(x=status, y=count, fill=colour)) +
-  geom_bar(stat="identity") +
-  labs(x="BP control status", y="Number of treated participants", 
-       title="Stacked bar plot to show proportion of treated\nparticipants in each BP control category",
-       fill="BP control category") +
-  scale_fill_manual(values = c("BP successfully controlled" = "green",
-                               "Uncontrolled - High DBP" = "yellow", 
-                                "Uncontrolled - High SBP" = "orange",
-                                "Uncontrolled - Both high" = "red"))
-
-```
-
-# Another possible supplementary figure, designed to complement Table 1 - dataset is treated participants (n = `r nrow(treated)`)
-
-Boxplots of SBP and DBP in each group of each covariate.
-Boxplots have a box spanning the interquartile range (25th-75th percentiles) with a line at the median (50th percentile) and whiskers from 1st to 99th percentiles. Min and max are shown as points.
-
-In this version, the mean has also been marked with a point to allow us to verify that there are no cases where it differs consequentially from the median.
-
-
-```{r suppfig, include=TRUE, echo=FALSE, results='asis', fig.height=3, fig.width=7}
- 
-# Want to change the whisker definition to show 1st to 99th percentiles
-#https://stackoverflow.com/questions/4765482/changing-whisker-definition-in-geom-boxplot
-
-# define the summary function - box plot over IQR with whiskers up to 1% and 99%
-f <- function(x) {
-  r <- quantile(x, probs = c(0.01, 0.25, 0.5, 0.75, 0.99))
-  names(r) <- c("ymin", "lower", "middle", "upper", "ymax")
-  r
-}
-
-# Use the outlier functionality to show the min and max values    
-# Don't show all values outside 1%-99% because dataset so large that those 2% are still lots!
-o <- function(x) {
-  subset(x, x == min(x) | x == max(x))
-}
-
-# Also show mean
-m <- function(x){
-  mean(x)
-}
-
-get_legend<-function(myggplot){
-  tmp <- ggplot_gtable(ggplot_build(myggplot))
-  leg <- which(sapply(tmp$grobs, function(x) x$name) == "guide-box")
-  legend <- tmp$grobs[[leg]]
-  return(legend)
-}
-
-# For each variable in this list
-varlist=c("agegrp", "gender", "eth_group",
-          "townsend_quint", "income", "employcat", "ISCED", "BirthCountryIncomeLevel", "countryResidence",
-          "BMIcat", "Smo_Status", "weekly_alccat", "METs_over1200",
-          "HTNdx_durcat", "antiHTNmedsno",  "FamilyHist_CVD_", 
-          "comorbNumber_",
-          "BowelCancerScreening")
-
-
-# Plot it for SBP and DBP
-for(var in varlist){
-  treated[paste0(var, "_rev")] <- fct_rev(treated[[var]])
-  
-  sbplot <- ggplot(treated, aes_string(x=paste0(var, "_rev"), y="SBP", color=var)) + 
-    stat_summary(fun.data=f, geom="boxplot") + 
-    stat_summary(fun.y = o, geom="point") +
-    stat_summary(fun.y = m, geom="point") +
-    labs(x=prettyfunc(var), y="SBP, mmHg", color=prettyfunc(var)) +
-    theme(axis.text.y = element_blank(),
-          axis.ticks.y = element_blank(),
-          legend.title = element_text(size=8),
-          legend.text = element_text(size=7)) +
-    coord_flip()
-  
-  legend <- get_legend(myggplot=sbplot)
-  
-  sbplot <- sbplot + theme(legend.position="none")
-  
-  dbplot <- ggplot(treated, aes_string(x=paste0(var, "_rev"), y="DBP", color=var)) + 
-    stat_summary(fun.data=f, geom="boxplot") + 
-    stat_summary(fun.y = o, geom="point") +
-    stat_summary(fun.y = m, geom="point") +
-    labs(x="", y="DBP, mmHg") +
-    theme(axis.text.y = element_blank(),
-          axis.ticks.y = element_blank(),
-          legend.position="none") +
-    coord_flip()
-
-  grid.arrange(sbplot, dbplot, legend, ncol=3, widths=c(2.3,2.3,2.3))
-}
-
-```
-
-
 

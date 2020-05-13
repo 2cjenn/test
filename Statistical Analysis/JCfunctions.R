@@ -146,7 +146,7 @@ printlogresults <- function(model, coeffnames=NULL, IDcol=FALSE){
   # NOMVAR <- rownames(coeff)
   regression <- data.frame(
     coeffname=(rownames(coeff)),
-    OR=pretty_dp(exp(coeff[,1]), dp=3), # OR
+    OR=pretty_dp(exp(coeff[,1]), dp=2), # OR
     CI=pretty_confint(exp(coeff[,1]-(1.96*coeff[,2])),
                       exp(coeff[,1]+(1.96*coeff[,2])),
                       dp=2), # 95% CI
