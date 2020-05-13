@@ -1,0 +1,147 @@
+---
+title: "Comparing prevalence findings to [Falaschetti2014] (reported prevalence of control among treated of 63% in 2011)"
+author: "Jennifer Collister"
+date: "13/05/2020"
+output: 
+  word_document:
+      reference_docx: "K:/TEU/APOE on Dementia/RMarkdownStyle.docx"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE)
+library(kableExtra)
+library(knitr)
+library(DiagrammeR)
+library(DiagrammeRsvg)
+library(magrittr)
+library(svglite)
+library(rsvg)
+library(png)
+library(DescTools)
+library(ggplot2)
+library(forcats)
+library(gridExtra)
+library(scales)
+
+source("K:/TEU/APOE on Dementia/Statistical Analysis/JCfunctions.R")
+options(knitr.kable.NA='')
+
+data <- readRDS(file="K:\\TEU\\APOE on Dementia\\Data Management\\R_Dataframes_TLA\\38358\\Organised\\Hypertension\\Neo\\HTN_excl.rds")
+
+
+# Comorbidities of interest
+comorbs <- readRDS("K:\\TEU\\APOE on Dementia\\Data Management\\R_Dataframes_TLA\\38358\\Organised\\Hypertension\\Neo\\VI_HTNcomorb.rds")
+colnames(comorbs) <- c("ID", paste0("VI_", colnames(comorbs)[-1]))
+print(colnames(comorbs)[-1])
+comorbs_raw <- c("VI_afib_or_aflutter", "VI_CVD", "VI_diabetes", "VI_asthma_or_COPD", "VI_migraine", "VI_epilepsy",
+                 "VI_anxiety_or_stress", "VI_depression_or_bipolar", "VI_Osteoarthritis", "VI_Other_joint_disorder")
+comorbs_string <- paste0(comorbs_raw, "_")
+
+# Principal components
+pclist <- paste0("GeP_PC.m",seq(1,10))
+
+#-------------------------------------------------------------------------------------------------------------------
+# Datasets:
+
+# For the SES descriptive analyses, we want to consider two subsets: all hypertensives and all treated individuals
+hypertensives <- data[data$evidenceHTN==TRUE & !is.na(data$evidenceHTN),]
+treated <- data[data$treated==TRUE & !is.na(data$treated),]
+
+# Among the treated, those who did not list any HTN meds in VI are assumed to be taking unlisted meds
+treated$antiHTNmedsno <- factor(treated$antiHTNmedsno, levels=c("1", "2", ">=3", "0"),
+                                labels=c("1", "2", ">=3",  "Medication list unavailable"))
+
+# For the genetic analyses, we will consider only the genetically caucasian individuals
+white <- data[data$genWhiteBrit=="White British",]
+white_trt <- treated[treated$genWhiteBrit=="White British",]
+
+pretty_names <- list(agegrp = "Age group",
+                     gender = "Gender",
+                     ethnicity = "Ethnicity",
+                     eth_group = "Ethnic group",
+                     genWhiteBrit = "Genetically categorised as White British",
+                     BMIcat = "BMI (categorical)",
+                     Smo_Status = "Smoking status",
+                     weekly_alcunits = "Alcohol units per week",
+                     weekly_alccat = "Alcohol units per week (categorical)",
+                     PhA_METsWkAllAct = "Weekly physical activity, in METs",
+                     METs_over1200 = "Sufficient physical activity",
+                     townsend_quint = "Townsend Deprivation Index, quintiles",
+                     income = "Household Income, GBP",
+                     employment = "Occupation type",
+                     employcat = "Occupation category",
+                     ISCED = "Highest level of education (ISCED)",
+                     BirthCountryIncomeLevel = "Country of birth, by income level",
+                     countryResidence = "UK country of residence",
+                     BowelCancerScreening = "Ever screened for bowel cancer",
+                     HTNdx_durcat = "Duration of hypertension (categorical)",
+                     antiHTNmedsno = "Number of antihypertensive medications",
+                     FamilyHist_CVD_ = "Family history of CVD",
+                     comorbNumber_ = "No. of comorbidities",
+                     VI_afib_or_aflutter_ = "Arrhythmia (afib/flutter)",
+                     VI_anxiety_or_stress_ = "Anxiety",
+                     VI_asthma_or_COPD_ = "Asthma or COPD",
+                     VI_depression_or_bipolar_ = "Depression",
+                     VI_diabetes_ = "Diabetes",
+                     VI_epilepsy_ = "Epilepsy",
+                     VI_CVD_ = "Cardiovascular disease",
+                     VI_migraine_ = "Migraines",
+                     VI_substance_use_ = "Substance use",
+                     VI_Osteoarthritis_ = "Osteoarthritis",
+                     VI_Other_joint_disorder_ = "Other joint disorder",
+                     PRS = "Polygenic risk score",
+                     PRS_quint = "Polygenic risk score, quintiles",
+                     GeP_PC.m1 = "Principal Component 1",
+                     GeP_PC.m2 = "PC 2",
+                     GeP_PC.m3 = "PC 3",
+                     GeP_PC.m4 = "PC 4",
+                     GeP_PC.m5 = "PC 5",
+                     GeP_PC.m6 = "PC 6",
+                     GeP_PC.m7 = "PC 7",
+                     GeP_PC.m8 = "PC 8",
+                     GeP_PC.m9 = "PC 9",
+                     GeP_PC.m10 = "PC 10"
+                     )
+prettyfunc <- function(x){
+  if(x %in% names(pretty_names)){
+     return(pretty_names[[x]])
+  } else {
+    return(x)
+  }
+}
+```
+
+```{r restrict, include=FALSE, echo=FALSE}
+# Restrict to individuals who enrolled in 2010 in assessment centres in England
+date2010 <- as.Date("2010-01-01", origin=as.Date("1970-01-01"))
+data <- data[data$recdate > date2010 & data$countryResidence=="England",]
+```
+
+# Figure 2. Prevalence of hypertension, and its awareness, treatment and control among adults aged 40-69 years in the UKB who attended an assessment centre in England in 2010 (n = `r nrow(data)`, assessment dates range from `r min(data$recdate)` to `r max(data$recdate)`)
+
+```{r fig2, include=TRUE, echo=FALSE, results='asis'}
+
+dflist <- c(list("Whole population"=data, "Females"=data[data$gender=="Female",], "Males"=data[data$gender=="Male",]))
+# names(dflist) <- c("Whole population")
+filenames <- list("Wholepop", "Females", "Males")
+names(filenames) <- names(dflist)
+
+grlist <- list()
+for(dfname in names(dflist)){
+  df <- dflist[[dfname]]
+  nlist <- list(wholepop=nrow(df))
+  pctlist <- list()
+  for(variable in c("evidenceHTN", "aware", "treated", "controlled")){
+    var <- paste0(variable, "_")
+    tab <- table(df[[var]])
+    pct <- round(100*prop.table(tab),1)
+    nlist[[variable]] <- tab
+    pctlist[[variable]] <- pct
+  }
+  export_svg(DiagrammeR::grViz("K:\\TEU\\APOE on Dementia\\Statistical Analysis\\NeoHypertension\\RMarkdown\\HTNtree.gv")) %>% charToRaw %>% rsvg %>% png::writePNG(paste0('K:/TEU/APOE on Dementia/Statistical Analysis/NeoHypertension/RMarkdown/',filenames[[dfname]],'.png'))
+}
+
+```
+![](K:/TEU/APOE on Dementia/Statistical Analysis/NeoHypertension/RMarkdown/Wholepop.png)
+
+
