@@ -21,10 +21,13 @@
 # Note excel and csv could be important mapping tables, so worth tracking these! #
 # Except this one which is data#
 ICD10.csv
+# And anything that's .xls probably isn't important
+**.xls
 
 # Note .png and .jpg files would be a faff to recreate, so I guess track these? #
 # Nope changed my mind they're a faff to track
 **.png
+**.jpg
 
 # Some directories don't contain any code #
 ###########################################
