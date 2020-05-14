@@ -1,7 +1,7 @@
 ---
-title: "Prevalence and correlates of hypertension control among almost 100,000 middle-aged adults receiving treatment for hypertension in the UK"
+title: "Prevalence and correlates of hypertension control among almost 100,000 middle-aged adults receiving treatment for hypertension in the UK: Tables and Figures"
 author: "Jennifer Collister"
-date: "13/05/2020"
+date: "14/05/2020"
 output: 
   word_document:
       reference_docx: "K:/TEU/APOE on Dementia/RMarkdownStyle.docx"
@@ -36,7 +36,7 @@ data <- readRDS(file="K:\\TEU\\APOE on Dementia\\Data Management\\R_Dataframes_T
 comorbs <- readRDS("K:\\TEU\\APOE on Dementia\\Data Management\\R_Dataframes_TLA\\38358\\Organised\\Hypertension\\Neo\\VI_HTNcomorb.rds")
 colnames(comorbs) <- c("ID", paste0("VI_", colnames(comorbs)[-1]))
 print(colnames(comorbs)[-1])
-comorbs_raw <- c("VI_afib_or_aflutter", "VI_CVD", "VI_diabetes", "VI_asthma_or_COPD", "VI_migraine", "VI_epilepsy",
+comorbs_raw <- c("VI_CVD", "VI_diabetes", "VI_afib_or_aflutter", "VI_asthma_or_COPD", "VI_migraine", "VI_epilepsy",
                  "VI_anxiety_or_stress", "VI_depression_or_bipolar", "VI_Osteoarthritis", "VI_Other_joint_disorder")
 comorbs_string <- paste0(comorbs_raw, "_")
 
@@ -58,17 +58,18 @@ treated$antiHTNmedsno <- factor(treated$antiHTNmedsno, levels=c("1", "2", ">=3",
 white <- data[data$genWhiteBrit=="White British",]
 white_trt <- treated[treated$genWhiteBrit=="White British",]
 
-pretty_names <- list(agegrp = "Age group",
+pretty_names <- list(age = "Age, years",
+                     agegrp = "Age group, years",
                      gender = "Gender",
                      ethnicity = "Ethnicity",
                      eth_group = "Ethnic group",
                      genWhiteBrit = "Genetically categorised as White British",
                      BMIcat = "BMI (categorical)",
                      Smo_Status = "Smoking status",
-                     weekly_alcunits = "Alcohol units per week",
+                     weekly_alcunits = "Alcohol units reported per week",
                      weekly_alccat = "Alcohol units per week (categorical)",
-                     PhA_METsWkAllAct = "Weekly physical activity, in METs",
-                     METs_over1200 = "Sufficient physical activity",
+                     PhA_METsWkAllAct = "Weekly physical activity, MET minutes",
+                     METs_over1200 = "Weekly physical activity",
                      townsend_quint = "Townsend Deprivation Index, quintiles",
                      income = "Household Income, GBP",
                      employment = "Occupation type",
@@ -77,7 +78,7 @@ pretty_names <- list(agegrp = "Age group",
                      BirthCountryIncomeLevel = "Country of birth, by income level",
                      countryResidence = "UK country of residence",
                      BowelCancerScreening = "Ever screened for bowel cancer",
-                     HTNdx_durcat = "Duration of hypertension (categorical)",
+                     HTNdx_durcat = "Duration of hypertension",
                      antiHTNmedsno = "Number of antihypertensive medications",
                      FamilyHist_CVD_ = "Family history of CVD",
                      comorbNumber_ = "No. of comorbidities",
@@ -105,22 +106,21 @@ pretty_names <- list(agegrp = "Age group",
                      GeP_PC.m9 = "PC 9",
                      GeP_PC.m10 = "PC 10"
                      )
-prettyfunc <- function(x){
-  if(x %in% names(pretty_names)){
-     return(pretty_names[[x]])
-  } else {
-    return(x)
-  }
-}
+
+figure <- 1
+table <- 1
+suppfig <- 1
+footnote_no <- 1
+
 ```
 
-![Exclusion Flowchart.](K:/TEU/APOE on Dementia/Statistical Analysis/NeoHypertension/RMarkdown/ExclFlowchart.png)
+# Figure `r figure`. Flowchart of study exclusion criteria, resulting in study population of `r nrow(treated)` treated hypertensives aged 40-70 years with complete data on core study variables and without any serious comorbidites.
+`r figure <- figure + 1`
+![](K:/TEU/APOE on Dementia/Statistical Analysis/NeoHypertension/RMarkdown/ExclFlowchart.png){height=700px}
 
-
-
-# Figure 2. Prevalence of hypertension, and its awareness, treatment and control among adults aged 40-69 years in the UKB (n = `r nrow(data)`).
-
-```{r fig2, include=TRUE, echo=FALSE, results='asis'}
+# Figure `r figure`. Prevalence of hypertension, and its awareness, treatment and control among adults in the UKB.
+`r figure <- figure + 1`
+```{r fig2, include=TRUE, echo=FALSE, results='asis', }
 
 dflist <- c(list("Whole population"=data, "Females"=data[data$gender=="Female",], "Males"=data[data$gender=="Male",]))
 # names(dflist) <- c("Whole population")
@@ -143,10 +143,11 @@ for(dfname in names(dflist)){
 }
 
 ```
-![](K:/TEU/APOE on Dementia/Statistical Analysis/NeoHypertension/RMarkdown/Wholepop.png)
 
-# Table 1: Prevalence of hypertension control among treated hypertensives (n = `r nrow(treated)`), by socioeconomic characteristics and comorbidity type
+![Hypertension defined as self-report of a prior diagnosis of hypertension in touchscreen questionnaire (TQ) or verbal interview (VI), or self-report of hypertensive medication in TQ or in VI by our rubric, or mean SBP >= 140 mmHg or mean DBP >= 90 mmHg at baseline assessment. Aware defined as self-report of a prior diagnosis of hypertension in TQ or VI, or self-report of hypertensive medication in TQ or in VI by our rubric. Treated defined as self-report of hypertensive medication in TQ or in VI by our rubric. Control defined among the treated as mean SBP >= 140 mmHg or mean DBP >= 90 mmHg at baseline assessment.](K:/TEU/APOE on Dementia/Statistical Analysis/NeoHypertension/RMarkdown/Wholepop.png){height=680px}
 
+# Table `r table`: Prevalence of hypertension control among treated hypertensives (n = `r nrow(treated)`), by socioeconomic characteristics and comorbidity type
+`r table <- table + 1`
 ```{r table1, include=TRUE, echo=FALSE}
 
 desctable2 <- function(df){
@@ -168,8 +169,8 @@ varlist=c("wholepop", "agegrp", "gender", "eth_group",
           "townsend_quint", "income", "employcat", "ISCED", "BirthCountryIncomeLevel", "countryResidence",
           "BMIcat", "Smo_Status", "weekly_alccat", "METs_over1200",
           "HTNdx_durcat", "antiHTNmedsno",  "FamilyHist_CVD_", 
-          "comorbNumber_",
-          "BowelCancerScreening")
+          "BowelCancerScreening",
+          "comorbNumber_")
 
 tab1 <- c()
 for(var in varlist){
@@ -180,60 +181,93 @@ for(var in varlist){
 }
 for(comorb in comorbs_string){
   newrow <- desctable2(treated[treated[comorb]=="Yes",])
-  tab1 <- rbind(tab1, cbind(prettyfunc(comorb), newrow))
+  tab1 <- rbind(tab1, cbind(prettyfunc(comorb, pnames=pretty_names), newrow))
 }
 
-rownames(tab1) <- c(unlist(sapply(varlist, function(x) c(prettyfunc(x), rep("", (nlevels(treated[[x]])-1))))),
+footnote_no <- 1
+colnames(tab1) <- c("", "n", "Median age, years", "Median SBP/DBP, mmHg", 
+                    paste0("% Controlled", "^", footnote_no, "^"), "95% CI Controlled")
+footnote_no <- footnote_no + 1
+footnote_list <- c("townsend_quint", "employcat", "ISCED", "countryResidence", "BMIcat", "METs_over1200", "comorbNumber_")
+
+rownamer <- function(x){
+  prettyname <- prettyfunc(x, pnames=pretty_names, flist=footnote_list)
+  
+  # Return the prettified name and the correct number of blanks
+  c(prettyname, rep("", (nlevels(treated[[x]])-1)))
+}
+rownames(tab1) <- c(unlist(sapply(varlist, rownamer)),
                     "Comorbidities", rep("", length(comorbs_string)-1))
 
-colnames(tab1) <- c("", "n", "Median age", "Median SBP/DBP", "% Controlled", "95% CI Controlled")
-kable(tab1)
+# Output the resulting table
+add_footnote(kable(tab1), label=c("Control defined as mean SBP >= 140 mmHg or mean DBP >= 90 mmHg at baseline assessment, among participants who self-reported treatment for hypertension either in TQ or in VI by our rubric",
+                                  "The Townsend index is a measure of material deprivation calculated at the level of census outputs areas. Higher scores imply a greater degree of deprivation.", 
+                                  "Employment categories have been condensed from those recorded in UKB. Professional and Administrative: Managers and Senior Officials, Professional Occupations, Associate Professional and Technical Occupations, Administrative and Secretarial Occupations. Skilled trades: Skilled Trades Occupations. Services: Personal Service Occupations, Sales and Customer Service Occupations. Manual and Industrial: Process, Plant and Machine Operatives, Elementary Occupations. Other: free text entry that was not coded by UKB.", 
+                                  "Participants reported all achieved qualifications; we mapped these to the International Standard Classification of Education (ISCED) categories",
+                                  "The assessment centre the participant attended was used as a proxy for country of residence",
+                                  "BMI has been categorised according to the NHS guidance. Underweight: BMI < 18.5. Normal: 18.5 <= BMI < 25. Overweight: 25 <= BMI < 30. Obese: BMI >= 30.", 
+                                  "The total Metabolic Equivalent Task (MET) minutes per week is available from UKB as a derived variable based on self-reported frequency and duration of walking, moderate and vigorous activity. We have dichotomized based on the upper end of the WHO guideline range for weekly physical activity.",
+                                  paste0("The number of comorbidities considered to be of interest - ", paste(sapply(comorbs_string, prettyfunc,  pnames=pretty_names, lower=TRUE), collapse=", "), ".")
+                                  ), notation="number")
 
 ```
 
-# Table 2. Characteristics of treated hypertensives, by blood pressure control status (n = `r nrow(treated)`).
-
-
+# Table `r table`. Characteristics of treated hypertensives, by blood pressure control status (n = `r nrow(treated)`).
+`r table <- table + 1`
 ```{r table2, include=TRUE, echo=FALSE}
 varlist=c("age", "agegrp", "gender", "eth_group",
           "townsend_quint", "income", "employcat", "ISCED", "BirthCountryIncomeLevel", "countryResidence",
           "BMIcat", "Smo_Status", "weekly_alcunits", "weekly_alccat", "PhA_METsWkAllAct", "METs_over1200",
           "HTNdx_durcat", "antiHTNmedsno",  "FamilyHist_CVD_", 
-          "comorbNumber_", comorbs_string,
-          "BowelCancerScreening")
+          "BowelCancerScreening",
+          "comorbNumber_", comorbs_string)
+
+footnote_list <- c("townsend_quint", "employcat", "ISCED", "countryResidence", "BMIcat", "METs_over1200", "comorbNumber_")
+footnote_no <- 1
 
 tab_c <- descriptivetable(df=treated[treated$controlled==TRUE,], 
                          varlist=varlist,
                          contavg='median',
-                         pretty_names=pretty_names)
+                         pretty_names=pretty_names,
+                         footnote_list=footnote_list)
 
 tab_u <- descriptivetable(df=treated[treated$controlled==FALSE,], 
                          varlist=varlist,
                          contavg='median',
-                         pretty_names=pretty_names)
+                         pretty_names=pretty_names,
+                         footnote_list=footnote_list)
 
 tab_o <- descriptivetable(df=treated, 
                          varlist=varlist,
                          contavg='median',
-                         pretty_names=pretty_names)
+                         pretty_names=pretty_names,
+                         footnote_list=footnote_list)
 
-uni <- regressiontable(df=treated, outcome="controlled", varlist=varlist, 
-                       regresstype="univariable")
+# uni <- regressiontable(df=treated, outcome="controlled", varlist=varlist, 
+#                        regresstype="univariable")
 
-tab2 <- cbind(tab_c, tab_u[,3:4], tab_o[,3:4], as.matrix(uni)[,4:5])
+tab2 <- cbind(tab_c, tab_u[,3:4], tab_o[,3:4]) #, as.matrix(uni)[,4:5])
 tab2 <- rbind(colnames(tab2), tab2)
 colnames(tab2) <- c("", "", 
     paste0("Controlled, n=", nrow(treated[treated$controlled==TRUE,])), "", 
     paste0("Uncontrolled, n=", nrow(treated[treated$controlled==FALSE,])), "",
-    paste0("Overall, n=", nrow(treated)), "", "", ""
+    paste0("Overall, n=", nrow(treated)), "" #, "", ""
     )
 
-kable(tab2)
+# Output the resulting table
+add_footnote(kable(tab2), label=c("The Townsend index is a measure of material deprivation calculated at the level of census outputs areas. Higher scores imply a greater degree of deprivation.", 
+                                  "Employment categories have been condensed from those recorded in UKB. Professional and Administrative: Managers and Senior Officials, Professional Occupations, Associate Professional and Technical Occupations, Administrative and Secretarial Occupations. Skilled trades: Skilled Trades Occupations. Services: Personal Service Occupations, Sales and Customer Service Occupations. Manual and Industrial: Process, Plant and Machine Operatives, Elementary Occupations. Other: free text entry that was not coded by UKB.", 
+                                  "Participants reported all achieved qualifications; we mapped these to the International Standard Classification of Education (ISCED) categories",
+                                  "The assessment centre the participant attended was used as a proxy for country of residence",
+                                  "BMI has been categorised according to the NHS guidance. Underweight: BMI < 18.5. Normal: 18.5 <= BMI < 25. Overweight: 25 <= BMI < 30. Obese: BMI >= 30.", 
+                                  "The total Metabolic Equivalent Task (MET) minutes per week is available from UKB as a derived variable based on self-reported frequency and duration of walking, moderate and vigorous activity. We have dichotomized based on the upper end of the WHO guideline range for weekly physical activity.",
+                                  paste0("The number of comorbidities considered to be of interest - ", paste(sapply(comorbs_string, prettyfunc, pnames=pretty_names, lower=TRUE), collapse=", "), ".")
+                                  ), notation="number")
 
 ```
 
-# Table 3: Multivariable logistic regression identifying factors associated with hypertension control (BP < 140/90 mmHg), among UK adults on antihypertensive treatment (n=`r nrow(treated)`)
-
+# Table `r table`: Multivariable logistic regression identifying factors associated with hypertension control (BP < 140/90 mmHg), among UK adults on antihypertensive treatment (n=`r nrow(treated)`)
+`r table <- table + 1`
 <div custom-style="Todo">Reminder: Manually re-order BMI categories</div>
 
 ```{r table3, include=TRUE, echo=FALSE}
@@ -242,40 +276,53 @@ varlist=c("agegrp", "gender", "eth_group",
           "townsend_quint", "income", "employcat", "ISCED", "BirthCountryIncomeLevel", "countryResidence",
           "BMIcat", "Smo_Status", "weekly_alccat", "METs_over1200",
           "antiHTNmedsno",  "FamilyHist_CVD_",
-          "comorbNumber_",
-           "BowelCancerScreening")
+          "BowelCancerScreening",
+          "comorbNumber_")
+
+footnote_list <- c("townsend_quint", "employcat", "ISCED", "countryResidence", "BMIcat", "METs_over1200", "comorbNumber_")
+footnote_no <- 2
 
 n <- data.frame(descriptivetable(df=treated, 
                          varlist=varlist,
                          contavg='median',
-                         pretty_names=pretty_names),
+                         pretty_names=pretty_names,
+                         footnote_list=footnote_list),
                 stringsAsFactors = FALSE)
 
 adj <- regressiontable(df=treated, outcome="controlled", varlist=varlist, 
                        regresstype="adjusted", adjvarlist=c("agegrp", "gender"))
 multi <- regressiontable(df=treated, outcome="controlled", varlist=varlist, 
                          regresstype="multivariable")
+
 tab3 <- merge(adj, multi, by=c("IDcol", "Coefficient", "Level"), sort=FALSE)
 # Add n column
-tab3$n <- n$n
+tab3 <- cbind(n[,1:3], tab3[,4:9])
 
 # Hide "unanswered"/"unknown"/"do not know" categories
 tab3 <- tab3[-which(tab3$Level %in% c("Unknown", "Unanswered", "Do not know", "Prefer not to answer")),]
 rownames(tab3) <- NULL
 
-tab3 <- tab3[,c("Coefficient", "Level", "n", "OR.x", "95% CI.x", "p.x", "OR.y", "95% CI.y", "p.y")]
-tab3 <- rbind(c("Coefficient", "Level", "n", "OR", "95% CI", "p", "OR", "95% CI", "p"),
-              tab3)
-colnames(tab3) <- c("","","", "Age- and sex-adjusted", "", "", "Fully adjusted", "", "")
+tab3 <- rbind(c("Coefficient", "Level", "n^1^", "OR", "95% CI", "p", "OR", "95% CI", "p"),
+              as.matrix(tab3))
+colnames(tab3) <- c("","","", 
+                    "Age- and sex-adjusted", "", "", 
+                    "Multivariable- adjusted", "", "")
 
-
-tab3[,1] <- sapply(tab3[,1], prettyfunc)
-kable(tab3, caption="Logistic regressions of various factors against hypertension control status, odds ratios are for successful BP control. Note: Number of individuals in levels of a factor may not add up to total n because 'Do not know' and 'Prefer not to answer' categories have been removed from results table")
+# Output the resulting table
+add_footnote(kable(tab3), label=c("Number of individuals in levels of a categorical variable may not add up to total n because 'Do not know' and 'Prefer not to answer' categories have been removed from results table",
+                                  "The Townsend index is a measure of material deprivation calculated at the level of census outputs areas. Higher scores imply a greater degree of deprivation.", 
+                                  "Employment categories have been condensed from those recorded in UKB. Professional and Administrative: Managers and Senior Officials, Professional Occupations, Associate Professional and Technical Occupations, Administrative and Secretarial Occupations. Skilled trades: Skilled Trades Occupations. Services: Personal Service Occupations, Sales and Customer Service Occupations. Manual and Industrial: Process, Plant and Machine Operatives, Elementary Occupations. Other: free text entry that was not coded by UKB.", 
+                                  "Participants reported all achieved qualifications; we mapped these to the International Standard Classification of Education (ISCED) categories",
+                                  "The assessment centre the participant attended was used as a proxy for country of residence",
+                                  "BMI has been categorised according to the NHS guidance. Underweight: BMI < 18.5. Normal: 18.5 <= BMI < 25. Overweight: 25 <= BMI < 30. Obese: BMI >= 30.", 
+                                  "The total Metabolic Equivalent Task (MET) minutes per week is available from UKB as a derived variable based on self-reported frequency and duration of walking, moderate and vigorous activity. We have dichotomized based on the upper end of the WHO guideline range for weekly physical activity.",
+                                  paste0("The number of self-reported conditions from the following list: ", paste(sapply(comorbs_string, prettyfunc,  pnames=pretty_names, lower=TRUE), collapse=", "), ".")
+                                  ), notation="number")
 
 ```
 
-# Table 4: Multivariable logistic regression coefficients for individual comorbidities
-
+# Table `r table`: Multivariable logistic regression examining association of individual comorbidities with hypertension control (BP < 140/90 mmHg), among UK adults on anti-hypertensive treatment (n = `r nrow(treated)`).
+`r table <- table +1`
 ```{r table4, include=TRUE, echo=FALSE}
 
 varlist=c("agegrp", "gender", "eth_group",
@@ -284,7 +331,6 @@ varlist=c("agegrp", "gender", "eth_group",
           "antiHTNmedsno",  "FamilyHist_CVD_",
           comorbs_string,
           "BowelCancerScreening")
-prettylist <- sapply(varlist, prettyfunc)
 
 n <- data.frame(descriptivetable(df=treated, 
                          varlist=varlist,
@@ -308,10 +354,100 @@ rownames(tab4) <- NULL
 tab4 <- tab4[,c("Coefficient", "Level", "n", "OR.x", "95% CI.x", "p.x", "OR.y", "95% CI.y", "p.y")]
 tab4 <- rbind(c("Coefficient", "Level", "n", "OR", "95% CI", "p", "OR", "95% CI", "p"),
               tab4)
-colnames(tab4) <- c("","","", "Age- and sex-adjusted", "", "", "Fully adjusted", "", "")
+colnames(tab4) <- c("","","", 
+                    "Age- and sex-adjusted", "", "", 
+                    "Multivariable- adjusted^1^", "", "")
 
-tab4[,1] <- sapply(tab4[,1], prettyfunc)
-kable(tab4, caption=paste0("Logistic regressions of individual comorbidities against hypertension control status, odds ratios are for successful BP control. The fully adjusted model contains the following variables: ", paste(prettylist, collapse=", "), ". Note that these are all the covariates from Table 3 except for number of comorbidities. The OR for all other covariates remained similar to those in Table 3 when adding these individual comorbidities."))
+tab4[,1] <- sapply(tab4[,1], prettyfunc, pnames=pretty_names)
+
+add_footnote(kable(tab4), label=c(paste0("The multivariable-adjusted model contains the following variables: ", paste(sapply(varlist, prettyfunc, pnames=pretty_names), collapse=", "), ". Note that these are all the covariates from Table 3 except for number of comorbidities.")), notation="number")
 
 ```
 
+# Supplementary Figure `r suppfig`. Scatterplot of blood pressure among treated participants (n = `r nrow(treated)`), categorised according to hypertension threshold SBP >= 140 and/or DBP >= 90.
+`r suppfig <- suppfig + 1`
+
+```{r suppfig, include=TRUE, echo=FALSE}
+
+# Create a factor variable for the BP categories we want to colourcode
+treated$plot_color <- dplyr::case_when(
+  treated$SBP >= 140 & treated$DBP < 90 ~ "High SBP",
+  treated$SBP < 140 & treated$DBP >= 90 ~ "High DBP",
+  treated$SBP >= 140 & treated$DBP >= 90 ~ "Both high",
+  treated$SBP < 140 & treated$DBP < 90 ~ "BP controlled"
+)
+treated$plot_color <- factor(treated$plot_color, levels=c("BP controlled", "High DBP", "High SBP", "Both high"))
+
+# Scatterplot showing distribution of SBP and DBP values among participants
+scatter <- ggplot(data = treated, aes(DBP, SBP, color = plot_color)) +
+  geom_point(size=1) +
+  labs(x="DBP, mmHg", y="SBP, mmHg", 
+       title="Scatterplot of blood pressure among treated participants",
+       color="Measured BP category") +
+  geom_vline(xintercept = 90, linetype="dotted") +
+  geom_hline(yintercept = 140, linetype="dotted") +
+  scale_color_manual(values = c("BP controlled" = "green",
+                               "High DBP" = "yellow", 
+                                "High SBP" = "orange",
+                                "Both high" = "red"))
+
+ggsave(filename="K:/TEU/APOE on Dementia/Statistical Analysis/NeoHypertension/RMarkdown/ScatterHTN.png",
+       plot=scatter, width=7, height=4, unit="in")
+
+```
+
+![](K:/TEU/APOE on Dementia/Statistical Analysis/NeoHypertension/RMarkdown/ScatterHTN.png){height=300px}
+
+# Supplementary Figure `r suppfig`. Prevalence of hypertension categories by gender and age among UKB participants with complete BP data and no serious comorbidities (n = `r nrow(data)`).
+`r suppfig <- suppfig + 1`
+
+```{r suppfig2, fig.height=3, fig.width=7}
+# https://learnr.wordpress.com/2009/09/24/ggplot2-back-to-back-bar-charts/
+# https://www.r-graph-gallery.com/48-grouped-barplot-with-ggplot2.html
+
+figdata <- data[,c("ID", "age", "gender", "evidenceHTN", "aware", "treated", "controlled")]
+
+figdata$label <- ifelse(figdata$evidenceHTN==TRUE,
+                        ifelse(figdata$aware==TRUE,
+                               ifelse(figdata$treated==TRUE,
+                                      ifelse(figdata$controlled==TRUE, 
+                                             "Controlled hypertensive", 
+                                             "Inadequately treated hypertensive"),
+                                      "Untreated hypertensive"),
+                               "Unaware hypertensive"),
+                        "No evidence of hypertension")
+figdata$label <- factor(figdata$label, levels=c("Controlled hypertensive", "Inadequately treated hypertensive",
+                                                "Untreated hypertensive", "Unaware hypertensive",
+                                                "No evidence of hypertension"))
+figdata$age_yr <- cut(figdata$age, seq(40, 70, 1), right=FALSE, labels=seq(from=40,to=69,by=1))
+figdata <- figdata[,c("age_yr", "gender", "label")]
+
+byAge <- melt(figdata, id.vars=c("label", "age_yr"))
+byAge$variable <- 1
+
+prevpct <- ggplot(byAge, aes(age_yr)) + 
+  geom_bar(data=subset(byAge, value == "Female"), 
+           aes(y = variable, fill = label), stat = "identity", position="fill") +
+  geom_bar(data=subset(byAge, value == "Male"),
+         aes(y = -variable, fill = label), stat = "identity", position="fill") +
+  labs(x="Age, years", fill="Hypertension category") + 
+  ggtitle("Prevalence of hypertension categories by gender and age") +
+  scale_y_continuous(name="Female     -       Male",
+                     labels=c("100%", "50%", "0%","50%","100%")) +
+  scale_x_discrete(breaks=seq(40,70,2)) +
+  geom_hline(yintercept = 0, linetype="dotted") +
+  theme(axis.ticks.y = element_blank(),
+          legend.title = element_text(size=8),
+          legend.text = element_text(size=7)) +
+  scale_fill_manual(values = c("No evidence of hypertension" = "green",
+                               "Unaware hypertensive" = "yellow", 
+                                "Untreated hypertensive" = "orange",
+                                "Inadequately treated hypertensive" = "red",
+                               "Controlled hypertensive" = "forestgreen")) +
+  coord_flip()
+
+ggsave(filename="K:/TEU/APOE on Dementia/Statistical Analysis/NeoHypertension/RMarkdown/PrevPct.png",
+       plot=prevpct, width=7, height=4, unit="in")
+```
+
+![Hypertension is defined as self-report of a prior diagnosis of hypertension in touchscreen questionnaire (TQ) or verbal interview (VI), or self-report of hypertensive medication in TQ or in VI by our rubric, or mean SBP >= 140 mmHg or mean DBP >= 90 mmHg at baseline assessment. Among those with hypertension, participants are considered to be unaware hypertensives if they did not self-report a prior diagnosis of hypertension in TQ or VI, or self-report hypertensive medication in TQ or in VI by our rubric; otherwise aware. Among those who are aware of their hypertension, participants are considered to be untreated hypertensives if they did not report hypertensive medication in TQ or in VI by our rubric; otherwise treated. Among those who self-reported treatment for their hypertension, they are considered to be inadequately treated if mean SBP >= 140 mmHg or mean DBP >= 90 mmHg at baseline assessment; otherwise controlled. ](K:/TEU/APOE on Dementia/Statistical Analysis/NeoHypertension/RMarkdown/PrevPct.png){height=300px}

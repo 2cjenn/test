@@ -217,7 +217,8 @@ data$employcat <- factor(data$employcat,
                          ordered=FALSE)
 
 # Categorise age into 10-yr groups
-data$agegrp <- cut(data$age, breaks=c(40, 50, 60, 70), right=FALSE)
+data$agegrp <- cut(data$age, breaks=c(40, 50, 60, 70), right=FALSE,
+                   labels=c("40-49", "50-59", "60-69"))
 
 # Categorise BMI into labelled categories
 data$BMIcat <- as.character(cut(data$BMI, breaks=c(0, 18.5, 25, 30, 200), right=FALSE))
@@ -267,7 +268,7 @@ data$BowelCancerScreening[data$BowelCancerScreening %in% c("Do not know")] <- "D
 data$BowelCancerScreening <- factor(data$BowelCancerScreening, levels=c("Yes", "No", "Do not know", "Unanswered"), ordered=FALSE)
 
 # Convert family history to a factor
-data$FamilyHist_CVD_ <- factor(as.numeric(data$FaH_CVD), levels=c(0,1), labels=c("No family history of CVD", "Family history of CVD"))
+data$FamilyHist_CVD_ <- factor(as.numeric(data$FaH_CVD), levels=c(0,1), labels=c("No", "Yes"))
 
 # Convert income level of birth country to a factor
 data$BirthCountryIncomeLevel[data$BirthCountryIncomeLevel %in% c("LM", "UM")] <- "M"

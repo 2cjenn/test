@@ -13,6 +13,28 @@ pretty_pval <- function(p, cutoff=0.001, string="<0.001", dp=3){
   ifelse(p<cutoff, string, pretty_dp(p, dp))
 }
 
+lower <- function(x){
+  paste0(tolower(substring(x, 1,1)), substring(x, 2))
+}
+
+prettyfunc <- function(x, pnames=list(), lower=FALSE, flist=c()){
+  out <- x
+  if(x %in% names(pnames)){
+    out <- pnames[[x]]
+    if(lower==TRUE){
+      out <- lower(out)
+    }
+  }
+  if(x %in% flist){
+    if(!exists("footnote_no")){
+      footnote_no <<- 1
+    }
+    out <- paste0(out, "^", footnote_no, "^")
+    footnote_no <<- footnote_no + 1
+  }
+  return(out)
+}
+
 code_filter <- function(df, diagcolname, datecolname=NULL, ncols, codelist, codelength=NA, separator=".", first=FALSE) {
   if (is.na(codelength)) {
     codelength <- nchar(codelist[1])
@@ -68,16 +90,14 @@ df_to_table <- function(tablist, overwrite) {
 
 # Print numbers and proportions for factors, median and IQR or mean and 95% CI for continuous variables
 # Optionally provide p-values from chi-squared (categorical) and t-test (continuous)
-descriptivetable <- function(df, varlist, contavg='mean', assocvar=NULL, pretty_names=NULL){
-  if(is.null(pretty_names)){
-    pretty_names <- setNames(varlist, varlist)
-  }
+descriptivetable <- function(df, varlist, contavg='mean', assocvar=NULL, pretty_names=list(), footnote_list=c()){
+  if(!exists("footnote_no")){footnote_no <<- 1}
   outtable <- c()
   for(var in varlist){
     if(is.factor(df[[var]])){
       n <- table(df[[var]], useNA='ifany')
       pct <- pretty_dp(100*prop.table(n), dp=1)
-      variable <- c(pretty_names[[var]], rep(NA, dim(n)-1))
+      variable <- c(prettyfunc(var, pnames=pretty_names, flist=footnote_list), rep(NA, dim(n)-1))
       levels <- names(n)
       if(!is.null(assocvar)){
         tab <- table(df[[assocvar]], df[[var]])
@@ -88,16 +108,16 @@ descriptivetable <- function(df, varlist, contavg='mean', assocvar=NULL, pretty_
       if(contavg=="mean"){
         n <- pretty_dp(mean(df[[var]], na.rm=TRUE), dp=1)
         pct <- pretty_dp(sd(df[[var]], na.rm=TRUE), dp=1)
-        variable <- paste0("Mean ", pretty_names[[var]], " (SD)")
+        variable <- paste0("Mean ", prettyfunc(var, pretty_names, lower=TRUE, flist=footnote_list), " (SD)")
       } else if (contavg=="median"){
         n <- pretty_dp(median(df[[var]], na.rm=TRUE), dp=1)
         IQR <- pretty_dp(quantile(df[[var]], na.rm=TRUE), dp=1)
         pct <- paste0("(", IQR[2], "-", IQR[4], ")")
-        variable <- paste0("Median ", pretty_names[[var]], " (IQR)")
+        variable <- paste0("Median ", prettyfunc(var, pnames=pretty_names, lower=TRUE, flist=footnote_list), " (IQR)")
       } else if(contavg=="n"){
         n <- nrow(df[!is.na(df[[var]]),])
         pct <- NA
-        variable <- pretty_names[[var]]
+        variable <- prettyfunc(var, pnames=pretty_names, flist=footnote_list)
       }
       levels <- NA
       if(!is.null(assocvar)){
