@@ -25,6 +25,7 @@ library(scales)
 library(plyr)
 library(dplyr)
 library(reshape2)
+library(corrplot)
 
 source("K:/TEU/APOE on Dementia/Statistical Analysis/JCfunctions.R")
 options(knitr.kable.NA='')
@@ -114,6 +115,48 @@ prettyfunc <- function(x){
 }
 ```
 
+# Correlation between socioeconomic status variables
+
+```{r corrSES, include=TRUE, echo=FALSE}
+
+complete <- treated[!(treated$income %in% c("Do not know", "Unanswered")) & 
+                      treated$ISCED!="Unanswered" & 
+                      !(treated$employcat %in% c("Other", "Unemployed/retired/unanswered")),
+                    c("townsend_depind","townsend_quint", "income", "ISCED", "employcat")]
+for(col in colnames(complete)){
+  complete[[col]] <- as.numeric(complete[[col]])
+}
+
+res <- cor(complete[,c("townsend_quint", "income", "ISCED", "employcat")], method="spearman")
+kable(res)
+corrplot(res, type='upper')
+```
+
+
+# Hypertension tree
+```{r fig2, include=TRUE, echo=FALSE, results='asis', }
+
+dflist <- c(list("Whole population"=data, "Females"=data[data$gender=="Female",], "Males"=data[data$gender=="Male",]))
+# names(dflist) <- c("Whole population")
+filenames <- list("Wholepop", "Females", "Males")
+names(filenames) <- names(dflist)
+
+grlist <- list()
+for(dfname in names(dflist)){
+  df <- dflist[[dfname]]
+  nlist <- list(wholepop=nrow(df))
+  pctlist <- list()
+  for(variable in c("evidenceHTN", "aware", "treated", "controlled")){
+    var <- paste0(variable, "_")
+    tab <- table(df[[var]])
+    pct <- round(100*prop.table(tab),1)
+    nlist[[variable]] <- tab
+    pctlist[[variable]] <- pct
+  }
+  export_svg(DiagrammeR::grViz("K:\\TEU\\APOE on Dementia\\Statistical Analysis\\NeoHypertension\\RMarkdown\\HTNtree.gv")) %>% charToRaw %>% rsvg %>% png::writePNG(paste0('K:/TEU/APOE on Dementia/Statistical Analysis/NeoHypertension/RMarkdown/',filenames[[dfname]],'.png'))
+}
+
+```
 
 # Supplementary Figure 3?
 
@@ -129,7 +172,7 @@ treated$plot_color <- dplyr::case_when(
 treated$plot_color <- factor(treated$plot_color, levels=c("BP controlled", "High DBP", "High SBP", "Both high"))
 
 # Scatterplot showing distribution of SBP and DBP values among participants
-ggplot(data = treated, aes(DBP, SBP, color = plot_color)) +
+scatter <- ggplot(data = treated, aes(DBP, SBP, color = plot_color)) +
   geom_point(size=1) +
   labs(x="DBP, mmHg", y="SBP, mmHg", 
        title="Scatterplot of blood pressure among\ntreated participants",
@@ -141,7 +184,8 @@ ggplot(data = treated, aes(DBP, SBP, color = plot_color)) +
                                 "High SBP" = "orange",
                                 "Both high" = "red"))
 
-
+ggsave(filename="K:/TEU/APOE on Dementia/Statistical Analysis/NeoHypertension/RMarkdown/ScatterHTN.png",
+       plot=scatter, height=9, width=8, units='cm')
 # # Stacked barplot to show proportion in each category
 # counts <- table(treated$plot_color, treated$controlled_)
 # count_df <- data.frame(counts)
@@ -161,7 +205,7 @@ ggplot(data = treated, aes(DBP, SBP, color = plot_color)) +
 counts <- table(treated$plot_color)
 count_df <- data.frame(counts)
 colnames(count_df) <- c("status", "count")
-ggplot(data=count_df, aes(x="", y=count, fill=status)) +
+pie <- ggplot(data=count_df, aes(x="", y=count, fill=status)) +
   geom_bar(stat="identity", width=1) +
   coord_polar("y", start=0) +
   labs(x="", y="", 
@@ -176,12 +220,15 @@ ggplot(data=count_df, aes(x="", y=count, fill=status)) +
                                 "High SBP" = "orange",
                                 "Both high" = "red"))
 
+ggsave(filename="K:/TEU/APOE on Dementia/Statistical Analysis/NeoHypertension/RMarkdown/PieHTN.png",
+       plot=pie)
 ```
 
 # There was a chart like this in yesterday's Richard Doll lecture, I thought it was pretty so gave it a go here! 
 
-```{r suppfig5, fig.height=3, fig.width=7}
+```{r suppfig3, fig.height=3, fig.width=7}
 # https://learnr.wordpress.com/2009/09/24/ggplot2-back-to-back-bar-charts/
+# https://www.r-graph-gallery.com/48-grouped-barplot-with-ggplot2.html
 
 figdata <- data[,c("ID", "age", "gender", "evidenceHTN", "aware", "treated", "controlled")]
 
@@ -200,21 +247,26 @@ figdata$age_yr <- cut(figdata$age, seq(40, 70, 1), right=FALSE, labels=seq(from=
 figdata <- figdata[,c("age_yr", "gender", "label")]
 
 byAge <- melt(figdata, id.vars=c("label", "age_yr"))
-byAge$age_yr <- fct_rev(byAge$age_yr)
 byAge$variable <- 1
 
 ggplot(byAge, aes(age_yr)) + 
   geom_bar(data=subset(byAge, value == "Female"), 
-           aes(y = variable, fill = label), stat = "identity") +
+           aes(y = variable, fill = label), stat = "identity", position="fill") +
   geom_bar(data=subset(byAge, value == "Male"),
-         aes(y = -variable, fill = label), stat = "identity") +
-  xlab("Age, years") + 
+         aes(y = -variable, fill = label), stat = "identity", position="fill") +
+  labs(x="Age, years", fill="Hypertension category") + 
   ggtitle("Prevalence of hypertension categories by gender and age") +
-  scale_y_continuous("Female  -  Male") +
+  scale_y_continuous(name="Female     -       Male",
+                     labels=c("100%", "50%", "0%","50%","100%")) +
+  scale_x_discrete(breaks=seq(40,70,2)) +
   geom_hline(yintercept = 0, linetype="dotted") +
+  theme(axis.ticks.y = element_blank(),
+          legend.title = element_text(size=8),
+          legend.text = element_text(size=7)) +
   coord_flip()
 
-
+ggsave(filename="K:/TEU/APOE on Dementia/Statistical Analysis/NeoHypertension/RMarkdown/PrevPct.png",
+       plot=prevpct)
 ```
 
 # Another possible supplementary figure, designed to complement Table 1 - dataset is treated participants (n = `r nrow(treated)`)
@@ -299,4 +351,15 @@ for(var in varlist){
 ```
 
 
+```{r job_income, include=TRUE, echo=FALSE}
 
+tab <- table(treated$employcat, treated$income)
+df <- data.frame(tab)
+colnames(df) <- c("Employment_category", "Household_income", "n")
+
+ggplot(df, aes(y=n, x=Household_income, fill=Employment_category)) +
+  geom_bar(stat="identity")
+
+kable(tab)
+
+```
