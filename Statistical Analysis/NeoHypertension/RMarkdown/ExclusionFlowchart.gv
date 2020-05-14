@@ -39,7 +39,7 @@ digraph dot {
   [1]: paste0('UKB participants','\nn = ', excl$initial)
   [2]: paste0('UK participants aged between 40 and 70\nn = ', excl$agerange)
   [3]: paste0('Complete information on core variables\nn = ', excl$BPimp)
-  [4]: paste0('Considered healthy\nn = ', excl$cancer)
+  [4]: paste0('Without serious comorbidities\nn = ', excl$cancer)
   [5]: paste0('Treated hypertensives\nn = ', excl$treat)
   [6]: paste0(excl$initial-excl$agerange,' outside the age range of [40,70) years')
   [7]: paste0(excl$agerange-excl$BPmiss,' missing BP data from baseline assessment', '\n', excl$BPmiss-excl$BPimp, ' implausible BP data from baseline assessment')

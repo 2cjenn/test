@@ -25,7 +25,7 @@ digraph dot {
   
   [1]: 'Consenting\nUKB population\nn = 502506'
   [2]: paste0('Healthy population\nwith complete information\non core variables\nn = ', nlist$wholepop)
-  [3]: paste0('Evidence of\nhypertension\nn = ', nlist$evidenceHTN[[2]] , '\n(', pctlist$evidenceHTN[[2]],'%)')
+  [3]: paste0('Hypertensive\nn = ', nlist$evidenceHTN[[2]] , '\n(', pctlist$evidenceHTN[[2]],'%)')
   [4]: paste0('No evidence of\nhypertension\nn = ', nlist$evidenceHTN[[1]] , '\n(', pctlist$evidenceHTN[[1]], '%)')
   [5]: paste0('Aware\nn = ', nlist$aware[[2]] , '\n(', pctlist$aware[[2]], '%)')
   [6]: paste0('Unaware\nn = ', nlist$aware[[1]] , '\n(', pctlist$aware[[1]], '%)')
