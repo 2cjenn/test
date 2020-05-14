@@ -121,7 +121,7 @@ jobcodes$employment <- jobcodes$TL
 employment <- readRDS("K:\\TEU\\APOE on Dementia\\Data Management\\R_Dataframes_TLA\\38358\\Emp_base.rds")
 employment$shiftwork <- employment$Emp_ShiftWrk.0
 
-covars <- merge(covars, jobcodes[,c("ID", "employment")], by="ID", all=TRUE)
+covars <- merge(covars, jobcodes[,c("ID", "employment", "TEU_EmpCat")], by="ID", all=TRUE)
 covars <- merge(covars, employment[,c("ID", "shiftwork")], by="ID", all=TRUE)
 
 #--------------------------------------------------------------------------------------------------------------
