@@ -46,3 +46,4 @@ Z Misc/
 # Ignore the R project stuff #
 ##############################
 **.Rproj.user
+.Rhistory
