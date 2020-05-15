@@ -119,15 +119,15 @@ prettyfunc <- function(x){
 
 ```{r corrSES, include=TRUE, echo=FALSE}
 
-complete <- treated[!(treated$income %in% c("Do not know", "Unanswered")) & 
-                      treated$ISCED!="Unanswered" & 
-                      !(treated$employcat %in% c("Other", "Unemployed/retired/unanswered")),
-                    c("townsend_depind","townsend_quint", "income", "ISCED", "employcat")]
+complete <- treated[!(treated$income %in% c("Do not know", "Unanswered"))
+                    & treated$ISCED!="Unanswered",
+                    #& !(treated$employcat %in% c("Other", "Unemployed/retired/unanswered")),
+                    c("townsend_depind","townsend_quint", "income", "ISCED", "employcat", "comorbNumber_")]
 for(col in colnames(complete)){
   complete[[col]] <- as.numeric(complete[[col]])
 }
 
-res <- cor(complete[,c("townsend_quint", "income", "ISCED", "employcat")], method="spearman")
+res <- cor(complete[,c("townsend_quint", "income", "ISCED", "comorbNumber_")], method="spearman")
 kable(res)
 corrplot(res, type='upper')
 ```
@@ -361,5 +361,7 @@ ggplot(df, aes(y=n, x=Household_income, fill=Employment_category)) +
   geom_bar(stat="identity")
 
 kable(tab)
+
+kable(table(treated$TEU_EmpCat))
 
 ```
