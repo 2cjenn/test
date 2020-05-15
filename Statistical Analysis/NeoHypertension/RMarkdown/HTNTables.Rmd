@@ -122,9 +122,9 @@ footnote_no <- 1
 `r figure <- figure + 1`
 ```{r fig2, include=TRUE, echo=FALSE, results='asis', }
 
-dflist <- c(list("Whole population"=data, "Females"=data[data$gender=="Female",], "Males"=data[data$gender=="Male",]))
+dflist <- c(list("UKB"=data, "England"=data[data$countryResidence=="England",], "Scotland"=data[data$countryResidence=="Scotland",], "Wales"=data[data$countryResidence=="Wales",]))
 # names(dflist) <- c("Whole population")
-filenames <- list("Wholepop", "Females", "Males")
+filenames <- list("Wholepop", "England", "Scotland", "Wales")
 names(filenames) <- names(dflist)
 
 grlist <- list()
@@ -144,7 +144,7 @@ for(dfname in names(dflist)){
 
 ```
 
-![Hypertension defined as self-report of a prior diagnosis of hypertension in touchscreen questionnaire (TQ) or verbal interview (VI), or self-report of hypertensive medication in TQ or in VI by our rubric, or mean SBP >= 140 mmHg or mean DBP >= 90 mmHg at baseline assessment. Aware defined as self-report of a prior diagnosis of hypertension in TQ or VI, or self-report of hypertensive medication in TQ or in VI by our rubric. Treated defined as self-report of hypertensive medication in TQ or in VI by our rubric. Control defined among the treated as mean SBP >= 140 mmHg or mean DBP >= 90 mmHg at baseline assessment.](K:/TEU/APOE on Dementia/Statistical Analysis/NeoHypertension/RMarkdown/Wholepop.png){height=680px}
+![Hypertension was defined as self-report of hypertensive medication use, or self-report of a prior diagnosis of hypertension, or mean BP >= 140 /90 mmHg at baseline assessment. Awareness was defined as self-report of a prior diagnosis of hypertension among those who were hypertensive. Treatment was defined as self-report of hypertensive medication among those who were aware. Control was defined as mean BP < 140/90 mmHg at baseline assessment, among those who were treated.](K:/TEU/APOE on Dementia/Statistical Analysis/NeoHypertension/RMarkdown/Wholepop.png){height=680px}
 
 # Table `r table`: Prevalence of hypertension control among treated hypertensives (n = `r nrow(treated)`), by socioeconomic characteristics and comorbidity type
 `r table <- table + 1`
@@ -188,7 +188,7 @@ footnote_no <- 1
 colnames(tab1) <- c("", "n", "Median age, years", "Median SBP/DBP, mmHg", 
                     paste0("% Controlled", "^", footnote_no, "^"), "95% CI Controlled")
 footnote_no <- footnote_no + 1
-footnote_list <- c("townsend_quint", "employcat", "ISCED", "countryResidence", "BMIcat", "METs_over1200", "comorbNumber_")
+footnote_list <- c("townsend_quint", "employcat", "ISCED", "BirthCountryIncomeLevel", "countryResidence", "BMIcat", "METs_over1200", "comorbNumber_")
 
 rownamer <- function(x){
   prettyname <- prettyfunc(x, pnames=pretty_names, flist=footnote_list)
@@ -200,12 +200,13 @@ rownames(tab1) <- c(unlist(sapply(varlist, rownamer)),
                     "Comorbidities", rep("", length(comorbs_string)-1))
 
 # Output the resulting table
-add_footnote(kable(tab1), label=c("Control defined as mean SBP >= 140 mmHg or mean DBP >= 90 mmHg at baseline assessment, among participants who self-reported treatment for hypertension either in TQ or in VI by our rubric",
+add_footnote(kable(tab1), label=c("Control defined as mean SBP >= 140 mmHg or mean DBP >= 90 mmHg at baseline assessment, among participants who self-reported treatment for hypertension.",
                                   "The Townsend index is a measure of material deprivation calculated at the level of census outputs areas. Higher scores imply a greater degree of deprivation.", 
-                                  "Employment categories have been condensed from those recorded in UKB. Professional and Administrative: Managers and Senior Officials, Professional Occupations, Associate Professional and Technical Occupations, Administrative and Secretarial Occupations. Skilled trades: Skilled Trades Occupations. Services: Personal Service Occupations, Sales and Customer Service Occupations. Manual and Industrial: Process, Plant and Machine Operatives, Elementary Occupations. Other: free text entry that was not coded by UKB.", 
+                                  "Occupation categories have been condensed from those recorded in UKB. Professional and Administrative: Managers and Senior Officials, Professional Occupations, Associate Professional and Technical Occupations, Administrative and Secretarial Occupations. Skilled trades: Skilled Trades Occupations. Services: Personal Service Occupations, Sales and Customer Service Occupations. Manual and Industrial: Process, Plant and Machine Operatives, Elementary Occupations. Other: free text entry that was not coded by UKB.", 
                                   "Participants reported all achieved qualifications; we mapped these to the International Standard Classification of Education (ISCED) categories",
+                                  "Participants' self-reported country of birth was mapped to World Bank Analytical Classifications using fiscal year 2020."
                                   "The assessment centre the participant attended was used as a proxy for country of residence",
-                                  "BMI has been categorised according to the NHS guidance. Underweight: BMI < 18.5. Normal: 18.5 <= BMI < 25. Overweight: 25 <= BMI < 30. Obese: BMI >= 30.", 
+                                  "BMI has been categorised according to the NHS guidance. Underweight: Below 18.5 kg/m^2^. Normal: 18.5 - 24.9 kg/m^2^. Overweight: 25.0 - 29.9 kg/m^2^. Obese: 30.0 kg/m^2^ or above.", 
                                   "The total Metabolic Equivalent Task (MET) minutes per week is available from UKB as a derived variable based on self-reported frequency and duration of walking, moderate and vigorous activity. We have dichotomized based on the upper end of the WHO guideline range for weekly physical activity.",
                                   paste0("The number of comorbidities considered to be of interest - ", paste(sapply(comorbs_string, prettyfunc,  pnames=pretty_names, lower=TRUE), collapse=", "), ".")
                                   ), notation="number")
@@ -256,12 +257,13 @@ colnames(tab2) <- c("", "",
 
 # Output the resulting table
 add_footnote(kable(tab2), label=c("The Townsend index is a measure of material deprivation calculated at the level of census outputs areas. Higher scores imply a greater degree of deprivation.", 
-                                  "Employment categories have been condensed from those recorded in UKB. Professional and Administrative: Managers and Senior Officials, Professional Occupations, Associate Professional and Technical Occupations, Administrative and Secretarial Occupations. Skilled trades: Skilled Trades Occupations. Services: Personal Service Occupations, Sales and Customer Service Occupations. Manual and Industrial: Process, Plant and Machine Operatives, Elementary Occupations. Other: free text entry that was not coded by UKB.", 
+                                  "Occupation categories have been condensed from those recorded in UKB. Professional and Administrative: Managers and Senior Officials, Professional Occupations, Associate Professional and Technical Occupations, Administrative and Secretarial Occupations. Skilled trades: Skilled Trades Occupations. Services: Personal Service Occupations, Sales and Customer Service Occupations. Manual and Industrial: Process, Plant and Machine Operatives, Elementary Occupations. Other: free text entry that was not coded by UKB.", 
                                   "Participants reported all achieved qualifications; we mapped these to the International Standard Classification of Education (ISCED) categories",
+                                  "Participants' self-reported country of birth was mapped to World Bank Analytical Classifications using fiscal year 2020."
                                   "The assessment centre the participant attended was used as a proxy for country of residence",
-                                  "BMI has been categorised according to the NHS guidance. Underweight: BMI < 18.5. Normal: 18.5 <= BMI < 25. Overweight: 25 <= BMI < 30. Obese: BMI >= 30.", 
+                                  "BMI has been categorised according to the NHS guidance. Underweight: Below 18.5 kg/m^2^. Normal: 18.5 - 24.9 kg/m^2^. Overweight: 25.0 - 29.9 kg/m^2^. Obese: 30.0 kg/m^2^ or above.", 
                                   "The total Metabolic Equivalent Task (MET) minutes per week is available from UKB as a derived variable based on self-reported frequency and duration of walking, moderate and vigorous activity. We have dichotomized based on the upper end of the WHO guideline range for weekly physical activity.",
-                                  paste0("The number of comorbidities considered to be of interest - ", paste(sapply(comorbs_string, prettyfunc, pnames=pretty_names, lower=TRUE), collapse=", "), ".")
+                                  paste0("The number of comorbidities considered to be of interest - ", paste(sapply(comorbs_string, prettyfunc,  pnames=pretty_names, lower=TRUE), collapse=", "), ".")
                                   ), notation="number")
 
 ```
@@ -311,12 +313,13 @@ colnames(tab3) <- c("","","",
 # Output the resulting table
 add_footnote(kable(tab3), label=c("Number of individuals in levels of a categorical variable may not add up to total n because 'Do not know' and 'Prefer not to answer' categories have been removed from results table",
                                   "The Townsend index is a measure of material deprivation calculated at the level of census outputs areas. Higher scores imply a greater degree of deprivation.", 
-                                  "Employment categories have been condensed from those recorded in UKB. Professional and Administrative: Managers and Senior Officials, Professional Occupations, Associate Professional and Technical Occupations, Administrative and Secretarial Occupations. Skilled trades: Skilled Trades Occupations. Services: Personal Service Occupations, Sales and Customer Service Occupations. Manual and Industrial: Process, Plant and Machine Operatives, Elementary Occupations. Other: free text entry that was not coded by UKB.", 
+                                  "Occupation categories have been condensed from those recorded in UKB. Professional and Administrative: Managers and Senior Officials, Professional Occupations, Associate Professional and Technical Occupations, Administrative and Secretarial Occupations. Skilled trades: Skilled Trades Occupations. Services: Personal Service Occupations, Sales and Customer Service Occupations. Manual and Industrial: Process, Plant and Machine Operatives, Elementary Occupations. Other: free text entry that was not coded by UKB.", 
                                   "Participants reported all achieved qualifications; we mapped these to the International Standard Classification of Education (ISCED) categories",
+                                  "Participants' self-reported country of birth was mapped to World Bank Analytical Classifications using fiscal year 2020."
                                   "The assessment centre the participant attended was used as a proxy for country of residence",
-                                  "BMI has been categorised according to the NHS guidance. Underweight: BMI < 18.5. Normal: 18.5 <= BMI < 25. Overweight: 25 <= BMI < 30. Obese: BMI >= 30.", 
+                                  "BMI has been categorised according to the NHS guidance. Underweight: Below 18.5 kg/m^2^. Normal: 18.5 - 24.9 kg/m^2^. Overweight: 25.0 - 29.9 kg/m^2^. Obese: 30.0 kg/m^2^ or above.", 
                                   "The total Metabolic Equivalent Task (MET) minutes per week is available from UKB as a derived variable based on self-reported frequency and duration of walking, moderate and vigorous activity. We have dichotomized based on the upper end of the WHO guideline range for weekly physical activity.",
-                                  paste0("The number of self-reported conditions from the following list: ", paste(sapply(comorbs_string, prettyfunc,  pnames=pretty_names, lower=TRUE), collapse=", "), ".")
+                                  paste0("The number of comorbidities considered to be of interest - ", paste(sapply(comorbs_string, prettyfunc,  pnames=pretty_names, lower=TRUE), collapse=", "), ".")
                                   ), notation="number")
 
 ```
@@ -386,6 +389,8 @@ scatter <- ggplot(data = treated, aes(DBP, SBP, color = plot_color)) +
        color="Measured BP category") +
   geom_vline(xintercept = 90, linetype="dotted") +
   geom_hline(yintercept = 140, linetype="dotted") +
+  geom_vline(xintercept = 110, linetype="dotted") +
+  geom_hline(yintercept = 180, linetype="dotted") +
   scale_color_manual(values = c("BP controlled" = "green",
                                "High DBP" = "yellow", 
                                 "High SBP" = "orange",
