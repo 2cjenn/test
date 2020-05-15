@@ -29,7 +29,12 @@ library(reshape2)
 source("K:/TEU/APOE on Dementia/Statistical Analysis/JCfunctions.R")
 options(knitr.kable.NA='')
 
+#-------------------------------------------------------------------------------------------------------------------
+# Load the data 
+
 data <- readRDS(file="K:\\TEU\\APOE on Dementia\\Data Management\\R_Dataframes_TLA\\38358\\Organised\\Hypertension\\Neo\\HTN_excl.rds")
+
+treated <- readRDS(file="K:\\TEU\\APOE on Dementia\\Data Management\\R_Dataframes_TLA\\38358\\Organised\\Hypertension\\Neo\\HTN_trt.rds")
 
 
 # Comorbidities of interest
@@ -40,23 +45,8 @@ comorbs_raw <- c("VI_CVD", "VI_diabetes", "VI_afib_or_aflutter", "VI_asthma_or_C
                  "VI_anxiety_or_stress", "VI_depression_or_bipolar", "VI_Osteoarthritis", "VI_Other_joint_disorder")
 comorbs_string <- paste0(comorbs_raw, "_")
 
-# Principal components
-pclist <- paste0("GeP_PC.m",seq(1,10))
-
 #-------------------------------------------------------------------------------------------------------------------
-# Datasets:
-
-# For the SES descriptive analyses, we want to consider two subsets: all hypertensives and all treated individuals
-hypertensives <- data[data$evidenceHTN==TRUE & !is.na(data$evidenceHTN),]
-treated <- data[data$treated==TRUE & !is.na(data$treated),]
-
-# Among the treated, those who did not list any HTN meds in VI are assumed to be taking unlisted meds
-treated$antiHTNmedsno <- factor(treated$antiHTNmedsno, levels=c("1", "2", ">=3", "0"),
-                                labels=c("1", "2", ">=3",  "Medication list unavailable"))
-
-# For the genetic analyses, we will consider only the genetically caucasian individuals
-white <- data[data$genWhiteBrit=="White British",]
-white_trt <- treated[treated$genWhiteBrit=="White British",]
+# Pretty variable names
 
 pretty_names <- list(age = "age, years",
                      agegrp = "age group, years",
@@ -94,18 +84,11 @@ pretty_names <- list(age = "age, years",
                      VI_Osteoarthritis_ = "osteoarthritis",
                      VI_Other_joint_disorder_ = "other joint disorder",
                      PRS = "polygenic risk score",
-                     PRS_quint = "polygenic risk score, quintiles",
-                     GeP_PC.m1 = "Principal Component 1",
-                     GeP_PC.m2 = "PC 2",
-                     GeP_PC.m3 = "PC 3",
-                     GeP_PC.m4 = "PC 4",
-                     GeP_PC.m5 = "PC 5",
-                     GeP_PC.m6 = "PC 6",
-                     GeP_PC.m7 = "PC 7",
-                     GeP_PC.m8 = "PC 8",
-                     GeP_PC.m9 = "PC 9",
-                     GeP_PC.m10 = "PC 10"
+                     PRS_quint = "polygenic risk score, quintiles"
                      )
+
+#-------------------------------------------------------------------------------------------------------------------
+# Setup
 
 figure <- 1
 table <- 1
@@ -114,11 +97,11 @@ footnote_no <- 1
 
 ```
 
-# Figure `r figure`. Flowchart of study exclusion criteria, resulting in study population of `r nrow(treated)` treated hypertensives aged 40-70 years with complete data on core study variables and without any serious comorbidites.
+# Figure `r figure`. Flowchart illustrating selection of analytic dataset (n = `r nrow(treated)`).
 `r figure <- figure + 1`
 ![](K:/TEU/APOE on Dementia/Statistical Analysis/NeoHypertension/RMarkdown/ExclFlowchart.png){height=700px}
 
-# Figure `r figure`. Prevalence of hypertension, and its awareness, treatment and control among adults in the UKB.
+# Figure `r figure`. Prevalence of hypertension, and its awareness, treatment and control among 40-69 year old adults in the UKB.
 `r figure <- figure + 1`
 ```{r fig2, include=TRUE, echo=FALSE, results='asis', }
 
@@ -146,7 +129,7 @@ for(dfname in names(dflist)){
 
 ![Hypertension was defined as self-report of hypertensive medication use, or self-report of a prior diagnosis of hypertension, or mean BP >= 140 /90 mmHg at baseline assessment. Awareness was defined as self-report of a prior diagnosis of hypertension among those who were hypertensive. Treatment was defined as self-report of hypertensive medication among those who were aware. Control was defined as mean BP < 140/90 mmHg at baseline assessment, among those who were treated.](K:/TEU/APOE on Dementia/Statistical Analysis/NeoHypertension/RMarkdown/Wholepop.png){height=680px}
 
-# Table `r table`: Prevalence of hypertension control among treated hypertensives (n = `r nrow(treated)`), by socioeconomic characteristics and comorbidity type
+# Table `r table`: Prevalence of hypertension control among treated hypertensives (n = `r nrow(treated)`), by socioeconomic and clinical characteristics.
 `r table <- table + 1`
 ```{r table1, include=TRUE, echo=FALSE}
 
@@ -213,7 +196,7 @@ add_footnote(kable(tab1), label=c("Control defined as mean SBP >= 140 mmHg or me
 
 ```
 
-# Table `r table`. Characteristics of treated hypertensives, by blood pressure control status (n = `r nrow(treated)`).
+# Table `r table`. Characteristics of participants included in the analysis (treated hypertensives, n = `r nrow(treated)`).
 `r table <- table + 1`
 ```{r table2, include=TRUE, echo=FALSE}
 varlist=c("age", "agegrp", "gender", "eth_group",
@@ -268,7 +251,7 @@ add_footnote(kable(tab2), label=c("The Townsend index is a measure of material d
 
 ```
 
-# Table `r table`: Multivariable logistic regression identifying factors associated with hypertension control (BP < 140/90 mmHg), among UK adults on antihypertensive treatment (n=`r nrow(treated)`)
+# Table `r table`: Multivariable logistic regression identifying factors associated with hypertension control, among middle-aged UK adults on anti-hypertensive treatment (n=`r nrow(treated)`)
 `r table <- table + 1`
 <div custom-style="Todo">Reminder: Manually re-order BMI categories</div>
 
@@ -324,7 +307,7 @@ add_footnote(kable(tab3), label=c("Number of individuals in levels of a categori
 
 ```
 
-# Table `r table`: Multivariable logistic regression examining association of individual comorbidities with hypertension control (BP < 140/90 mmHg), among UK adults on anti-hypertensive treatment (n = `r nrow(treated)`).
+# Table `r table`: Multivariable logistic regression examining the association of individual comorbidities with hypertension control, among middle-aged UK adults on anti-hypertensive treatment (n = `r nrow(treated)`).
 `r table <- table +1`
 ```{r table4, include=TRUE, echo=FALSE}
 
@@ -367,7 +350,7 @@ add_footnote(kable(tab4), label=c(paste0("The multivariable-adjusted model conta
 
 ```
 
-# Supplementary Figure `r suppfig`. Scatterplot of blood pressure among treated participants (n = `r nrow(treated)`), categorised according to hypertension threshold SBP >= 140 and/or DBP >= 90.
+# Supplementary Figure `r suppfig`. Scatterplot of blood pressure among treated hypertensives (n = `r nrow(treated)`), categorised according to BP threshold 140/90 mmHg.
 `r suppfig <- suppfig + 1`
 
 ```{r suppfig, include=TRUE, echo=FALSE}
