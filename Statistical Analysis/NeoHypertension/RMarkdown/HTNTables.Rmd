@@ -58,43 +58,43 @@ treated$antiHTNmedsno <- factor(treated$antiHTNmedsno, levels=c("1", "2", ">=3",
 white <- data[data$genWhiteBrit=="White British",]
 white_trt <- treated[treated$genWhiteBrit=="White British",]
 
-pretty_names <- list(age = "Age, years",
-                     agegrp = "Age group, years",
-                     gender = "Gender",
-                     ethnicity = "Ethnicity",
-                     eth_group = "Ethnic group",
-                     genWhiteBrit = "Genetically categorised as White British",
+pretty_names <- list(age = "age, years",
+                     agegrp = "age group, years",
+                     gender = "gender",
+                     ethnicity = "ethnicity",
+                     eth_group = "ethnic group",
+                     genWhiteBrit = "genetically categorised as White British",
                      BMIcat = "BMI (categorical)",
-                     Smo_Status = "Smoking status",
-                     weekly_alcunits = "Alcohol units reported per week",
-                     weekly_alccat = "Alcohol units per week (categorical)",
-                     PhA_METsWkAllAct = "Weekly physical activity, MET minutes",
-                     METs_over1200 = "Weekly physical activity",
+                     Smo_Status = "smoking status",
+                     weekly_alcunits = "alcohol units reported per week",
+                     weekly_alccat = "alcohol units per week (categorical)",
+                     PhA_METsWkAllAct = "weekly physical activity, MET minutes",
+                     METs_over1200 = "weekly physical activity",
                      townsend_quint = "Townsend Deprivation Index, quintiles",
-                     income = "Household Income, GBP",
-                     employment = "Occupation type",
-                     employcat = "Occupation category",
-                     ISCED = "Highest level of education (ISCED)",
-                     BirthCountryIncomeLevel = "Country of birth, by income level",
+                     income = "household Income, GBP",
+                     employment = "occupation type",
+                     employcat = "occupation category",
+                     ISCED = "highest level of education (ISCED)",
+                     BirthCountryIncomeLevel = "country of birth, by income level",
                      countryResidence = "UK country of residence",
-                     BowelCancerScreening = "Ever screened for bowel cancer",
-                     HTNdx_durcat = "Duration of hypertension",
-                     antiHTNmedsno = "Number of antihypertensive medications",
-                     FamilyHist_CVD_ = "Family history of CVD",
-                     comorbNumber_ = "No. of comorbidities",
-                     VI_afib_or_aflutter_ = "Arrhythmia (afib/flutter)",
-                     VI_anxiety_or_stress_ = "Anxiety",
-                     VI_asthma_or_COPD_ = "Asthma or COPD",
-                     VI_depression_or_bipolar_ = "Depression",
-                     VI_diabetes_ = "Diabetes",
-                     VI_epilepsy_ = "Epilepsy",
-                     VI_CVD_ = "Cardiovascular disease",
-                     VI_migraine_ = "Migraines",
-                     VI_substance_use_ = "Substance use",
-                     VI_Osteoarthritis_ = "Osteoarthritis",
-                     VI_Other_joint_disorder_ = "Other joint disorder",
-                     PRS = "Polygenic risk score",
-                     PRS_quint = "Polygenic risk score, quintiles",
+                     BowelCancerScreening = "ever screened for bowel cancer",
+                     HTNdx_durcat = "duration of hypertension",
+                     antiHTNmedsno = "number of antihypertensive medications",
+                     FamilyHist_CVD_ = "family history of CVD",
+                     comorbNumber_ = "no. of comorbidities",
+                     VI_afib_or_aflutter_ = "arrhythmia (afib/flutter)",
+                     VI_anxiety_or_stress_ = "anxiety",
+                     VI_asthma_or_COPD_ = "asthma or COPD",
+                     VI_depression_or_bipolar_ = "depression",
+                     VI_diabetes_ = "diabetes",
+                     VI_epilepsy_ = "epilepsy",
+                     VI_CVD_ = "cardiovascular disease",
+                     VI_migraine_ = "migraines",
+                     VI_substance_use_ = "substance use",
+                     VI_Osteoarthritis_ = "osteoarthritis",
+                     VI_Other_joint_disorder_ = "other joint disorder",
+                     PRS = "polygenic risk score",
+                     PRS_quint = "polygenic risk score, quintiles",
                      GeP_PC.m1 = "Principal Component 1",
                      GeP_PC.m2 = "PC 2",
                      GeP_PC.m3 = "PC 3",
@@ -181,7 +181,7 @@ for(var in varlist){
 }
 for(comorb in comorbs_string){
   newrow <- desctable2(treated[treated[comorb]=="Yes",])
-  tab1 <- rbind(tab1, cbind(prettyfunc(comorb, pnames=pretty_names), newrow))
+  tab1 <- rbind(tab1, cbind(prettyfunc(comorb, pnames=pretty_names, upper=TRUE), newrow))
 }
 
 footnote_no <- 1
@@ -191,7 +191,7 @@ footnote_no <- footnote_no + 1
 footnote_list <- c("townsend_quint", "employcat", "ISCED", "BirthCountryIncomeLevel", "countryResidence", "BMIcat", "METs_over1200", "comorbNumber_")
 
 rownamer <- function(x){
-  prettyname <- prettyfunc(x, pnames=pretty_names, flist=footnote_list)
+  prettyname <- prettyfunc(x, pnames=pretty_names, upper=TRUE, flist=footnote_list)
   
   # Return the prettified name and the correct number of blanks
   c(prettyname, rep("", (nlevels(treated[[x]])-1)))
@@ -204,11 +204,11 @@ add_footnote(kable(tab1), label=c("Control defined as mean SBP >= 140 mmHg or me
                                   "The Townsend index is a measure of material deprivation calculated at the level of census outputs areas. Higher scores imply a greater degree of deprivation.", 
                                   "Occupation categories have been condensed from those recorded in UKB. Professional and Administrative: Managers and Senior Officials, Professional Occupations, Associate Professional and Technical Occupations, Administrative and Secretarial Occupations. Skilled trades: Skilled Trades Occupations. Services: Personal Service Occupations, Sales and Customer Service Occupations. Manual and Industrial: Process, Plant and Machine Operatives, Elementary Occupations. Other: free text entry that was not coded by UKB.", 
                                   "Participants reported all achieved qualifications; we mapped these to the International Standard Classification of Education (ISCED) categories",
-                                  "Participants' self-reported country of birth was mapped to World Bank Analytical Classifications using fiscal year 2020."
+                                  "Participants' self-reported country of birth was mapped to World Bank Analytical Classifications using fiscal year 2020.",
                                   "The assessment centre the participant attended was used as a proxy for country of residence",
                                   "BMI has been categorised according to the NHS guidance. Underweight: Below 18.5 kg/m^2^. Normal: 18.5 - 24.9 kg/m^2^. Overweight: 25.0 - 29.9 kg/m^2^. Obese: 30.0 kg/m^2^ or above.", 
                                   "The total Metabolic Equivalent Task (MET) minutes per week is available from UKB as a derived variable based on self-reported frequency and duration of walking, moderate and vigorous activity. We have dichotomized based on the upper end of the WHO guideline range for weekly physical activity.",
-                                  paste0("The number of comorbidities considered to be of interest - ", paste(sapply(comorbs_string, prettyfunc,  pnames=pretty_names, lower=TRUE), collapse=", "), ".")
+                                  paste0("The number of comorbidities considered to be of interest - ", paste(sapply(comorbs_string, prettyfunc,  pnames=pretty_names, upper=FALSE), collapse=", "), ".")
                                   ), notation="number")
 
 ```
@@ -259,11 +259,11 @@ colnames(tab2) <- c("", "",
 add_footnote(kable(tab2), label=c("The Townsend index is a measure of material deprivation calculated at the level of census outputs areas. Higher scores imply a greater degree of deprivation.", 
                                   "Occupation categories have been condensed from those recorded in UKB. Professional and Administrative: Managers and Senior Officials, Professional Occupations, Associate Professional and Technical Occupations, Administrative and Secretarial Occupations. Skilled trades: Skilled Trades Occupations. Services: Personal Service Occupations, Sales and Customer Service Occupations. Manual and Industrial: Process, Plant and Machine Operatives, Elementary Occupations. Other: free text entry that was not coded by UKB.", 
                                   "Participants reported all achieved qualifications; we mapped these to the International Standard Classification of Education (ISCED) categories",
-                                  "Participants' self-reported country of birth was mapped to World Bank Analytical Classifications using fiscal year 2020."
+                                  "Participants' self-reported country of birth was mapped to World Bank Analytical Classifications using fiscal year 2020.",
                                   "The assessment centre the participant attended was used as a proxy for country of residence",
                                   "BMI has been categorised according to the NHS guidance. Underweight: Below 18.5 kg/m^2^. Normal: 18.5 - 24.9 kg/m^2^. Overweight: 25.0 - 29.9 kg/m^2^. Obese: 30.0 kg/m^2^ or above.", 
                                   "The total Metabolic Equivalent Task (MET) minutes per week is available from UKB as a derived variable based on self-reported frequency and duration of walking, moderate and vigorous activity. We have dichotomized based on the upper end of the WHO guideline range for weekly physical activity.",
-                                  paste0("The number of comorbidities considered to be of interest - ", paste(sapply(comorbs_string, prettyfunc,  pnames=pretty_names, lower=TRUE), collapse=", "), ".")
+                                  paste0("The number of comorbidities considered to be of interest - ", paste(sapply(comorbs_string, prettyfunc,  pnames=pretty_names, upper=FALSE), collapse=", "), ".")
                                   ), notation="number")
 
 ```
@@ -315,11 +315,11 @@ add_footnote(kable(tab3), label=c("Number of individuals in levels of a categori
                                   "The Townsend index is a measure of material deprivation calculated at the level of census outputs areas. Higher scores imply a greater degree of deprivation.", 
                                   "Occupation categories have been condensed from those recorded in UKB. Professional and Administrative: Managers and Senior Officials, Professional Occupations, Associate Professional and Technical Occupations, Administrative and Secretarial Occupations. Skilled trades: Skilled Trades Occupations. Services: Personal Service Occupations, Sales and Customer Service Occupations. Manual and Industrial: Process, Plant and Machine Operatives, Elementary Occupations. Other: free text entry that was not coded by UKB.", 
                                   "Participants reported all achieved qualifications; we mapped these to the International Standard Classification of Education (ISCED) categories",
-                                  "Participants' self-reported country of birth was mapped to World Bank Analytical Classifications using fiscal year 2020."
+                                  "Participants' self-reported country of birth was mapped to World Bank Analytical Classifications using fiscal year 2020.",
                                   "The assessment centre the participant attended was used as a proxy for country of residence",
                                   "BMI has been categorised according to the NHS guidance. Underweight: Below 18.5 kg/m^2^. Normal: 18.5 - 24.9 kg/m^2^. Overweight: 25.0 - 29.9 kg/m^2^. Obese: 30.0 kg/m^2^ or above.", 
                                   "The total Metabolic Equivalent Task (MET) minutes per week is available from UKB as a derived variable based on self-reported frequency and duration of walking, moderate and vigorous activity. We have dichotomized based on the upper end of the WHO guideline range for weekly physical activity.",
-                                  paste0("The number of comorbidities considered to be of interest - ", paste(sapply(comorbs_string, prettyfunc,  pnames=pretty_names, lower=TRUE), collapse=", "), ".")
+                                  paste0("The number of comorbidities considered to be of interest - ", paste(sapply(comorbs_string, prettyfunc,  pnames=pretty_names, upper=FALSE), collapse=", "), ".")
                                   ), notation="number")
 
 ```
@@ -361,9 +361,9 @@ colnames(tab4) <- c("","","",
                     "Age- and sex-adjusted", "", "", 
                     "Multivariable- adjusted^1^", "", "")
 
-tab4[,1] <- sapply(tab4[,1], prettyfunc, pnames=pretty_names)
+tab4[,1] <- sapply(tab4[,1], prettyfunc, pnames=pretty_names, upper=TRUE)
 
-add_footnote(kable(tab4), label=c(paste0("The multivariable-adjusted model contains the following variables: ", paste(sapply(varlist, prettyfunc, pnames=pretty_names), collapse=", "), ". Note that these are all the covariates from Table 3 except for number of comorbidities.")), notation="number")
+add_footnote(kable(tab4), label=c(paste0("The multivariable-adjusted model contains the following variables: ", paste(sapply(varlist, prettyfunc, pnames=pretty_names, upper=FALSE), collapse=", "), ". Note that these are all the covariates from Table 3 except for number of comorbidities.")), notation="number")
 
 ```
 

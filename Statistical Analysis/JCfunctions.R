@@ -17,12 +17,16 @@ lower <- function(x){
   paste0(tolower(substring(x, 1,1)), substring(x, 2))
 }
 
-prettyfunc <- function(x, pnames=list(), lower=FALSE, flist=c()){
+upper <- function(x){
+  paste0(toupper(substring(x, 1,1)), substring(x, 2))
+}
+
+prettyfunc <- function(x, pnames=list(), upper=FALSE, flist=c()){
   out <- x
   if(x %in% names(pnames)){
     out <- pnames[[x]]
-    if(lower==TRUE){
-      out <- lower(out)
+    if(upper==TRUE){
+      out <- upper(out)
     }
   }
   if(x %in% flist){
@@ -97,7 +101,7 @@ descriptivetable <- function(df, varlist, contavg='mean', assocvar=NULL, pretty_
     if(is.factor(df[[var]])){
       n <- table(df[[var]], useNA='ifany')
       pct <- pretty_dp(100*prop.table(n), dp=1)
-      variable <- c(prettyfunc(var, pnames=pretty_names, flist=footnote_list), rep(NA, dim(n)-1))
+      variable <- c(prettyfunc(var, pnames=pretty_names, upper=TRUE, flist=footnote_list), rep(NA, dim(n)-1))
       levels <- names(n)
       if(!is.null(assocvar)){
         tab <- table(df[[assocvar]], df[[var]])
@@ -108,16 +112,16 @@ descriptivetable <- function(df, varlist, contavg='mean', assocvar=NULL, pretty_
       if(contavg=="mean"){
         n <- pretty_dp(mean(df[[var]], na.rm=TRUE), dp=1)
         pct <- pretty_dp(sd(df[[var]], na.rm=TRUE), dp=1)
-        variable <- paste0("Mean ", prettyfunc(var, pretty_names, lower=TRUE, flist=footnote_list), " (SD)")
+        variable <- paste0("Mean ", prettyfunc(var, pretty_names, upper=FALSE, flist=footnote_list), " (SD)")
       } else if (contavg=="median"){
         n <- pretty_dp(median(df[[var]], na.rm=TRUE), dp=1)
         IQR <- pretty_dp(quantile(df[[var]], na.rm=TRUE), dp=1)
         pct <- paste0("(", IQR[2], "-", IQR[4], ")")
-        variable <- paste0("Median ", prettyfunc(var, pnames=pretty_names, lower=TRUE, flist=footnote_list), " (IQR)")
+        variable <- paste0("Median ", prettyfunc(var, pnames=pretty_names, upper=FALSE, flist=footnote_list), " (IQR)")
       } else if(contavg=="n"){
         n <- nrow(df[!is.na(df[[var]]),])
         pct <- NA
-        variable <- prettyfunc(var, pnames=pretty_names, flist=footnote_list)
+        variable <- prettyfunc(var, pnames=pretty_names, upper=TRUE, flist=footnote_list)
       }
       levels <- NA
       if(!is.null(assocvar)){
@@ -172,7 +176,7 @@ printlogresults <- function(model, coeffnames=NULL, IDcol=FALSE){
                       dp=2), # 95% CI
     p=pretty_pval(coeff[,4]), # p-value
     stringsAsFactors=FALSE
-    )
+  )
   if(!is.null(coeffnames)){
     results <- merge(coeffnames, regression, all.x=TRUE)
     results$OR[is.na(results$OR)] <- "1"
@@ -193,7 +197,7 @@ printlogresults <- function(model, coeffnames=NULL, IDcol=FALSE){
   # VARIABLE=c("",gsub("[-^0-9]", "", names(unlist(modeloutput$xlevels))))
   # MODALITY=c("",as.character(unlist(model$xlevels)))
   # names=data.frame(VARIABLE,MODALITY,NOMVAR=c("(Intercept)",paste(VARIABLE,MODALITY,sep="")[-1]))
-
+  
   return(results)
 }
 
