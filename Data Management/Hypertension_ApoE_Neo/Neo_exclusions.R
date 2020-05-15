@@ -114,10 +114,10 @@ data$treated_ <- factor(as.numeric(data$treated), levels=c(0,1), labels=c("Did n
 data$evidenceHTN_ <- factor(as.numeric(data$evidenceHTN), levels=c(0,1), labels=c("No evidence of hypertension", "Normotensive"))
 
 
-saveRDS(data, file="K:\\TEU\\APOE on Dementia\\Data Management\\R_Dataframes_TLA\\38358\\Organised\\Hypertension\\HTN_excl.rds")
+# saveRDS(data, file="K:\\TEU\\APOE on Dementia\\Data Management\\R_Dataframes_TLA\\38358\\Organised\\Hypertension\\HTN_excl.rds")
 
 
-data <- readRDS(file="K:\\TEU\\APOE on Dementia\\Data Management\\R_Dataframes_TLA\\38358\\Organised\\Hypertension\\HTN_excl.rds")
+# data <- readRDS(file="K:\\TEU\\APOE on Dementia\\Data Management\\R_Dataframes_TLA\\38358\\Organised\\Hypertension\\HTN_excl.rds")
 #--------------------------------------------------------------------------------------------------------------
 # Further exclusions for Neo's covariates of interest
 #--------------------------------------------------------------------------------------------------------------
@@ -369,4 +369,32 @@ data$PRS_quint <- factor(data$PRS_quint,
                               levels=c("Q3", "Q1: Lowest score", "Q2", "Q4", "Q5: Highest score", "Unanswered"))
 
 
+#--------------------------------------------------------------------------------------------------------------
+# Datasets
+#--------------------------------------------------------------------------------------------------------------
+
+# For the SES descriptive analyses, we want to consider two subsets: all hypertensives and all treated individuals
+hypertensives <- data[data$evidenceHTN==TRUE & !is.na(data$evidenceHTN),]
+treated <- data[data$treated==TRUE & !is.na(data$treated),]
+
+# Among the treated, those who did not list any HTN meds in VI are assumed to be taking unlisted meds
+treated$antiHTNmedsno <- factor(treated$antiHTNmedsno, levels=c("1", "2", ">=3", "0"),
+                                labels=c("1", "2", ">=3",  "Medication list unavailable"))
+
+# Need Townsend quintiles to be calculated within treated population only
+# Convert Townsend deprivation index to quintiles (and a factor)
+quintiles <- quantile(treated$townsend_depind, probs=seq(0, 1, 0.2), na.rm=TRUE)
+treated$townsend_quint <- dplyr::case_when(
+  treated$townsend_depind <= quintiles[2] ~ "Q1: Least deprived",
+  treated$townsend_depind > quintiles[2] & treated$townsend_depind <= quintiles[3] ~ "Q2",
+  treated$townsend_depind > quintiles[3] & treated$townsend_depind <= quintiles[4] ~ "Q3",
+  treated$townsend_depind > quintiles[4] & treated$townsend_depind <= quintiles[5] ~ "Q4",
+  treated$townsend_depind > quintiles[5] & treated$townsend_depind <= quintiles[6] ~ "Q5: Most deprived",
+  TRUE ~ "Unanswered"
+)
+treated$townsend_quint <- factor(treated$townsend_quint, 
+                              levels=c("Q1: Least deprived", "Q2", "Q3", "Q4", "Q5: Most deprived", "Unanswered"))
+
+
 saveRDS(data, file="K:\\TEU\\APOE on Dementia\\Data Management\\R_Dataframes_TLA\\38358\\Organised\\Hypertension\\Neo\\HTN_excl.rds")
+saveRDS(treated, file="K:\\TEU\\APOE on Dementia\\Data Management\\R_Dataframes_TLA\\38358\\Organised\\Hypertension\\Neo\\HTN_trt.rds")
