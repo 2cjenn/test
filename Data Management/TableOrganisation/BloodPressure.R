@@ -7,15 +7,29 @@ library(reshape2)
 library(dplyr)
 
 #--------------------------------------------------------------------------------------------------------------
-
 # Read in the raw data
 bp <- readRDS("K:\\TEU\\APOE on Dementia\\Data Management\\R_Dataframes_TLA\\38358\\BlP_base.rds")
 
-bp$SBP <- rowMeans(bp[,c("BlP_SBPAuto.0", "BlP_SBPAuto.1", "BlP_SBPMan.0", "BlP_SBPMan.1")], na.rm=TRUE)
-bp$DBP <- rowMeans(bp[,c("BlP_DBPAuto.0", "BlP_DBPAuto.1", "BlP_DBPMan.0", "BlP_DBPMan.1")], na.rm=TRUE)
+#--------------------------------------------------------------------------------------------------------------
+# Mean BP and number of measurements
+
+bp$SBP.0 <- coalesce(bp$BlP_SBPAuto.0, bp$BlP_SBPMan.0)
+bp$SBP.1 <- coalesce(bp$BlP_SBPAuto.1, bp$BlP_SBPMan.1)
+bp$DBP.0 <- coalesce(bp$BlP_DBPAuto.0, bp$BlP_DBPMan.0)
+bp$DBP.1 <- coalesce(bp$BlP_DBPAuto.1, bp$BlP_DBPMan.1)
+
+bp$nSBP <- rowSums(!is.na(bp[,c("SBP.0", "SBP.1")]))
+bp$nDBP <- rowSums(!is.na(bp[,c("DBP.0", "DBP.1")]))
+
+bp$SBP <- rowMeans(bp[,c("SBP.0", "SBP.1")], na.rm=TRUE)
+bp$DBP <- rowMeans(bp[,c("DBP.0", "DBP.1")], na.rm=TRUE)
+
+#--------------------------------------------------------------------------------------------------------------
+# Mean pulse rate
 bp$PulseRate <- rowMeans(bp[,c("BlP_PulseRateAuto.0", "BlP_PulseRateAuto.1", "BlP_PulseRate.0", "BlP_PulseRate.1")], na.rm=TRUE)
-# bp$SBPcat <- cut(bp$SBP, breaks=c(0, 120, 140, 160, 1000), right=FALSE, labels=c("<120", "120-140", "140-160", ">160"))
-# bp$DBPcat <- cut(bp$DBP, breaks=c(0, 80, 90, 100, 1000), right=FALSE, labels=c("<80", "80-90", "90-100", ">100"))
+
+#--------------------------------------------------------------------------------------------------------------
+# Categorise BP based on HTN thresholds
 bp$SBPcat <- ifelse(bp$SBP<=120, "SBP<=120", 
                     ifelse(bp$SBP>120 & bp$SBP<140, "120<SBP<140", 
                            ifelse(bp$SBP>=140 & bp$SBP<160, "140<=SBP<160", 
@@ -34,10 +48,12 @@ bp$DBPcat <- ifelse(bp$DBP<=80, "DBP<=80",
                     )
 )
 bp$DBPcat <- factor(bp$DBPcat, levels=c("DBP<=80", "80<DBP<90", "90<=DBP<100", "DBP>=100"))
+
+#--------------------------------------------------------------------------------------------------------------
 # Indicator variable for hypertensive status at baseline assessment
 bp$measuredhyp <- (bp$SBP>=140 | bp$DBP>=90)
 bp$controlled <- !bp$measuredhyp
 
+#--------------------------------------------------------------------------------------------------------------
 # Save the organised data
-saveRDS(bp[,c("ID", "SBP", "DBP", "PulseRate", "SBPcat", "DBPcat", "measuredhyp", "controlled")],
-        file="K:\\TEU\\APOE on Dementia\\Data Management\\R_Dataframes_TLA\\38358\\Organised\\bp.rds")
+saveRDS(bp, file="K:\\TEU\\APOE on Dementia\\Data Management\\R_Dataframes_TLA\\38358\\Organised\\bp.rds")
