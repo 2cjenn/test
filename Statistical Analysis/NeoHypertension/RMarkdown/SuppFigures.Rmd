@@ -118,16 +118,25 @@ prettyfunc <- function(x){
 # Correlation between socioeconomic status variables
 
 ```{r corrSES, include=TRUE, echo=FALSE}
+complete <- treated[,c("agegrp", "gender", "eth_group",
+          "townsend_quint", "income", "employcat", "ISCED", "BirthCountryIncomeLevel", "countryResidence",
+          "BMIcat", "Smo_Status", "weekly_alccat", "METs_over1200",
+          "antiHTNmedsno",  "FamilyHist_CVD_",
+          "BowelCancerScreening",
+          "comorbNumber_")]
+complete$BMIcat <- factor(complete$BMIcat, levels=c("Underweight", "Normal (ref)", "Overweight", "Obese", "Unanswered"))
 
-complete <- treated[!(treated$income %in% c("Do not know", "Unanswered"))
-                    & treated$ISCED!="Unanswered",
+complete <- complete[!(complete$income %in% c("Do not know", "Unanswered"))
+                    & complete$ISCED!="Unanswered"
+                    & complete$BMIcat!="Unanswered"
+                    & complete$Smo_Status!="Unanswered",
                     #& !(treated$employcat %in% c("Other", "Unemployed/retired/unanswered")),
-                    c("townsend_depind","townsend_quint", "income", "ISCED", "employcat", "comorbNumber_")]
+                   ]
 for(col in colnames(complete)){
   complete[[col]] <- as.numeric(complete[[col]])
 }
 
-res <- cor(complete[,c("townsend_quint", "income", "ISCED", "comorbNumber_")], method="spearman")
+res <- cor(complete[,c("townsend_quint", "agegrp", "income", "ISCED", "BMIcat", "Smo_Status", "weekly_alccat", "BirthCountryIncomeLevel",  "comorbNumber_")], method="spearman")
 kable(res)
 corrplot(res, type='upper')
 ```
@@ -222,6 +231,10 @@ pie <- ggplot(data=count_df, aes(x="", y=count, fill=status)) +
 
 ggsave(filename="K:/TEU/APOE on Dementia/Statistical Analysis/NeoHypertension/RMarkdown/PieHTN.png",
        plot=pie)
+
+
+highBP <- data[data$SBP>200,]
+plot(highBP$SBP)
 ```
 
 # There was a chart like this in yesterday's Richard Doll lecture, I thought it was pretty so gave it a go here! 
@@ -352,13 +365,19 @@ for(var in varlist){
 
 
 ```{r job_income, include=TRUE, echo=FALSE}
+varlist <- c("agegrp", "gender", "eth_group",
+          "townsend_quint", "income", "employcat", "ISCED", "BirthCountryIncomeLevel", "countryResidence",
+          "BMIcat", "Smo_Status", "weekly_alccat", "METs_over1200",
+          "antiHTNmedsno",  "FamilyHist_CVD_",
+          "BowelCancerScreening",
+          "comorbNumber_")
 
-tab <- table(treated$employcat, treated$income)
+tab <- table(treated$townsend_quint, treated$antiHTNmedsno)
 df <- data.frame(tab)
-colnames(df) <- c("Employment_category", "Household_income", "n")
+colnames(df) <- c("Townsend", "antiHTNmedsno", "n")
 
-ggplot(df, aes(y=n, x=Household_income, fill=Employment_category)) +
-  geom_bar(stat="identity")
+ggplot(df, aes(y=n, x=antiHTNmedsno, fill=Townsend)) +
+  geom_bar(stat="identity", position="fill")
 
 kable(tab)
 
