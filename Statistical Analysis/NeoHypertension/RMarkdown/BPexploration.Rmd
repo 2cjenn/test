@@ -1,0 +1,274 @@
+---
+title: "BPexploration"
+author: "Jennifer Collister"
+date: "18/05/2020"
+output: 
+  word_document:
+      reference_docx: "K:/TEU/APOE on Dementia/RMarkdownStyle.docx"
+---
+
+```{r setup, include=FALSE}
+
+library(kableExtra)
+library(knitr)
+library(tidyr)
+library(reshape2)
+library(dplyr)
+library(ggplot2)
+
+source("K:/TEU/APOE on Dementia/Statistical Analysis/JCfunctions.R")
+
+#--------------------------------------------------------------------------------------------------------------
+# Read in the raw data
+
+bp <- readRDS("K:\\TEU\\APOE on Dementia\\Data Management\\R_Dataframes_TLA\\38358\\BlP_base.rds")
+
+bp$SBP <- rowMeans(bp[,c("BlP_SBPAuto.0", "BlP_SBPAuto.1", "BlP_SBPMan.0", "BlP_SBPMan.1")], na.rm=TRUE)
+bp$DBP <- rowMeans(bp[,c("BlP_DBPAuto.0", "BlP_DBPAuto.1", "BlP_DBPMan.0", "BlP_DBPMan.1")], na.rm=TRUE)
+bp$PulseRate <- rowMeans(bp[,c("BlP_PulseRateAuto.0", "BlP_PulseRateAuto.1", "BlP_PulseRate.0", "BlP_PulseRate.1")], na.rm=TRUE)
+
+#--------------------------------------------------------------------------------------------------------------
+# Read in the analysis data
+
+data <- readRDS(file="K:\\TEU\\APOE on Dementia\\Data Management\\R_Dataframes_TLA\\38358\\Organised\\Hypertension\\Neo\\HTN_excl.rds")
+
+treated <- readRDS(file="K:\\TEU\\APOE on Dementia\\Data Management\\R_Dataframes_TLA\\38358\\Organised\\Hypertension\\Neo\\HTN_trt.rds")
+
+```
+
+
+# Given concern of white coat syndrome in the setting of single visit measurement at a center/clinic, explore whether first BP measurements were consistently higher than second BP measurements
+
+## Number of measurements taken
+
+Begin with full dataset, n = `r nrow(bp)`
+
+```{r n_measure, include=TRUE, echo=FALSE}
+bp$SBP.0 <- coalesce(bp$BlP_SBPAuto.0, bp$BlP_SBPMan.0)
+bp$SBP.1 <- coalesce(bp$BlP_SBPAuto.1, bp$BlP_SBPMan.1)
+bp$DBP.0 <- coalesce(bp$BlP_DBPAuto.0, bp$BlP_DBPMan.0)
+bp$DBP.1 <- coalesce(bp$BlP_DBPAuto.1, bp$BlP_DBPMan.1)
+
+bp$nSBP <- rowSums(!is.na(bp[,c("SBP.0", "SBP.1")]))
+bp$nDBP <- rowSums(!is.na(bp[,c("DBP.0", "DBP.1")]))
+
+t <- table(bp$nSBP, bp$nDBP)
+names(dimnames(t)) <- c("Number of SBP measurements", "Number of DBP measurements")
+t
+
+bp <- bp[bp$nSBP == 2 & bp$nDBP == 2,]
+
+```
+
+Exclude those who don't have 2 complete BP measurements, remaining n = `r nrow(bp)`
+ 
+## Difference between first and second measurement
+
+
+```{r BP_diff, include=TRUE, echo=TRUE}
+# First SBP measurement
+mean(bp$SBP.0)
+
+# Second SBP measurement
+mean(bp$SBP.1)
+
+# First DBP measurement
+mean(bp$DBP.0)
+
+# Second DBP measurement
+mean(bp$DBP.1)
+
+```
+
+We find that the first SBP measurement is on average `r pretty_dp(mean(bp$SBP.0 - bp$SBP.1, na.rm=TRUE),2)` mmHg higher than the second SBP measurement.
+However, the DBP values from the two measurements are closer together,  with the first `r pretty_dp(abs(mean(bp$DBP.0 - bp$DBP.1, na.rm=TRUE)),2)` mmHg lower than the second on average.
+
+```{r measure_diff, include=TRUE, echo=FALSE, fig.width=8, fig.height=6}
+
+hist(bp$SBP.0 - bp$SBP.1,
+     main="Difference between first and second SBP measurements, mmHg")
+hist(bp$DBP.0 - bp$DBP.1,
+     main="Difference between first and second SBP measurements, mmHg")
+
+plot(bp$DBP.0 - bp$DBP.1, bp$SBP.0 - bp$SBP.1,
+     main="Scatterplot of difference in DBP vs difference in SBP\nfrom first to second measurement",
+     xlab="Difference in DBP, mmHg", ylab="Difference in SBP, mmHg")
+
+```
+
+
+
+```{r highbp, include=TRUE, echo=FALSE}
+highbp <- bp[bp$SBP>200 & !is.na(bp$SBP)
+             ,c("BlP_SBPAuto.0", "BlP_SBPAuto.1", "BlP_SBPMan.0", "BlP_SBPMan.1",
+                "BlP_DBPAuto.0", "BlP_DBPAuto.1", "BlP_DBPMan.0", "BlP_DBPMan.1",
+                "BlP_MthMsrBP.0", "BlP_MthMsrBP.1","SBP", "DBP")]
+ggplot(data=highbp, aes(x=BlP_SBPAuto.0, y=BlP_SBPAuto.1)) + geom_point() +
+  geom_abline(intercept=0, slope=1) +
+  geom_hline(yintercept=200) +
+  geom_vline(xintercept=200)
+
+
+```
+
+# Check UKB procedures manuals for what happened to individuals who had very high BPs (> 180/110). Were they referred to their GP or to the emergency departments? 
+
+Brief summary here, full quotes and sources at end
+
+## When and how was BP measured
+
+BP was taken during the "verbal interview" part of the assessment. The participant was seated with a nurse in a dedicated interview and BP station, partitioned to allow sufficient privacy.
+
+First, the verbal interview was completed, ensuring that the participant had been seated for at least 5 minutes. Then BP and pulse were measured twice, with a minimum interval of one minute during which time the nurse could enter information that the participant had brought on the pre-visit questionnaire.
+
+BP was measured using an Omron 705 IT monitor connected directly to the computer; direct entry from the machine to the computer was achieved for both measurements in ~456k participants. This is the optimal method.
+
+Around ~43k participants had one or both of the electronic measurements manually entered into the computer, which raises the possibility of human error, although the computer had validation to flag completely inappropriate information.
+
+A small proportion of participants had their BP measured by manual sphygmometer, and a small proportion did not have it measured at all.
+
+## What was done if participants had elevated BP?
+
+At the end of the visit, participants were provided with a printed report containing their BP measurements, which included the standard range for BP so the participants could put their results into context.
+
+If staff considered there to be a professional or ethical obligation to draw attention to elevated BP then they were to encourage participants to contact a relevant health professional. 
+
+The ethics and governance framework is vague and doesn't specify a threshold at which the participant should be notified, so presumably this varied between different staff members.
+
+
+# Need to be sure that BP levels in Scotland and Wales were not higher than in England. 
+
+```{r BPscotwales, include=TRUE, echo=FALSE}
+
+aggregate(data[,c("SBP", "DBP")], list(data$countryResidence), mean)
+
+aggregate(data[,c("SBP", "DBP")], list(data$countryResidence), median)
+
+ggplot(data=data, aes(x=countryResidence, y=SBP)) + geom_boxplot()
+ggplot(data=data, aes(x=countryResidence, y=DBP)) + geom_boxplot()
+
+res <- aov(SBP~countryResidence, data=data)
+summary(res)
+TukeyHSD(res)
+
+```
+
+Looks like both mean SBP and DBP values are higher in Scotland and Wales than in England.
+
+## Do we have any ideas as to why?
+
+![England](K:/TEU/APOE on Dementia/Statistical Analysis/NeoHypertension/RMarkdown/England.png){height=680px}
+![Scotland](K:/TEU/APOE on Dementia/Statistical Analysis/NeoHypertension/RMarkdown/Scotland.png){height=680px}
+![Wales](K:/TEU/APOE on Dementia/Statistical Analysis/NeoHypertension/RMarkdown/Wales.png){height=680px}
+
+```{r regress, include=TRUE, echo=FALSE}
+
+aggregate(data[,c("SBP", "DBP")], list(data$assess_centrename), mean)
+
+```
+
+
+# Source documents and direct quotes for UKB BP procedures
+
+## Protocol
+https://www.ukbiobank.ac.uk/wp-content/uploads/2011/11/UK-Biobank-Protocol.pdf
+
+### 1.4.2.1 Blood pressure (and pulse rate) 
+p23
+
+Blood pressure (and pulse rate) will be measured in UK Biobank using the
+Omron HEM-7015IT digital blood pressure monitor. After correctly applying
+the blood pressure cuff, staff need only press a button on the monitor before
+waiting for the cuff to automatically inflate then deflate. Following this, the
+monitor automatically downloads the systolic and diastolic blood pressure
+(and pulse rate) readings to the assessment centre IT system. The process is
+then repeated, to obtain a second set of readings, after the participant has
+rested for about one minute. The blood pressure measurement process is
+quick (taking two to three minutes in total, including the one minute’s rest) and
+simple (requiring minimal staff training and monitoring). 
+
+The Omron HEM 7015-T has been recommended for use by the British
+Hypertension Society. A less technically advanced version (Omron 705CP)
+has been used in several large studies, including the Anglo Scandinavian
+Cardiac Output Trial (ASCOT) and the British Genetics of Hypertension
+(BRIGHT) Study, and it is used routinely in NHS blood pressure clinics.
+Compared with this earlier version, the Omron HEM 7015-T can automatically
+download readings to a computer, thereby saving time (and, hence, also staff
+costs) and reducing the potential for data errors. Despite its technical
+advantages, the Omron HEM 7015-T digital monitors involve only a modest
+capital cost, and they will be a source of minor recurrent costs (e.g. each
+device only needs infrequent recalibration).
+
+### 1.6.4.2 Integrated pilot study (March-June 2006)
+"Assessment Centre flow" p45
+
+Further changes for the main phase of
+recruitment include:...
+ensuring that the rest period between blood pressure measures is used to
+complete the interview
+
+### Fig. 2.3.1 Assessment centre specification and staffing
+p63
+
+![](K:/TEU/APOE on Dementia/Statistical Analysis/NeoHypertension/RMarkdown/UKB_AssessCentre_Map.PNG){height=300px}
+
+### 2.3.4 Assessment visit sequence and timing
+p66
+
+Based on the integrated pilot experience, the baseline assessment visit is
+expected to take around 90 minutes. It involves the participant moving
+through a fixed sequence of visit stations, with the sequence and expected
+timing of each station shown in Box 2.3.2.
+
+### Fig. 2.3.2: Estimated time for assessment visit
+p67
+
+![](K:/TEU/APOE on Dementia/Statistical Analysis/NeoHypertension/RMarkdown/UKB_AssessCentre_Times.png){height=300px}
+
+### 2.3.5.4 Interview and blood pressure station
+p69
+
+There will be three separate interview and blood pressure stations to avoid a
+bottleneck, and each station will be manned by a nurse and partitioned to
+provide sufficient privacy for the interview and procedure. The participant will
+be seated at one of the stations and the following activities undertaken:
+• Their USB memory key will be connected, the staff member will enter their
+username and password, and will then confirm the identity of the person
+before introducing the interviewer questionnaire;
+• After completing the interview with the participant (which ensures that they
+have been seated for at least 5 minutes), blood pressure and pulse will be
+measured twice (with a minimum interval of one minute) using an Omron
+705 IT monitor connected directly to the computer;
+• During the rest period between measurements, the staff member can enter
+information recorded by the participant on the pre-visit questionnaire
+(which will not be retained);
+Following completion of the station, the staff member will sign it off, return the
+USB memory key to the participant and direct them to the physical measures
+station. 
+
+
+## UK BIOBANK ETHICS AND GOVERNANCE FRAMEWORK
+
+https://www.ukbiobank.ac.uk/wp-content/uploads/2011/05/EGF20082.pdf?phpMyAdmin=trmKQlYdjjnQIgJ%2CfAzikMhEnx6
+
+### B. Understandings and consent
+
+### 3. Provision of health information to participants
+
+At the initial assessment visit: It would be impractical and inappropriate to conceal 
+from participants some  of the  measurements taken in  their enrolment visit (i.e.
+blood  pressure,  height, weight, estimated  amount of fat). Consequently, a  printed 
+report will  be  provided  at the  end  of their visit as a  means of feeding  back such 
+measurements. By reporting  standard  ranges, the  participant should be  provided 
+with sufficient information to give meaning to the measurements taken, so that they 
+may act on the results if necessary and arrange to see their general practitioner or
+other relevant health professional.
+The  legal duty of care  for staff conducting  enrolment will be  determined  by the 
+research context, and  will apply mainly to safe  and  competent collection of
+questionnaire data, baseline measurements, and  blood or other samples. They will 
+not have the same duty of care that they would have in a clinical setting. However, even in this research context, there may be occasions when staff consider there to be 
+a  professional or ethical obligation to draw  attention to abnormal measurements
+(such  as elevated  blood  pressure)  or incidental findings (such as possible 
+melanoma). In  such  circumstances, participants will be encouraged  to contact a 
+relevant health professional.
+
