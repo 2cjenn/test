@@ -69,6 +69,8 @@ data <- data[!is.na(data$SBP),]
 data <- data[!is.na(data$DBP),]
 data <- data[!is.na(data$selfrephyp),]
 data <- data[!is.na(data$selfrepmeds),]
+# Exclude participants who only had BP measured once?
+data <- data[data$nSBP == 2 & data$nDBP == 2,]
 
 excl$BPmiss=nrow(data)
 
@@ -289,6 +291,39 @@ data$townsend_quint <- factor(data$townsend_quint,
                               levels=c("Q1: Least deprived", "Q2", "Q3", "Q4", "Q5: Most deprived", "Unanswered"))
 
 # Convert assessment centre code to a country
+# Codes to names
+data$assess_centrename <- dplyr::case_when(
+  data$assess_centre == 11012 ~ "Barts",
+  data$assess_centre == 11021 ~ "Birmingham",
+  data$assess_centre == 11011 ~ "Bristol",
+  data$assess_centre == 11008 ~ "Bury",
+  data$assess_centre == 11003 ~ "Cardiff",
+  data$assess_centre == 11024 ~ "Cheadle (revisit)",
+  data$assess_centre == 11020 ~ "Croydon",
+  data$assess_centre == 11005 ~ "Edinburgh",
+  data$assess_centre == 11004 ~ "Glasgow",
+  data$assess_centre == 11018 ~ "Hounslow",
+  data$assess_centre == 11010 ~ "Leeds",
+  data$assess_centre == 11016 ~ "Liverpool",
+  data$assess_centre == 11001 ~ "Manchester",
+  data$assess_centre == 11017 ~ "Middlesborough",
+  data$assess_centre == 11009 ~ "Newcastle",
+  data$assess_centre == 11013 ~ "Nottingham",
+  data$assess_centre == 11002 ~ "Oxford",
+  data$assess_centre == 11007 ~ "Reading",
+  data$assess_centre == 11014 ~ "Sheffield",
+  data$assess_centre == 10003 ~ "Stockport (pilot)",
+  data$assess_centre == 11006 ~ "Stoke",
+  data$assess_centre == 11022 ~ "Swansea",
+  data$assess_centre == 11023 ~ "Wrexham",
+  data$assess_centre == 11025 ~ "Cheadle (imaging)",
+  data$assess_centre == 11026 ~ "Reading (imaging)",
+  data$assess_centre == 11027 ~ "Newcastle (imaging)",
+  data$assess_centre == 11028 ~ "Bristol (imaging)",
+  TRUE ~ "Other"
+)
+
+# Codes to countries
 data$countryResidence <- dplyr::case_when(
   data$assess_centre %in% c(10003, 11001, 11002, 11006, 11007, 11008, 11009, 
            11010, 11011, 11012, 11013, 11014, 11016, 11017, 

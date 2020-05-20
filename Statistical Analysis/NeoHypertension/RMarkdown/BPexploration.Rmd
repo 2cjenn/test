@@ -1,7 +1,7 @@
 ---
 title: "BPexploration"
 author: "Jennifer Collister"
-date: "18/05/2020"
+date: "20/05/2020"
 output: 
   word_document:
       reference_docx: "K:/TEU/APOE on Dementia/RMarkdownStyle.docx"
@@ -18,6 +18,10 @@ library(ggplot2)
 
 source("K:/TEU/APOE on Dementia/Statistical Analysis/JCfunctions.R")
 
+options(knitr.kable.NA='')
+
+options("scipen"=100, "digits"=4)
+
 #--------------------------------------------------------------------------------------------------------------
 # Read in the raw data
 
@@ -33,6 +37,48 @@ bp$PulseRate <- rowMeans(bp[,c("BlP_PulseRateAuto.0", "BlP_PulseRateAuto.1", "Bl
 data <- readRDS(file="K:\\TEU\\APOE on Dementia\\Data Management\\R_Dataframes_TLA\\38358\\Organised\\Hypertension\\Neo\\HTN_excl.rds")
 
 treated <- readRDS(file="K:\\TEU\\APOE on Dementia\\Data Management\\R_Dataframes_TLA\\38358\\Organised\\Hypertension\\Neo\\HTN_trt.rds")
+
+#-------------------------------------------------------------------------------------------------------------------
+# Pretty variable names
+
+pretty_names <- list(age = "age, years",
+                     agegrp = "age group, years",
+                     gender = "gender",
+                     ethnicity = "ethnicity",
+                     eth_group = "ethnic group",
+                     genWhiteBrit = "genetically categorised as White British",
+                     BMIcat = "BMI (categorical)",
+                     Smo_Status = "smoking status",
+                     weekly_alcunits = "alcohol units reported per week",
+                     weekly_alccat = "alcohol units per week (categorical)",
+                     PhA_METsWkAllAct = "weekly physical activity, MET minutes",
+                     METs_over1200 = "weekly physical activity",
+                     townsend_quint = "Townsend Deprivation Index, quintiles",
+                     income = "household Income, GBP",
+                     employment = "occupation type",
+                     employcat = "occupation category",
+                     ISCED = "highest level of education (ISCED)",
+                     BirthCountryIncomeLevel = "country of birth, by income level",
+                     countryResidence = "UK country of residence",
+                     BowelCancerScreening = "ever screened for bowel cancer",
+                     HTNdx_durcat = "duration of hypertension",
+                     antiHTNmedsno = "number of antihypertensive medications",
+                     FamilyHist_CVD_ = "family history of CVD",
+                     comorbNumber_ = "no. of comorbidities",
+                     VI_afib_or_aflutter_ = "arrhythmia (afib/flutter)",
+                     VI_anxiety_or_stress_ = "anxiety",
+                     VI_asthma_or_COPD_ = "asthma or COPD",
+                     VI_depression_or_bipolar_ = "depression",
+                     VI_diabetes_ = "diabetes",
+                     VI_epilepsy_ = "epilepsy",
+                     VI_CVD_ = "cardiovascular disease",
+                     VI_migraine_ = "migraines",
+                     VI_substance_use_ = "substance use",
+                     VI_Osteoarthritis_ = "osteoarthritis",
+                     VI_Other_joint_disorder_ = "other joint disorder",
+                     PRS = "polygenic risk score",
+                     PRS_quint = "polygenic risk score, quintiles"
+                     )
 
 ```
 
@@ -56,11 +102,21 @@ t <- table(bp$nSBP, bp$nDBP)
 names(dimnames(t)) <- c("Number of SBP measurements", "Number of DBP measurements")
 t
 
+t <- table(bp$BlP_MthMsrBP.0, bp$BlP_MthMsrBP.1, useNA='ifany')
+t <- rbind(t, colSums(t))
+t <- cbind(t, rowSums(t))
+names(dimnames(t)) <- c("First BP measurement", "Second BP measurement")
+kable(t)
+
 bp <- bp[bp$nSBP == 2 & bp$nDBP == 2,]
 
 ```
 
-Exclude those who don't have 2 complete BP measurements, remaining n = `r nrow(bp)`
+Exclude those who don't have 2 complete BP measurements, remaining n = `r nrow(bp)`.
+
+Henceforth will incorporate this into BP data completeness exclusion criterion, instead of using the one available measurement. This should increase reliability of our BP data.
+
+We could also exclude the measurements taken by manual sphyg, since it could be thought less reliable - but that could introduce some bias, as one reason for using a manual sphymometer is if the participant’s arm was too large to comfortable fit in the electronic device, ie obesity which is a risk factor for high BP.
  
 ## Difference between first and second measurement
 
@@ -83,7 +139,7 @@ mean(bp$DBP.1)
 We find that the first SBP measurement is on average `r pretty_dp(mean(bp$SBP.0 - bp$SBP.1, na.rm=TRUE),2)` mmHg higher than the second SBP measurement.
 However, the DBP values from the two measurements are closer together,  with the first `r pretty_dp(abs(mean(bp$DBP.0 - bp$DBP.1, na.rm=TRUE)),2)` mmHg lower than the second on average.
 
-```{r measure_diff, include=TRUE, echo=FALSE, fig.width=8, fig.height=6}
+```{r measure_diff, include=TRUE, echo=FALSE, fig.width=12, fig.height=8}
 
 hist(bp$SBP.0 - bp$SBP.1,
      main="Difference between first and second SBP measurements, mmHg")
@@ -96,20 +152,21 @@ plot(bp$DBP.0 - bp$DBP.1, bp$SBP.0 - bp$SBP.1,
 
 ```
 
+## Is there anything interesting going on among those with mean SBP > 200 (n = `r nrow(bp[bp$SBP>200,])`)
 
+```{r highbp, include=TRUE, echo=FALSE, fig.width=8, fig.height=8.5}
 
-```{r highbp, include=TRUE, echo=FALSE}
-highbp <- bp[bp$SBP>200 & !is.na(bp$SBP)
-             ,c("BlP_SBPAuto.0", "BlP_SBPAuto.1", "BlP_SBPMan.0", "BlP_SBPMan.1",
-                "BlP_DBPAuto.0", "BlP_DBPAuto.1", "BlP_DBPMan.0", "BlP_DBPMan.1",
-                "BlP_MthMsrBP.0", "BlP_MthMsrBP.1","SBP", "DBP")]
-ggplot(data=highbp, aes(x=BlP_SBPAuto.0, y=BlP_SBPAuto.1)) + geom_point() +
+ggplot(data=bp[bp$SBP>200,], aes(x=SBP.0, y=SBP.1)) + geom_point() +
+  xlim(175,275) + ylim(175,275) +
   geom_abline(intercept=0, slope=1) +
   geom_hline(yintercept=200) +
-  geom_vline(xintercept=200)
+  geom_vline(xintercept=200) +
+  ggtitle("Scatterplot of first and second SBP measurements\namong participants with mean SBP > 200")
 
 
 ```
+
+The plot is fairly symmetrical about y=x
 
 # Check UKB procedures manuals for what happened to individuals who had very high BPs (> 180/110). Were they referred to their GP or to the emergency departments? 
 
@@ -138,22 +195,19 @@ The ethics and governance framework is vague and doesn't specify a threshold at 
 
 # Need to be sure that BP levels in Scotland and Wales were not higher than in England. 
 
-```{r BPscotwales, include=TRUE, echo=FALSE}
+```{r BPscotwales, include=TRUE, echo=TRUE}
 
+# First check the means
 aggregate(data[,c("SBP", "DBP")], list(data$countryResidence), mean)
 
+# Then the medians, because the BP data is skewed
 aggregate(data[,c("SBP", "DBP")], list(data$countryResidence), median)
 
 ggplot(data=data, aes(x=countryResidence, y=SBP)) + geom_boxplot()
 ggplot(data=data, aes(x=countryResidence, y=DBP)) + geom_boxplot()
-
-res <- aov(SBP~countryResidence, data=data)
-summary(res)
-TukeyHSD(res)
-
 ```
 
-Looks like both mean SBP and DBP values are higher in Scotland and Wales than in England.
+Looks like SBP and DBP values are higher in Scotland and Wales than in England.
 
 ## Do we have any ideas as to why?
 
@@ -161,12 +215,349 @@ Looks like both mean SBP and DBP values are higher in Scotland and Wales than in
 ![Scotland](K:/TEU/APOE on Dementia/Statistical Analysis/NeoHypertension/RMarkdown/Scotland.png){height=680px}
 ![Wales](K:/TEU/APOE on Dementia/Statistical Analysis/NeoHypertension/RMarkdown/Wales.png){height=680px}
 
-```{r regress, include=TRUE, echo=FALSE}
+# With regards to surprising findings, conduct analyses looking at prevalence and ORs (unadjusted, sex/age adjusted and fully adjusted) for hypertension, its awareness and treatment.
 
-aggregate(data[,c("SBP", "DBP")], list(data$assess_centrename), mean)
+Surprising findings were: Townsend deprivation, UK country of residence, Weekly physical activity.
+
+Townsend quintiles have been recalculated within each group.
+
+## Prevalence
+
+```{r table1, include=TRUE, echo=FALSE}
+
+desctable2 <- function(df){
+  n <- nrow(df)
+  median_age <- pretty_dp(median(df$age),1)
+  median_SBP <- pretty_dp(median(df$SBP),1)
+  median_DBP <- pretty_dp(median(df$DBP),1)
+  
+  pct_htn <- round(100*nrow(df[df$evidenceHTN==TRUE & !is.na(df$evidenceHTN),])/nrow(df),1)
+  pct_aware <- round(100*nrow(df[df$aware==TRUE & !is.na(df$aware),])/nrow(df[df$evidenceHTN==TRUE & !is.na(df$evidenceHTN),]),1)
+  pct_treat <- round(100*nrow(df[df$treated==TRUE & !is.na(df$treated),])/nrow(df[df$aware==TRUE & !is.na(df$aware),]),1)
+  pct_control <- round(100*nrow(df[df$controlled==TRUE & !is.na(df$controlled),])/nrow(df[df$treated==TRUE & !is.na(df$treated),]),1)
+  
+  table <- cbind(n, median_age, paste0(median_SBP,"/",median_DBP), pct_htn, pct_aware, pct_treat, pct_control)
+  return(table)
+}
+
+data$wholepop <- factor(1, levels=c(1), labels=c("All healthy participants"))
+varlist=c("wholepop", "townsend_quint",  "countryResidence", "METs_over1200")
+
+tab1 <- c()
+for(var in varlist){
+  for(level in levels(data[[var]])){
+    newrow <- desctable2(data[data[var]==level,])
+    tab1 <- rbind(tab1, cbind(level, newrow))
+  }
+}
+
+
+colnames(tab1) <- c("", "n", "Median age, years", "Median SBP/DBP, mmHg", 
+                    "% Htn", "% Aware", "% Treated", "% Controlled")
+
+rownamer <- function(x){
+  prettyname <- prettyfunc(x, pnames=pretty_names, upper=TRUE)
+  
+  # Return the prettified name and the correct number of blanks
+  c(prettyname, rep("", (nlevels(data[[x]])-1)))
+}
+rownames(tab1) <- c(unlist(sapply(varlist, rownamer)))
+
+kable(tab1)
+```
+
+## Hypertension among all participants (n = `r nrow(data)`), OR for evidence of HTN
+
+```{r regress_htn, include=TRUE, echo=FALSE}
+
+varlist=c("townsend_quint", "countryResidence", "METs_over1200")
+
+full_list=c("agegrp", "gender", "eth_group",
+          "townsend_quint", "income", "employcat", "ISCED", "BirthCountryIncomeLevel", "countryResidence",
+          "BMIcat", "Smo_Status", "weekly_alccat", "METs_over1200",
+          "antiHTNmedsno",  "FamilyHist_CVD_",
+          "BowelCancerScreening",
+          "comorbNumber_")
+
+n <- data.frame(descriptivetable(df=data, 
+                         varlist=varlist,
+                         contavg='median',
+                         pretty_names=pretty_names),
+                stringsAsFactors = FALSE)
+uni <- regressiontable(df=data, outcome="evidenceHTN_", varlist=varlist, 
+                       regresstype="univariable")
+adj <- regressiontable(df=data, outcome="evidenceHTN_", varlist=varlist, 
+                       regresstype="adjusted", adjvarlist=c("agegrp", "gender"))
+multi <- regressiontable(df=data, outcome="evidenceHTN_", varlist=full_list, 
+                         regresstype="multivariable")
+
+tab3 <- merge(uni, merge(adj, multi, by=c("IDcol", "Coefficient", "Level"), sort=FALSE, all.x=TRUE), 
+              by=c("IDcol", "Coefficient", "Level"), sort=FALSE)
+# Add n column
+tab3 <- cbind(n[,1:3], tab3[,4:12])
+
+# Hide "unanswered"/"unknown"/"do not know" categories
+tab3 <- tab3[-which(tab3$Level %in% c("Unknown", "Unanswered", "Do not know", "Prefer not to answer")),]
+rownames(tab3) <- NULL
+
+tab3 <- rbind(c("Coefficient", "Level", "n", "OR", "95% CI", "p", "OR", "95% CI", "p", "OR", "95% CI", "p"),
+              as.matrix(tab3))
+colnames(tab3) <- c("","","", 
+                    "Univariable", "", "",
+                    "Age- and sex-adjusted", "", "", 
+                    "Multivariable- adjusted", "", "")
+
+kable(tab3)
 
 ```
 
+```{r TownsendQuint, include=FALSE, echo=FALSE}
+
+htn <- data[data$evidenceHTN==TRUE & !is.na(data$evidenceHTN),]
+
+# Need Townsend quintiles to be calculated within treated population only
+# Convert Townsend deprivation index to quintiles (and a factor)
+quintiles <- quantile(htn$townsend_depind, probs=seq(0, 1, 0.2), na.rm=TRUE)
+htn$townsend_quint <- dplyr::case_when(
+  htn$townsend_depind <= quintiles[2] ~ "Q1: Least deprived",
+  htn$townsend_depind > quintiles[2] & htn$townsend_depind <= quintiles[3] ~ "Q2",
+  htn$townsend_depind > quintiles[3] & htn$townsend_depind <= quintiles[4] ~ "Q3",
+  htn$townsend_depind > quintiles[4] & htn$townsend_depind <= quintiles[5] ~ "Q4",
+  htn$townsend_depind > quintiles[5] & htn$townsend_depind <= quintiles[6] ~ "Q5: Most deprived",
+  TRUE ~ "Unanswered"
+)
+htn$townsend_quint <- factor(htn$townsend_quint, 
+                              levels=c("Q1: Least deprived", "Q2", "Q3", "Q4", "Q5: Most deprived", "Unanswered"))
+
+
+aware <- htn[htn$aware==TRUE & !is.na(htn$aware),]
+
+# Need Townsend quintiles to be calculated within treated population only
+# Convert Townsend deprivation index to quintiles (and a factor)
+quintiles <- quantile(aware$townsend_depind, probs=seq(0, 1, 0.2), na.rm=TRUE)
+aware$townsend_quint <- dplyr::case_when(
+  aware$townsend_depind <= quintiles[2] ~ "Q1: Least deprived",
+  aware$townsend_depind > quintiles[2] & aware$townsend_depind <= quintiles[3] ~ "Q2",
+  aware$townsend_depind > quintiles[3] & aware$townsend_depind <= quintiles[4] ~ "Q3",
+  aware$townsend_depind > quintiles[4] & aware$townsend_depind <= quintiles[5] ~ "Q4",
+  aware$townsend_depind > quintiles[5] & aware$townsend_depind <= quintiles[6] ~ "Q5: Most deprived",
+  TRUE ~ "Unanswered"
+)
+aware$townsend_quint <- factor(aware$townsend_quint, 
+                              levels=c("Q1: Least deprived", "Q2", "Q3", "Q4", "Q5: Most deprived", "Unanswered"))
+
+```
+
+
+## Hypertension awareness among all participants with evidence of hypertension (n = `r nrow(htn)`), OR for aware
+
+```{r regress_aware, include=TRUE, echo=FALSE}
+
+varlist=c("townsend_quint", "countryResidence", "METs_over1200")
+
+full_list=c("agegrp", "gender", "eth_group",
+          "townsend_quint", "income", "employcat", "ISCED", "BirthCountryIncomeLevel", "countryResidence",
+          "BMIcat", "Smo_Status", "weekly_alccat", "METs_over1200",
+          "antiHTNmedsno",  "FamilyHist_CVD_",
+          "BowelCancerScreening",
+          "comorbNumber_")
+
+n <- data.frame(descriptivetable(df=htn, 
+                         varlist=varlist,
+                         contavg='median',
+                         pretty_names=pretty_names),
+                stringsAsFactors = FALSE)
+uni <- regressiontable(df=htn, outcome="aware_", varlist=varlist, 
+                       regresstype="univariable")
+adj <- regressiontable(df=htn, outcome="aware_", varlist=varlist, 
+                       regresstype="adjusted", adjvarlist=c("agegrp", "gender"))
+multi <- regressiontable(df=htn, outcome="aware_", varlist=full_list, 
+                         regresstype="multivariable")
+
+tab3 <- merge(uni, merge(adj, multi, by=c("IDcol", "Coefficient", "Level"), sort=FALSE, all.x=TRUE), 
+              by=c("IDcol", "Coefficient", "Level"), sort=FALSE)
+# Add n column
+tab3 <- cbind(n[,1:3], tab3[,4:12])
+
+# Hide "unanswered"/"unknown"/"do not know" categories
+tab3 <- tab3[-which(tab3$Level %in% c("Unknown", "Unanswered", "Do not know", "Prefer not to answer")),]
+rownames(tab3) <- NULL
+
+tab3 <- rbind(c("Coefficient", "Level", "n", "OR", "95% CI", "p", "OR", "95% CI", "p", "OR", "95% CI", "p"),
+              as.matrix(tab3))
+colnames(tab3) <- c("","","", 
+                    "Univariable", "", "",
+                    "Age- and sex-adjusted", "", "", 
+                    "Multivariable- adjusted", "", "")
+
+kable(tab3)
+
+```
+
+
+## Hypertension treatment among all aware hypertensives (n = `r nrow(aware)`), OR for treatment
+
+```{r regress_trt, include=TRUE, echo=FALSE}
+
+varlist=c("townsend_quint", "countryResidence", "METs_over1200")
+
+full_list=c("agegrp", "gender", "eth_group",
+          "townsend_quint", "income", "employcat", "ISCED", "BirthCountryIncomeLevel", "countryResidence",
+          "BMIcat", "Smo_Status", "weekly_alccat", "METs_over1200",
+          "antiHTNmedsno",  "FamilyHist_CVD_",
+          "BowelCancerScreening",
+          "comorbNumber_")
+
+n <- data.frame(descriptivetable(df=aware, 
+                         varlist=varlist,
+                         contavg='median',
+                         pretty_names=pretty_names),
+                stringsAsFactors = FALSE)
+uni <- regressiontable(df=aware, outcome="treated_", varlist=varlist, 
+                       regresstype="univariable")
+adj <- regressiontable(df=aware, outcome="treated_", varlist=varlist, 
+                       regresstype="adjusted", adjvarlist=c("agegrp", "gender"))
+multi <- regressiontable(df=aware, outcome="treated_", varlist=full_list, 
+                         regresstype="multivariable")
+
+tab3 <- merge(uni, merge(adj, multi, by=c("IDcol", "Coefficient", "Level"), sort=FALSE, all.x=TRUE), 
+              by=c("IDcol", "Coefficient", "Level"), sort=FALSE)
+# Add n column
+tab3 <- cbind(n[,1:3], tab3[,4:12])
+
+# Hide "unanswered"/"unknown"/"do not know" categories
+tab3 <- tab3[-which(tab3$Level %in% c("Unknown", "Unanswered", "Do not know", "Prefer not to answer")),]
+rownames(tab3) <- NULL
+
+tab3 <- rbind(c("Coefficient", "Level", "n", "OR", "95% CI", "p", "OR", "95% CI", "p", "OR", "95% CI", "p"),
+              as.matrix(tab3))
+colnames(tab3) <- c("","","", 
+                    "Univariable", "", "",
+                    "Age- and sex-adjusted", "", "", 
+                    "Multivariable- adjusted", "", "")
+
+kable(tab3)
+
+```
+
+## Hypertension control among all treated hypertensives (n = `r nrow(treated)`), OR for control
+
+```{r regress_ctrl, include=TRUE, echo=FALSE}
+
+varlist=c("townsend_quint", "countryResidence", "METs_over1200")
+
+full_list=c("agegrp", "gender", "eth_group",
+          "townsend_quint", "income", "employcat", "ISCED", "BirthCountryIncomeLevel", "countryResidence",
+          "BMIcat", "Smo_Status", "weekly_alccat", "METs_over1200",
+          "antiHTNmedsno",  "FamilyHist_CVD_",
+          "BowelCancerScreening",
+          "comorbNumber_")
+
+n <- data.frame(descriptivetable(df=treated, 
+                         varlist=varlist,
+                         contavg='median',
+                         pretty_names=pretty_names),
+                stringsAsFactors = FALSE)
+uni <- regressiontable(df=treated, outcome="controlled_", varlist=varlist, 
+                       regresstype="univariable")
+adj <- regressiontable(df=treated, outcome="controlled_", varlist=varlist, 
+                       regresstype="adjusted", adjvarlist=c("agegrp", "gender"))
+multi <- regressiontable(df=treated, outcome="controlled_", varlist=full_list, 
+                         regresstype="multivariable")
+
+tab3 <- merge(uni, merge(adj, multi, by=c("IDcol", "Coefficient", "Level"), sort=FALSE, all.x=TRUE), 
+              by=c("IDcol", "Coefficient", "Level"), sort=FALSE)
+# Add n column
+tab3 <- cbind(n[,1:3], tab3[,4:12])
+
+# Hide "unanswered"/"unknown"/"do not know" categories
+tab3 <- tab3[-which(tab3$Level %in% c("Unknown", "Unanswered", "Do not know", "Prefer not to answer")),]
+rownames(tab3) <- NULL
+
+tab3 <- rbind(c("Coefficient", "Level", "n", "OR", "95% CI", "p", "OR", "95% CI", "p", "OR", "95% CI", "p"),
+              as.matrix(tab3))
+colnames(tab3) <- c("","","", 
+                    "Univariable", "", "",
+                    "Age- and sex-adjusted", "", "", 
+                    "Multivariable- adjusted", "", "")
+
+kable(tab3)
+
+```
+
+
+# Consider sub-analysis of prevalence and correlates of severely uncontrolled BP (180/110) among untreated and suboptimally treated hypertensives.
+
+Dataset is all participants (healthy, 40-69yrs, complete data) with evidence of hypertension (whether aware or unaware) who are *either* untreated *or* are treated but uncontrolled.
+
+Severely uncontrolled BP defined as SBP >= 180 *or* DBP >= 110. 
+
+
+```{r severeBP, include=TRUE, echo=FALSE}
+
+# Find the untreated and suboptimally treated hypertensives
+uncontrolled <- htn[htn$controlled==FALSE | is.na(htn$controlled),]
+uncontrolled$severe <- uncontrolled$SBP >= 180 | uncontrolled$DBP >= 110
+uncontrolled$severe_ <- factor(as.numeric(uncontrolled$severe), levels=c(0,1), labels=c("SBP/DBP < 180/110", "SBP/DBP >= 180/110"))
+
+# Need Townsend quintiles to be calculated within treated population only
+# Convert Townsend deprivation index to quintiles (and a factor)
+quintiles <- quantile(uncontrolled$townsend_depind, probs=seq(0, 1, 0.2), na.rm=TRUE)
+uncontrolled$townsend_quint <- dplyr::case_when(
+  uncontrolled$townsend_depind <= quintiles[2] ~ "Q1: Least deprived",
+  uncontrolled$townsend_depind > quintiles[2] & uncontrolled$townsend_depind <= quintiles[3] ~ "Q2",
+  uncontrolled$townsend_depind > quintiles[3] & uncontrolled$townsend_depind <= quintiles[4] ~ "Q3",
+  uncontrolled$townsend_depind > quintiles[4] & uncontrolled$townsend_depind <= quintiles[5] ~ "Q4",
+  uncontrolled$townsend_depind > quintiles[5] & uncontrolled$townsend_depind <= quintiles[6] ~ "Q5: Most deprived",
+  TRUE ~ "Unanswered"
+)
+uncontrolled$townsend_quint <- factor(uncontrolled$townsend_quint, 
+                              levels=c("Q1: Least deprived", "Q2", "Q3", "Q4", "Q5: Most deprived", "Unanswered"))
+
+```
+
+## Severely uncontrolled BP among all untreated and suboptimally treated hypertensives (n = `r nrow(uncontrolled)`), OR for severely uncontrolled
+
+```{r severe_regress, include=TRUE, echo=FALSE}
+
+varlist=c("agegrp", "gender", "eth_group",
+          "townsend_quint", "income", "employcat", "ISCED", "BirthCountryIncomeLevel", "countryResidence",
+          "BMIcat", "Smo_Status", "weekly_alccat", "METs_over1200",
+          "antiHTNmedsno",  "FamilyHist_CVD_",
+          "BowelCancerScreening",
+          "comorbNumber_")
+
+n <- data.frame(descriptivetable(df=uncontrolled, 
+                         varlist=varlist,
+                         contavg='median',
+                         pretty_names=pretty_names),
+                stringsAsFactors = FALSE)
+uni <- regressiontable(df=uncontrolled, outcome="severe_", varlist=varlist, 
+                       regresstype="univariable")
+adj <- regressiontable(df=uncontrolled, outcome="severe_", varlist=varlist, 
+                       regresstype="adjusted", adjvarlist=c("agegrp", "gender"))
+multi <- regressiontable(df=uncontrolled, outcome="severe_", varlist=full_list, 
+                         regresstype="multivariable")
+
+tab3 <- merge(uni, merge(adj, multi, by=c("IDcol", "Coefficient", "Level"), sort=FALSE, all.x=TRUE), 
+              by=c("IDcol", "Coefficient", "Level"), sort=FALSE)
+# Add n column
+tab3 <- cbind(n[,1:3], tab3[,4:12])
+
+# Hide "unanswered"/"unknown"/"do not know" categories
+tab3 <- tab3[-which(tab3$Level %in% c("Unknown", "Unanswered", "Do not know", "Prefer not to answer")),]
+rownames(tab3) <- NULL
+
+tab3 <- rbind(c("Coefficient", "Level", "n", "OR", "95% CI", "p", "OR", "95% CI", "p", "OR", "95% CI", "p"),
+              as.matrix(tab3))
+colnames(tab3) <- c("","","", 
+                    "Univariable", "", "",
+                    "Age- and sex-adjusted", "", "", 
+                    "Multivariable- adjusted", "", "")
+
+kable(tab3)
+
+```
 
 # Source documents and direct quotes for UKB BP procedures
 
