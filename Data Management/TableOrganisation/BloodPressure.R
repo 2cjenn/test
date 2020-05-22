@@ -51,7 +51,7 @@ bp$DBPcat <- factor(bp$DBPcat, levels=c("DBP<=80", "80<DBP<90", "90<=DBP<100", "
 
 #--------------------------------------------------------------------------------------------------------------
 # Indicator variable for hypertensive status at baseline assessment
-bp$measuredhyp <- (bp$SBP.1>=140 | bp$DBP.1>=90)
+bp$measuredhyp <- (bp$SBP>=140 | bp$DBP>=90)
 bp$controlled <- !bp$measuredhyp
 
 #--------------------------------------------------------------------------------------------------------------
