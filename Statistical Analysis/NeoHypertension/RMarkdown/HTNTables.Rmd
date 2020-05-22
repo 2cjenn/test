@@ -1,7 +1,7 @@
 ---
-title: "Sensitivity analysis: Using 2nd BP measurement only (instead of average)"
+title: "Prevalence and correlates of hypertension control among almost 100,000 middle-aged adults receiving treatment for hypertension in the UK: Tables and Figures"
 author: "Jennifer Collister"
-date: "20/05/2020"
+date: "22/05/2020"
 output: 
   word_document:
       reference_docx: "K:/TEU/APOE on Dementia/RMarkdownStyle.docx"
@@ -30,8 +30,6 @@ options(knitr.kable.NA='')
 data <- readRDS(file="K:\\TEU\\APOE on Dementia\\Data Management\\R_Dataframes_TLA\\38358\\Organised\\Hypertension\\Neo\\HTN_excl.rds")
 
 treated <- readRDS(file="K:\\TEU\\APOE on Dementia\\Data Management\\R_Dataframes_TLA\\38358\\Organised\\Hypertension\\Neo\\HTN_trt.rds")
-
-100*nrow(treated[treated$SBP>=180 | treated$DBP >= 110,])/nrow(treated)
 
 
 # Comorbidities of interest
@@ -97,7 +95,7 @@ footnote_no <- 1
 
 # Figure `r figure`. Flowchart illustrating selection of analytic dataset (n = `r nrow(treated)`).
 `r figure <- figure + 1`
-![Hypertension was defined as self-report of hypertensive medication use, or self-report of a prior diagnosis of hypertension, or mean BP >= 140 /90 mmHg at baseline assessment. Awareness was defined as self-report of a prior diagnosis of hypertension among those who were hypertensive. Treatment was defined as self-report of hypertensive medication among those who were aware. Control was defined as mean BP < 140/90 mmHg at baseline assessment, among those who were treated.](K:/TEU/APOE on Dementia/Statistical Analysis/NeoHypertension/RMarkdown/ExclFlowchartTree.png){height=700px}
+![Missing BP data was fewer than 2 BP measurements, or missing answers to the prior diagnosis and treatment questions. Hypertension was defined as self-report of hypertensive medication use, or self-report of a prior diagnosis of hypertension, or mean BP >= 140 /90 mmHg at baseline assessment. Awareness was defined as self-report of a prior diagnosis of hypertension among those who were hypertensive. Treatment was defined as self-report of hypertensive medication among those who were aware. Control was defined as mean BP < 140/90 mmHg at baseline assessment, among those who were treated.](K:/TEU/APOE on Dementia/Statistical Analysis/NeoHypertension/RMarkdown/ExclFlowchartTree.png){height=700px}
 
 # Table `r table`. Characteristics of participants included in the analysis (treated hypertensives, n = `r nrow(treated)`).
 `r table <- table + 1`

@@ -24,6 +24,10 @@ bp$nDBP <- rowSums(!is.na(bp[,c("DBP.0", "DBP.1")]))
 bp$SBP <- rowMeans(bp[,c("SBP.0", "SBP.1")], na.rm=TRUE)
 bp$DBP <- rowMeans(bp[,c("DBP.0", "DBP.1")], na.rm=TRUE)
 
+bp$SBPdiff <- bp$SBP.1 - bp$SBP.0
+bp$DBPdiff <- bp$DBP.1 - bp$DBP.0
+
+
 #--------------------------------------------------------------------------------------------------------------
 # Mean pulse rate
 bp$PulseRate <- rowMeans(bp[,c("BlP_PulseRateAuto.0", "BlP_PulseRateAuto.1", "BlP_PulseRate.0", "BlP_PulseRate.1")], na.rm=TRUE)

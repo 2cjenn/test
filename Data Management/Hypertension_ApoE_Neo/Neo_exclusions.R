@@ -166,7 +166,7 @@ for(variable in c("evidenceHTN", "aware", "treated", "controlled")){
 }
 
 # Create exclusion flowchart
-export_svg(DiagrammeR::grViz("K:/TEU/APOE on Dementia/Statistical Analysis/NeoHypertension/RMarkdown/ExclusionFlowchartTree.gv")
+export_svg(DiagrammeR::grViz("K:/TEU/TEU_Members/Jennifer_Collister/ukb_hypertension/Statistical Analysis/NeoHypertension/RMarkdown/ExclusionFlowchartTree.gv")
            ) %>% charToRaw %>% rsvg %>% png::writePNG("K:/TEU/APOE on Dementia/Statistical Analysis/NeoHypertension/RMarkdown/ExclFlowchartTree.png")
 
 #--------------------------------------------------------------------------------------------------------------
