@@ -32,7 +32,7 @@ options("scipen"=100, "digits"=4)
 #--------------------------------------------------------------------------------------------------------------
 # Read in the raw data
 
-bp <- readRDS("K:\\TEU\\APOE on Dementia\\Data Management\\R_Dataframes_TLA\\38358\\BlP_base.rds")
+bp <- readRDS("K:\\TEU\\APOE on Dementia\\Data Management\\R_Dataframes_TLA\\38358\\Organised\\bp.rds")
 
 bp <- bp[bp$nSBP == 2 & bp$nDBP == 2,]
 
@@ -147,6 +147,59 @@ ggplot(data=bp, aes(x=SBP, y=100*SBPdiff/SBP.0)) + geom_point() +
   ggtitle("Bland-Altman plot of mean vs % difference in SBP measurements") +
   labs(x="Mean SBP", y="% Difference 100*(2nd - 1st)/1st SBP")
 
+ggplot(data=bp, aes(x=DBP, y=100*SBPdiff/SBP.0)) + geom_point() +
+  geom_hline(yintercept=0, color="red") +
+  geom_vline(xintercept=140, color="green") +
+  ggtitle("Bland-Altman plot of mean vs % difference in DBP measurements") +
+  labs(x="Mean DBP", y="% Difference 100*(2nd - 1st)/1st DBP")
+
+```
+
+
+# Considering our collider
+
+## Regressions for hypertension treatment among all participants with evidence of hypertension (n = `r nrow(htn)`), OR for treated
+
+```{r regress_aware, include=TRUE, echo=FALSE}
+
+
+varlist=c("agegrp", "gender", "eth_group",
+          "townsend_quint", "income", "employcat", "ISCED", "BirthCountryIncomeLevel", "countryResidence",
+          "BMIcat", "Smo_Status", "weekly_alccat", "METs_over1200",
+          "antiHTNmedsno",  "FamilyHist_CVD_",
+          "BowelCancerScreening",
+          "comorbNumber_")
+
+n <- data.frame(descriptivetable(df=htn, 
+                         varlist=varlist,
+                         contavg='median',
+                         pretty_names=pretty_names),
+                stringsAsFactors = FALSE)
+uni <- regressiontable(df=htn, outcome="treated_", varlist=varlist, 
+                       regresstype="univariable")
+adj <- regressiontable(df=htn, outcome="treated_", varlist=varlist, 
+                       regresstype="adjusted", adjvarlist=c("agegrp", "gender"))
+multi <- regressiontable(df=htn, outcome="treated_", varlist=varlist, 
+                         regresstype="multivariable")
+
+tab3 <- merge(uni, merge(adj, multi, by=c("IDcol", "Coefficient", "Level"), sort=FALSE, all.x=TRUE), 
+              by=c("IDcol", "Coefficient", "Level"), sort=FALSE)
+# Add n column
+tab3 <- cbind(n[,1:3], tab3[,4:12])
+
+# Hide "unanswered"/"unknown"/"do not know" categories
+tab3 <- tab3[-which(tab3$Level %in% c("Unknown", "Unanswered", "Do not know", "Prefer not to answer")),]
+rownames(tab3) <- NULL
+
+tab3 <- rbind(c("Coefficient", "Level", "n", "OR", "95% CI", "p", "OR", "95% CI", "p", "OR", "95% CI", "p"),
+              as.matrix(tab3))
+colnames(tab3) <- c("","","", 
+                    "Univariable", "", "",
+                    "Age- and sex-adjusted", "", "", 
+                    "Multivariable- adjusted", "", "")
+
+kable(tab3)
+
 ```
 
 # Consider BP levels in Scotland/Wales vs England
@@ -198,48 +251,3 @@ for(dfname in names(dflist)){
 
 
 
-# Considering our collider
-
-## Regressions for hypertension treatment among all participants with evidence of hypertension (n = `r nrow(htn)`), OR for treated
-
-```{r regress_aware, include=TRUE, echo=FALSE}
-
-
-varlist=c("agegrp", "gender", "eth_group",
-          "townsend_quint", "income", "employcat", "ISCED", "BirthCountryIncomeLevel", "countryResidence",
-          "BMIcat", "Smo_Status", "weekly_alccat", "METs_over1200",
-          "antiHTNmedsno",  "FamilyHist_CVD_",
-          "BowelCancerScreening",
-          "comorbNumber_")
-
-n <- data.frame(descriptivetable(df=htn, 
-                         varlist=varlist,
-                         contavg='median',
-                         pretty_names=pretty_names),
-                stringsAsFactors = FALSE)
-uni <- regressiontable(df=htn, outcome="treated_", varlist=varlist, 
-                       regresstype="univariable")
-adj <- regressiontable(df=htn, outcome="treated_", varlist=varlist, 
-                       regresstype="adjusted", adjvarlist=c("agegrp", "gender"))
-multi <- regressiontable(df=htn, outcome="treated_", varlist=varlist, 
-                         regresstype="multivariable")
-
-tab3 <- merge(uni, merge(adj, multi, by=c("IDcol", "Coefficient", "Level"), sort=FALSE, all.x=TRUE), 
-              by=c("IDcol", "Coefficient", "Level"), sort=FALSE)
-# Add n column
-tab3 <- cbind(n[,1:3], tab3[,4:12])
-
-# Hide "unanswered"/"unknown"/"do not know" categories
-tab3 <- tab3[-which(tab3$Level %in% c("Unknown", "Unanswered", "Do not know", "Prefer not to answer")),]
-rownames(tab3) <- NULL
-
-tab3 <- rbind(c("Coefficient", "Level", "n", "OR", "95% CI", "p", "OR", "95% CI", "p", "OR", "95% CI", "p"),
-              as.matrix(tab3))
-colnames(tab3) <- c("","","", 
-                    "Univariable", "", "",
-                    "Age- and sex-adjusted", "", "", 
-                    "Multivariable- adjusted", "", "")
-
-kable(tab3)
-
-```
