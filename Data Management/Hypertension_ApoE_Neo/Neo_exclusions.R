@@ -33,11 +33,6 @@ data$HTNdx_duration[(data$HTNdx_duration < 0 | data$HTNdx_duration > data$HBPAge
 data$selfrephyp <- (data$prevHBP==TRUE & !is.na(data$prevHBP)) | data$VIhyp==TRUE
 data$selfrephyp[is.na(data$prevHBP) & is.na(data$NumberDiagnoses)] <- NA
 
-# data$selfrephyp.sens <- data$VIhyp==TRUE
-# data$selfrephyp.sens[is.na(data$NumberDiagnoses)] <- NA
-# 
-# data$selfrephyp <- data$selfrephyp.sens
-
 # Single variable for self-reported meds
 # If participant answered the question in touchscreen questionnaire, use this
 # If they did not answer ("Do not know"/Prefer not to answer"/skipped question) then use the "probable BP meds"
@@ -199,23 +194,32 @@ data$employment <- factor(data$employment, levels=c("Managers and Senior Officia
                                                     "Elementary Occupations", "Other job (free text entry)", "Unemployed/retired/other"))
 
 data$employcat <- dplyr::case_when(
-  data$employment %in% c("Managers and Senior Officials", "Professional Occupations",
+  data$TEU_EmpCat %in% c("Managers and Senior Officials", "Professional Occupations",
                          "Associate Professional and Technical Occupations",
                          "Administrative and Secretarial Occupations") ~ "White collar",
-  data$employment == "Skilled Trades Occupations" ~ "Skilled trades",
-  data$employment %in% c("Personal Service Occupations",
+  data$TEU_EmpCat == "Skilled Trades Occupations" ~ "Skilled trades",
+  data$TEU_EmpCat %in% c("Personal Service Occupations",
                          "Sales and Customer Service Occupations") ~ "Services",
-  data$employment %in% c("Process, Plant and Machine Operatives",
+  data$TEU_EmpCat %in% c("Process, Plant and Machine Operatives",
                          "Elementary Occupations") ~ "Blue collar",
-  data$employment == "Other job (free text entry)" ~ "Other",
-  data$employment == "Unemployed/retired/other" ~ "Unemployed/retired/unanswered",
+  data$TEU_EmpCat %in% c("Other job (free text entry)",
+                         "In paid employment or self-employed") ~ "Other employment",
+  data$TEU_EmpCat == "Retired" ~ "Retired",
+  data$TEU_EmpCat == "Unable to work because of sickness or disability" ~ "Disability",
+  data$TEU_EmpCat %in% c("Looking after home and/or family",
+                         "Unemployed", "Full or part-time student",
+                         "Doing unpaid or voluntary work",
+                         "None of the above", "Prefer not to answer") ~ "Unemployed/unanswered",
   TRUE ~ "Error?"
 )
 data$employcat <- factor(data$employcat, 
                          levels=c("White collar", "Skilled trades", "Services", 
-                                  "Blue collar", "Other", "Unemployed/retired/unanswered"), 
+                                  "Blue collar", "Other employment", "Retired", 
+                                  "Disability", "Unemployed/unanswered"), 
                          labels=c("Professional and Administrative", "Skilled trades", "Services", 
-                                  "Manual and Industrial", "Other", "Unemployed/retired/unanswered"),
+                                  "Manual and Industrial", "Other employment", "Retired", 
+                                  "Unable to work because of sickness or disability", 
+                                  "Unemployed/unanswered"),
                          ordered=FALSE)
 
 # Categorise age into 10-yr groups
