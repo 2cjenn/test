@@ -108,11 +108,10 @@ data$measuredhyp_ <- factor(as.numeric(data$measuredhyp), levels=c(0,1), labels=
 data$controlled_ <- factor(as.numeric(data$controlled), levels=c(0,1), labels=c("Sub-optimally treated", "Controlled"))
 data$aware_ <- factor(as.numeric(data$aware), levels=c(0,1), labels=c("Unaware of hypertension", "Aware of hypertension"))
 data$treated_ <- factor(as.numeric(data$treated), levels=c(0,1), labels=c("Did not report BP medication", "Self-reported BP medication"))
-data$evidenceHTN_ <- factor(as.numeric(data$evidenceHTN), levels=c(0,1), labels=c("No evidence of hypertension", "Normotensive"))
+data$evidenceHTN_ <- factor(as.numeric(data$evidenceHTN), levels=c(0,1), labels=c("No evidence of hypertension", "Hypertensive"))
 
 
 # saveRDS(data, file="K:\\TEU\\APOE on Dementia\\Data Management\\R_Dataframes_TLA\\38358\\Organised\\Hypertension\\HTN_excl.rds")
-
 
 # data <- readRDS(file="K:\\TEU\\APOE on Dementia\\Data Management\\R_Dataframes_TLA\\38358\\Organised\\Hypertension\\HTN_excl.rds")
 #--------------------------------------------------------------------------------------------------------------
@@ -150,9 +149,25 @@ excl$hypert <- nrow(data[data$evidenceHTN==TRUE,])
 excl$aware <- nrow(data[data$aware==TRUE & !is.na(data$aware),])
 excl$treat <- nrow(data[data$treated==TRUE & !is.na(data$treated),])
 
+#--------------------------------------------------------------------------------------------------------------
 # Create exclusion flowchart
-export_svg(DiagrammeR::grViz("K:\\TEU\\APOE on Dementia\\Statistical Analysis\\NeoHypertension\\RMarkdown\\ExclusionFlowchart.gv")
-           ) %>% charToRaw %>% rsvg %>% png::writePNG("K:\\TEU\\APOE on Dementia\\Statistical Analysis\\NeoHypertension\\RMarkdown\\ExclFlowchart.png")
+#--------------------------------------------------------------------------------------------------------------
+
+# Incorporate HTN prevalence tree into flowchart
+
+nlist <- list(wholepop=nrow(data))
+pctlist <- list()
+for(variable in c("evidenceHTN", "aware", "treated", "controlled")){
+  var <- paste0(variable, "_")
+  tab <- table(data[[var]])
+  pct <- round(100*prop.table(tab),1)
+  nlist[[variable]] <- tab
+  pctlist[[variable]] <- pct
+}
+
+# Create exclusion flowchart
+export_svg(DiagrammeR::grViz("K:/TEU/APOE on Dementia/Statistical Analysis/NeoHypertension/RMarkdown/ExclusionFlowchartTree.gv")
+           ) %>% charToRaw %>% rsvg %>% png::writePNG("K:/TEU/APOE on Dementia/Statistical Analysis/NeoHypertension/RMarkdown/ExclFlowchartTree.png")
 
 #--------------------------------------------------------------------------------------------------------------
 # Neo's specific variants of covariate variables
