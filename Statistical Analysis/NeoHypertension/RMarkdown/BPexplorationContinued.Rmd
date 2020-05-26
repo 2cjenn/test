@@ -21,6 +21,7 @@ library(magrittr)
 library(svglite)
 library(rsvg)
 library(png)
+library(car)
 
 
 source("K:/TEU/APOE on Dementia/Statistical Analysis/JCfunctions.R")
@@ -112,11 +113,11 @@ pretty_names <- list(age = "age, years",
 
 tab <- c()
 for(var in c("SBP.0", "SBP.1", "DBP.0", "DBP.1")){
-  min <- min(bp[[var]])
-  max <- max(bp[[var]])
-  mean <- pretty_dp(mean(bp[[var]]),1)
-  median <- median(bp[[var]])
-  tab <- rbind(tab, cbind(min, max, mean, median))
+  minbp <- min(bp[[var]])
+  maxbp <- max(bp[[var]])
+  meanbp <- pretty_dp(mean(bp[[var]]),1)
+  medianbp <- median(bp[[var]])
+  tab <- rbind(tab, cbind(minbp, maxbp, meanbp, medianbp))
   
 }
 colnames(tab) <- c("Min", "Max", "Mean", "Median")
@@ -128,30 +129,30 @@ kable(tab)
 ```
 
 ```{r blandaltman, include=TRUE, echo=FALSE}
-
-ggplot(data=bp, aes(x=SBP, y=SBPdiff)) + geom_point() +
-  geom_hline(yintercept=0, color="red") +
-  geom_vline(xintercept=140, color="green") +
-  ggtitle("Bland-Altman plot of mean vs difference in SBP measurements") +
-  labs(x="Mean SBP", y="2nd - 1st SBP")
-
-ggplot(data=bp, aes(x=DBP, y=DBPdiff)) + geom_point() +
-  geom_hline(yintercept=0, color="red") +
-  geom_vline(xintercept=90, color="green") +
-  ggtitle("Bland-Altman plot of mean vs difference in DBP measurements") +
-  labs(x="Mean DBP", y="2nd - 1st DBP")
-
-ggplot(data=bp, aes(x=SBP, y=100*SBPdiff/SBP.0)) + geom_point() +
-  geom_hline(yintercept=0, color="red") +
-  geom_vline(xintercept=140, color="green") +
-  ggtitle("Bland-Altman plot of mean vs % difference in SBP measurements") +
-  labs(x="Mean SBP", y="% Difference 100*(2nd - 1st)/1st SBP")
-
-ggplot(data=bp, aes(x=DBP, y=100*SBPdiff/SBP.0)) + geom_point() +
-  geom_hline(yintercept=0, color="red") +
-  geom_vline(xintercept=140, color="green") +
-  ggtitle("Bland-Altman plot of mean vs % difference in DBP measurements") +
-  labs(x="Mean DBP", y="% Difference 100*(2nd - 1st)/1st DBP")
+# # These take quite a while to run because so many data points - commented out unless required
+# ggplot(data=bp, aes(x=SBP, y=SBPdiff)) + geom_point() +
+#   geom_hline(yintercept=0, color="red") +
+#   geom_vline(xintercept=140, color="green") +
+#   ggtitle("Bland-Altman plot of mean vs difference in SBP measurements") +
+#   labs(x="Mean SBP", y="2nd - 1st SBP")
+# 
+# ggplot(data=bp, aes(x=DBP, y=DBPdiff)) + geom_point() +
+#   geom_hline(yintercept=0, color="red") +
+#   geom_vline(xintercept=90, color="green") +
+#   ggtitle("Bland-Altman plot of mean vs difference in DBP measurements") +
+#   labs(x="Mean DBP", y="2nd - 1st DBP")
+# 
+# ggplot(data=bp, aes(x=SBP, y=100*SBPdiff/SBP.0)) + geom_point() +
+#   geom_hline(yintercept=0, color="red") +
+#   geom_vline(xintercept=140, color="green") +
+#   ggtitle("Bland-Altman plot of mean vs % difference in SBP measurements") +
+#   labs(x="Mean SBP", y="% Difference 100*(2nd - 1st)/1st SBP")
+# 
+# ggplot(data=bp, aes(x=DBP, y=100*SBPdiff/SBP.0)) + geom_point() +
+#   geom_hline(yintercept=0, color="red") +
+#   geom_vline(xintercept=140, color="green") +
+#   ggtitle("Bland-Altman plot of mean vs % difference in DBP measurements") +
+#   labs(x="Mean DBP", y="% Difference 100*(2nd - 1st)/1st DBP")
 
 ```
 
@@ -204,50 +205,135 @@ kable(tab3)
 
 # Consider BP levels in Scotland/Wales vs England
 
-## Age- and sex-adjusted mean BP
+## Age-standardised mean BP
 
-```{r BPscotwales, include=TRUE, echo=TRUE}
+```{r BPscotwales, include=TRUE, echo=FALSE}
 
 # First check the means
-aggregate(data[,c("SBP", "DBP")], list(data$countryResidence), mean)
+means <- aggregate(data[,c("SBP", "DBP")], list(data$countryResidence), mean)
 
 # Then the medians, because the BP data is skewed
-aggregate(data[,c("SBP", "DBP")], list(data$countryResidence), median)
+medians <- aggregate(data[,c("SBP", "DBP")], list(data$countryResidence), median)
 
-ggplot(data=data, aes(x=countryResidence, y=SBP)) + geom_boxplot()
-ggplot(data=data, aes(x=countryResidence, y=DBP)) + geom_boxplot()
+# Define categorical age groups
+data$agestd <- cut(data$age, seq(40, 70,  by=1), right=FALSE)
+
+# Number of individuals in each age group
+agepop <- table(data$agestd)
+ageprop <- prop.table(agepop)
+
+
+dflist <- list("UKB"=data, 
+                "England"=data[data$countryResidence=="England",],
+                "Scotland"=data[data$countryResidence=="Scotland",],
+                "Wales"=data[data$countryResidence=="Wales",])
+adjmean <- c()
+adjmedian <- c()
+
+for (dfname in names(dflist)) {
+  df <- dflist[[dfname]]
+  
+  # Mean ages
+  ageMeans <- aggregate(df[,c("SBP", "DBP")], list(df$agestd), mean)
+  ageMedians <- aggregate(df[,c("SBP", "DBP")], list(df$agestd), median)
+  adjmean <- rbind(adjmean, colSums(ageprop * ageMeans[,2:3]))
+  adjmedian <- rbind(adjmedian, colSums(ageprop * ageMedians[,2:3]))
+}
+
+colnames(adjmean) <- c("Age-Adjusted SBP", "Age-adjusted DBP")
+means <- cbind(means, adjmean[2:4,])
+kable(means, caption="Mean BP by country")
+
+colnames(adjmedian) <- c("Age-Adjusted SBP", "Age-adjusted DBP")
+medians <- cbind(medians, adjmedian[2:4,])
+kable(medians, caption="Median BP by country")
+
 ```
 
-## And prevalence
 
-```{r fig2, include=TRUE, echo=FALSE, results='asis', }
+## Age-standardised HTN category prevalence and mean BP in each country of UKB
 
-dflist <- c(list("UKB"=data, "England"=data[data$countryResidence=="England",], "Scotland"=data[data$countryResidence=="Scotland",], "Wales"=data[data$countryResidence=="Wales",]))
-# names(dflist) <- c("Whole population")
-filenames <- list("Wholepop", "England", "Scotland", "Wales")
-names(filenames) <- names(dflist)
+```{r incidencerates, include=TRUE, echo=FALSE, results='asis'}
+# Define categorical age groups
+data$agestd <- cut(data$age, seq(40, 70,  by=1), right=FALSE)
 
-grlist <- list()
-for(dfname in names(dflist)){
+# Number of individuals in each age group
+agepop <- table(data$agestd)
+ageprop <- prop.table(agepop)
+
+
+dflist <- list("UKB"=data, 
+                "England"=data[data$countryResidence=="England",],
+                "Scotland"=data[data$countryResidence=="Scotland",],
+                "Wales"=data[data$countryResidence=="Wales",])
+adjmean <- c()
+adjmedian <- c()
+
+for (dfname in names(dflist)) {
   df <- dflist[[dfname]]
-  nlist <- list(wholepop=nrow(df))
-  pctlist <- list()
-  for(variable in c("evidenceHTN", "aware", "treated", "controlled")){
-    var <- paste0(variable, "_")
-    tab <- table(df[[var]])
-    pct <- round(100*prop.table(tab),1)
-    nlist[[variable]] <- tab
-    pctlist[[variable]] <- pct
-  }
-  export_svg(DiagrammeR::grViz("K:\\TEU\\APOE on Dementia\\Statistical Analysis\\NeoHypertension\\RMarkdown\\HTNtree.gv")) %>% charToRaw %>% rsvg %>% png::writePNG(paste0('K:/TEU/APOE on Dementia/Statistical Analysis/NeoHypertension/RMarkdown/',filenames[[dfname]],'.png'))
+  
+  # Crude prevalence per age group in the whole population
+  # Number of individuals in each age group by dementia status
+  age_RAW <- table(df$agestd)
+  age_HTN <- table(df$agestd[df$evidenceHTN==TRUE & !is.na(df$evidenceHTN)])
+  age_AWR <- table(df$agestd[df$aware==TRUE & !is.na(df$aware)])
+  age_TRT <- table(df$agestd[df$treated==TRUE & !is.na(df$treated)])
+  age_CTRL <- table(df$agestd[df$controlled==TRUE & !is.na(df$controlled)])
+  
+  # Divide dementia cases by person-years in each age group
+  HTNprev <- 100 * (age_HTN/age_RAW)
+  AWRprev <- 100 * (age_AWR/age_HTN)
+  TRTprev <- 100 * (age_TRT/age_AWR)
+  CTRLprev <- 100 * (age_CTRL/age_TRT)
+  
+  HTNcrude <- 100 * sum(age_HTN)/sum(age_RAW)
+  AWRcrude <- 100 * sum(age_AWR)/sum(age_HTN)
+  TRTcrude <- 100 * sum(age_TRT)/sum(age_AWR)
+  CTRLcrude <- 100 * sum(age_CTRL)/sum(age_TRT)
+  
+  HTNadj <- sum(ageprop * HTNprev)
+  AWRadj <- sum(ageprop * AWRprev)
+  TRTadj <- sum(ageprop * TRTprev)
+  CTRLadj <- sum(ageprop * CTRLprev)
+
+  # Incorporate HTN prevalence tree into flowchart
+
+  nlist <- list("wholepop"=sum(age_RAW), 
+                "evidenceHTN"=table(df$evidenceHTN), "aware"=table(df$aware), 
+                "treated"=table(df$treated), "controlled"=table(df$controlled))
+  pctlist <- list("evidenceHTN"=pretty_dp(c(100-HTNcrude, HTNcrude),1), "aware"=pretty_dp(c(100-AWRcrude, AWRcrude),1), 
+                  "treated"=pretty_dp(c(100-TRTcrude, TRTcrude),1), "controlled"=pretty_dp(c(100-CTRLcrude, CTRLcrude),1))
+  adjlist <- list("evidenceHTN"=pretty_dp(c(100-HTNadj, HTNadj),1), "aware"=pretty_dp(c(100-AWRadj, AWRadj),1),
+                  "treated"=pretty_dp(c(100-TRTadj, TRTadj),1), "controlled"=pretty_dp(c(100-CTRLadj, CTRLadj),1))
+
+
+  # Create exclusion flowchart
+  export_svg(DiagrammeR::grViz("K:/TEU/TEU_Members/Jennifer_Collister/ukb_hypertension/Statistical Analysis/NeoHypertension/RMarkdown/HTNtreeadj.gv")
+             ) %>% charToRaw %>% rsvg %>% png::writePNG(paste0("K:/TEU/APOE on Dementia/Statistical Analysis/NeoHypertension/RMarkdown/HTNTreeAdj", dfname, ".png"))
 }
 
 ```
 
+![UKB](K:/TEU/APOE on Dementia/Statistical Analysis/NeoHypertension/RMarkdown/HTNTreeAdjUKB.png){height=680px}
+![England](K:/TEU/APOE on Dementia/Statistical Analysis/NeoHypertension/RMarkdown/HTNTreeAdjEngland.png){height=680px}
+![Scotland](K:/TEU/APOE on Dementia/Statistical Analysis/NeoHypertension/RMarkdown/HTNTreeAdjScotland.png){height=680px}
+![Wales](K:/TEU/APOE on Dementia/Statistical Analysis/NeoHypertension/RMarkdown/HTNTreeAdjWales.png){height=680px}
 
-![England](K:/TEU/APOE on Dementia/Statistical Analysis/NeoHypertension/RMarkdown/England.png){height=680px}
-![Scotland](K:/TEU/APOE on Dementia/Statistical Analysis/NeoHypertension/RMarkdown/Scotland.png){height=680px}
-![Wales](K:/TEU/APOE on Dementia/Statistical Analysis/NeoHypertension/RMarkdown/Wales.png){height=680px}
 
+```{r vif, include=FALSE, echo=FALSE}
+comorbs_raw <- c("VI_CVD", "VI_diabetes", "VI_afib_or_aflutter", "VI_asthma_or_COPD", "VI_migraine", "VI_epilepsy",
+                 "VI_anxiety_or_stress", "VI_depression_or_bipolar", "VI_Osteoarthritis", "VI_Other_joint_disorder")
+comorbs_string <- paste0(comorbs_raw, "_")
 
+varlist=c("agegrp", "gender", "eth_group",
+          "townsend_quint", "income", "employcat", "ISCED", "BirthCountryIncomeLevel", "countryResidence",
+          "BMIcat", "Smo_Status", "weekly_alccat", "METs_over1200",
+          "antiHTNmedsno",  "FamilyHist_CVD_",
+          comorbs_string,
+          "BowelCancerScreening")
 
+formula <- paste0("controlled", " ~ ", paste(varlist, collapse=" + "))
+model <- glm(formula, data=treated, family="binomial")
+vif(model)
+
+```
