@@ -64,7 +64,7 @@ household$income <- fct_collapse(household$income,
                                  "Greater than 100,000" = "Greater than 100,000",
                                  "Do not know" = "Do not know",
                                  "Unanswered" = "Unanswered"
-                                 )
+)
 household$income <- factor(household$income, levels=c("Greater than 100,000", "52,000 to 100,000",
                                                       "31,000 to 51,999", "18,000 to 30,999",
                                                       "Less than 18,000", 
@@ -141,7 +141,7 @@ names(veint)[names(veint)=="VeI_Ntreatments"] <- "NumberMedications"
 veint$BirthCountry[is.na(veint$BirthCountry)] <- "United Kingdom"
 veint$BirthContinent[is.na(veint$BirthContinent)] <- "Europe"
 veint$BirthCountryIncomeLevel[is.na(veint$BirthCountryIncomeLevel)] <- "HUK"
-covars <- merge(covars, veint[,c("ID", "BirthContinent", "BirthCountry", "BirthCountryIncomeLevel", 
+covars <- merge(covars, veint[,c("ID", "BirthContinent", "BirthCountry", "BirthCountryIncomeLevel", "VeI_PregnantNow",
                                  "NumberCancers", "NumberDiagnoses", "NumberOperations", "NumberMedications")],
                 by="ID", all=TRUE)
 

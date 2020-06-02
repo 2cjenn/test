@@ -118,11 +118,11 @@ data$evidenceHTN_ <- factor(as.numeric(data$evidenceHTN), levels=c(0,1), labels=
 # Further exclusions for Neo's covariates of interest
 #--------------------------------------------------------------------------------------------------------------
 
-# Exclude individuals without highest level of education
-# n = 498698 - 489006 = 
-# data <- data[!is.na(data$edu_highest),]
+# Exclude pregnant women ("Yes" or "Unsure")
+# n = 498107 - 497739 = 
+data <- data[is.na(data$VeI_PregnantNow) | data$VeI_PregnantNow == "No",]
 
-# excl$education <- nrow(data)
+excl$pregnant <- nrow(data)
 
 # Exclude individuals who have serious health conditions
 # n = 489006 - 483794 = 5212
