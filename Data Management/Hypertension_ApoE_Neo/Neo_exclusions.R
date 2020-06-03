@@ -13,6 +13,8 @@ library(svglite)
 library(rsvg)
 library(png)
 
+source("K:/TEU/APOE on Dementia/Statistical Analysis/JCfunctions.R")
+
 #--------------------------------------------------------------------------------------------------------------
 data <- readRDS("K:\\TEU\\APOE on Dementia\\Data Management\\R_Dataframes_TLA\\38358\\Organised\\Hypertension\\HTN_raw.rds")
 
@@ -157,12 +159,18 @@ excl$treat <- nrow(data[data$treated==TRUE & !is.na(data$treated),])
 
 nlist <- list(wholepop=nrow(data))
 pctlist <- list()
+cilist <- list()
 for(variable in c("evidenceHTN", "aware", "treated", "controlled")){
   var <- paste0(variable, "_")
   tab <- table(data[[var]])
-  pct <- round(100*prop.table(tab),1)
+  pct <- prop.table(tab)
+  z <- qnorm(1-(0.05/2))
+  sd <- sqrt(pct[1]*pct[2]/sum(tab))
+  uci <- pct + z*sd
+  lci <- pct - z*sd
   nlist[[variable]] <- tab
-  pctlist[[variable]] <- pct
+  pctlist[[variable]] <- pretty_dp(100*pct,1)
+  cilist[[variable]] <- paste0(pretty_dp(100*lci,1), ", ", pretty_dp(100*uci,1))
 }
 
 # Create exclusion flowchart
