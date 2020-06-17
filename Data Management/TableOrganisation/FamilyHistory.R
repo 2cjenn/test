@@ -17,5 +17,23 @@ fam$FaH_CVD <- apply(fam[,c(grep("FaH_FatherIll.", colnames(fam), fixed=TRUE),
 )
 ], 1, function(x) any(x %in% c("Heart disease", "Stroke")))
 
-saveRDS(fam[,c("ID", "FaH_CVD")],
+fam$FaH_HeartDisease <- apply(fam[,c(grep("FaH_FatherIll.", colnames(fam), fixed=TRUE),
+                            grep("FaH_MotherIll.", colnames(fam), fixed=TRUE),
+                            grep("FaH_SibIll.", colnames(fam), fixed=TRUE)
+)
+], 1, function(x) any(x %in% c("Heart disease")))
+
+fam$FaH_Stroke <- apply(fam[,c(grep("FaH_FatherIll.", colnames(fam), fixed=TRUE),
+                            grep("FaH_MotherIll.", colnames(fam), fixed=TRUE),
+                            grep("FaH_SibIll.", colnames(fam), fixed=TRUE)
+)
+], 1, function(x) any(x %in% c("Stroke")))
+
+fam$FaH_Hypertension <- apply(fam[,c(grep("FaH_FatherIll.", colnames(fam), fixed=TRUE),
+                            grep("FaH_MotherIll.", colnames(fam), fixed=TRUE),
+                            grep("FaH_SibIll.", colnames(fam), fixed=TRUE)
+)
+], 1, function(x) any(x %in% c("High blood pressure")))
+
+saveRDS(fam[,c("ID", "FaH_CVD", "FaH_HeartDisease", "FaH_Stroke", "FaH_Hypertension")],
         file="K:\\TEU\\APOE on Dementia\\Data Management\\R_Dataframes_TLA\\38358\\Organised\\familyhistory.rds")
