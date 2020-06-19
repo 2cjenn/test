@@ -306,6 +306,12 @@ data$FamilyHist_HeartDisease_ <- factor(as.numeric(data$FaH_HeartDisease), level
 data$FamilyHist_Stroke_ <- factor(as.numeric(data$FaH_Stroke), levels=c(0,1), labels=c("No", "Yes"))
 data$FamilyHist_Hypertension_ <- factor(as.numeric(data$FaH_Hypertension), levels=c(0,1), labels=c("No", "Yes"))
 
+data$AdoptHist_CVD_ <- factor(as.numeric(data$FaH_Ad_CVD), levels=c(0,1), labels=c("No", "Yes"))
+
+data$AdoptHist_HeartDisease_ <- factor(as.numeric(data$FaH_Ad_HeartDisease), levels=c(0,1), labels=c("No", "Yes"))
+data$AdoptHist_Stroke_ <- factor(as.numeric(data$FaH_Ad_Stroke), levels=c(0,1), labels=c("No", "Yes"))
+data$AdoptHist_Hypertension_ <- factor(as.numeric(data$FaH_Ad_Hypertension), levels=c(0,1), labels=c("No", "Yes"))
+
 # Convert income level of birth country to a factor
 data$BirthCountryIncomeLevel[data$BirthCountryIncomeLevel %in% c("LM", "UM")] <- "M"
 data$BirthCountryIncomeLevel <- factor(data$BirthCountryIncomeLevel, levels=c("HUK", "H", "M", "L"), 
