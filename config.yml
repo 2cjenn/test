@@ -1,0 +1,14 @@
+cleaning:
+ rawdata: "K:/TEU/CancerPRS/Data_Downloads/v1_TLAtables/"
+ organised: "K:/TEU/APOE on Dementia/Data_Management/Data/TLAtables/"
+ coding: "K:/TEU/CancerPRS/Data_Dictionary/Mappings/"
+ mapping: "K:/TEU/APOE on Dementia/Data_Management/Mappings/"
+exclusions:
+ raw: "K:/TEU/APOE on Dementia/Data_Management/Data/"
+ apoe: "K:/TEU/APOE on Dementia/Data_Management/Data/ApoE/"
+ htn: "K:/TEU/APOE on Dementia/Data_Management/Data/HTN/"
+withdrawals: "K:/TEU/CancerPRS/Data_Downloads/Withdrawals/WithdrawnIDs.csv"
+outputs:
+ markdown: "K:/TEU/APOE on Dementia/Statistical_Analysis/NeoHypertension/RMarkdown/"
+ flowcharts: "K:/TEU/TEU_Members/Jennifer_Collister/ukb_hypertension/Statistical_Analysis/NeoHypertension/RMarkdown/"
+functions: "K:/TEU/APOE on Dementia/Statistical_Analysis/JCfunctions.R"
