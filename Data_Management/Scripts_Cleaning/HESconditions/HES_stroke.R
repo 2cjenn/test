@@ -14,7 +14,7 @@ config = yaml.load_file("K:/TEU/APOE on Dementia/config.yml")
 # Read in the raw data
 # https://www.ahajournals.org/doi/full/10.1161/01.STR.0000174293.17959.a1
 HES <- readRDS(paste0(config$cleaning$rawdata, "HES.rds"))
-source("K:/TEU/APOE on Dementia/Statistical Analysis/JCfunctions.R")
+source(config$functions)
 
 # ICD 10 codes for stroke
 haem_ICD10 <- c("I60", "I61")

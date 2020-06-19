@@ -13,7 +13,7 @@ config = yaml.load_file("K:/TEU/APOE on Dementia/config.yml")
 
 # Read in the raw data
 HES <- readRDS(paste0(config$cleaning$rawdata, "HES.rds"))
-source("K:/TEU/APOE on Dementia/Statistical Analysis/JCfunctions.R")
+source(config$functions)
 
 # ICD 10 codes for dementia
 alz_ICD10 <- c("F00")

@@ -13,7 +13,7 @@ config = yaml.load_file("K:/TEU/APOE on Dementia/config.yml")
 
 #--------------------------------------------------------------------------------------------------------------
 # Load the codings
-coding3 <- read.table("K:/TEU/CancerPRS/Data_Dictionary/Mappings/coding3.tsv", sep="\t", header=TRUE, quote="", comment.char="$", fill=FALSE)
+coding3 <- read.table(paste0(config$cleaning$coding, "coding3.tsv"), sep="\t", header=TRUE, quote="", comment.char="$", fill=FALSE)
 
 # And rearrange them into a more sensible format
 joinables <- coding3[,c("coding", "meaning", "node_id", "parent_id")]

@@ -8,7 +8,7 @@ config = yaml.load_file("K:/TEU/APOE on Dementia/config.yml")
 #-----------------------------------------------------------------------------------------------------------------------
 # Combine the different tiers of country code
 #-----------------------------------------------------------------------------------------------------------------------
-coding89 <- read.table("K:\\TEU\\CancerPRS\\Data_Dictionary\\Mappings\\coding89.tsv", sep="\t", header=TRUE, quote="", comment.char="$", fill=FALSE)
+coding89 <- read.table(paste0(config$cleaning$coding, "coding89.tsv"), sep="\t", header=TRUE, quote="", comment.char="$", fill=FALSE)
 
 # And rearrange them into a more sensible format
 joinables <- coding89[,c("coding", "meaning", "node_id", "parent_id")]
@@ -46,7 +46,7 @@ saveRDS(level1, paste0(config$cleaning$organised, "CountryCodes.rds"))
 #--------------------------------------------------------------------------------------------------------------
 # Use the World Bank spreadsheet to determine which countries are classified as high, middle or low income
 # Load in the income levels of the countries
-incomelevel <- read_xlsx("K:\\TEU\\APOE on Dementia\\Data Management\\Mappings\\CountryIncomeCategory.xlsx", 
+incomelevel <- read_xlsx(paste0(config$cleaning$mapping, "CountryIncomeCategory.xlsx"), 
                          sheet="UKB_CountryNames", col_names=TRUE)
 
 names(incomelevel)[names(incomelevel)=="meaning"] <- "Country"
