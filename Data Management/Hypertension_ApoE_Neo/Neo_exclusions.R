@@ -299,9 +299,9 @@ data$BowelCancerScreening <- factor(data$BowelCancerScreening, levels=c("Yes", "
 # Convert family history to a factor
 data$FamilyHist_CVD_ <- factor(as.numeric(data$FaH_CVD), levels=c(0,1), labels=c("No", "Yes"))
 
-data$FaH_HeartDisease_ <- factor(as.numeric(data$FaH_HeartDisease), levels=c(0,1), labels=c("No", "Yes"))
-data$FaH_Stroke_ <- factor(as.numeric(data$FaH_Stroke), levels=c(0,1), labels=c("No", "Yes"))
-data$FaH_Hypertension_ <- factor(as.numeric(data$FaH_Hypertension), levels=c(0,1), labels=c("No", "Yes"))
+data$FamilyHist_HeartDisease_ <- factor(as.numeric(data$FaH_HeartDisease), levels=c(0,1), labels=c("No", "Yes"))
+data$FamilyHist_Stroke_ <- factor(as.numeric(data$FaH_Stroke), levels=c(0,1), labels=c("No", "Yes"))
+data$FamilyHist_Hypertension_ <- factor(as.numeric(data$FaH_Hypertension), levels=c(0,1), labels=c("No", "Yes"))
 
 # Convert income level of birth country to a factor
 data$BirthCountryIncomeLevel[data$BirthCountryIncomeLevel %in% c("LM", "UM")] <- "M"
