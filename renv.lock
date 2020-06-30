@@ -23,6 +23,13 @@
       "Repository": "CRAN",
       "Hash": "4744be45519d675af66c28478720fce5"
     },
+    "DescTools": {
+      "Package": "DescTools",
+      "Version": "0.99.36",
+      "Source": "Repository",
+      "Repository": "CRAN",
+      "Hash": "3ea19c7c0e913c251f3fc053da2fb2cb"
+    },
     "DiagrammeR": {
       "Package": "DiagrammeR",
       "Version": "1.0.6.1",
@@ -107,12 +114,26 @@
       "Repository": "CRAN",
       "Hash": "fbe4ac267bf42a91e495cc68ad3f8b63"
     },
+    "V8": {
+      "Package": "V8",
+      "Version": "3.2.0",
+      "Source": "Repository",
+      "Repository": "CRAN",
+      "Hash": "3c172c3eba3972c896b73361bfa323d0"
+    },
     "abind": {
       "Package": "abind",
       "Version": "1.4-5",
       "Source": "Repository",
       "Repository": "CRAN",
       "Hash": "4f57884290cc75ab22f4af9e9d4ca862"
+    },
+    "askpass": {
+      "Package": "askpass",
+      "Version": "1.1",
+      "Source": "Repository",
+      "Repository": "CRAN",
+      "Hash": "e8a22846fff485f0be3770c2da758713"
     },
     "assertthat": {
       "Package": "assertthat",
@@ -317,6 +338,13 @@
       "Repository": "CRAN",
       "Hash": "1cc8cd88a11115c88d8bac0369cf3bf4"
     },
+    "expm": {
+      "Package": "expm",
+      "Version": "0.999-4",
+      "Source": "Repository",
+      "Repository": "CRAN",
+      "Hash": "d4e0e839218ca1fa869f807b8668576e"
+    },
     "fansi": {
       "Package": "fansi",
       "Version": "0.4.1",
@@ -457,6 +485,13 @@
       "Repository": "CRAN",
       "Hash": "41bace23583fbc25089edae324de2dc3"
     },
+    "httr": {
+      "Package": "httr",
+      "Version": "1.4.1",
+      "Source": "Repository",
+      "Repository": "CRAN",
+      "Hash": "7146fea4685b4252ebf478978c75f597"
+    },
     "igraph": {
       "Package": "igraph",
       "Version": "1.2.5",
@@ -484,6 +519,13 @@
       "Source": "Repository",
       "Repository": "CRAN",
       "Hash": "84b0ee361e2f78d6b7d670db9471c0c5"
+    },
+    "kableExtra": {
+      "Package": "kableExtra",
+      "Version": "1.1.0",
+      "Source": "Repository",
+      "Repository": "CRAN",
+      "Hash": "37e11c605b3c0b7207763beda52c8535"
     },
     "km.ci": {
       "Package": "km.ci",
@@ -569,6 +611,13 @@
       "Repository": "CRAN",
       "Hash": "58baa74e4603fcfb9a94401c58c8f9b1"
     },
+    "mgcv": {
+      "Package": "mgcv",
+      "Version": "1.8-31",
+      "Source": "Repository",
+      "Repository": "CRAN",
+      "Hash": "4bb7e0c4f3557583e1e8d3c9ffb8ba5c"
+    },
     "mice": {
       "Package": "mice",
       "Version": "3.9.0",
@@ -624,6 +673,13 @@
       "Source": "Repository",
       "Repository": "CRAN",
       "Hash": "0d87e50e11394a7151a28873637d799a"
+    },
+    "openssl": {
+      "Package": "openssl",
+      "Version": "1.4.1",
+      "Source": "Repository",
+      "Repository": "CRAN",
+      "Hash": "49f7258fd86ebeaea1df24d9ded00478"
     },
     "openxlsx": {
       "Package": "openxlsx",
@@ -842,12 +898,26 @@
       "Repository": "CRAN",
       "Hash": "f3d32ee70ee9e5ca65b06ee61b4ce813"
     },
+    "rvest": {
+      "Package": "rvest",
+      "Version": "0.3.5",
+      "Source": "Repository",
+      "Repository": "CRAN",
+      "Hash": "6a20c2cdf133ebc7ac45888c9ccc052b"
+    },
     "scales": {
       "Package": "scales",
       "Version": "1.1.1",
       "Source": "Repository",
       "Repository": "CRAN",
       "Hash": "6f76f71042411426ec8df6c54f34e6dd"
+    },
+    "selectr": {
+      "Package": "selectr",
+      "Version": "0.4-2",
+      "Source": "Repository",
+      "Repository": "CRAN",
+      "Hash": "3838071b66e0c566d55cc26bd6e27bf4"
     },
     "sp": {
       "Package": "sp",
@@ -911,6 +981,13 @@
       "Source": "Repository",
       "Repository": "CRAN",
       "Hash": "ed61a9516ba30e7ebe72855931007255"
+    },
+    "sys": {
+      "Package": "sys",
+      "Version": "3.3",
+      "Source": "Repository",
+      "Repository": "CRAN",
+      "Hash": "507f3116a38d37ad330a038b3be07b66"
     },
     "systemfonts": {
       "Package": "systemfonts",
@@ -1002,6 +1079,13 @@
       "Source": "Repository",
       "Repository": "CRAN",
       "Hash": "60e146e3aba37a547e12306dc3da77a6"
+    },
+    "xml2": {
+      "Package": "xml2",
+      "Version": "1.3.2",
+      "Source": "Repository",
+      "Repository": "CRAN",
+      "Hash": "d4d71a75dd3ea9eb5fa28cc21f9585e2"
     },
     "xtable": {
       "Package": "xtable",
