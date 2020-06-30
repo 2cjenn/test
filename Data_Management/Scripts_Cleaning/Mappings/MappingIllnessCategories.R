@@ -21,7 +21,9 @@ noncancerillness_mapping <- function(mappath, mapcol="Mapping", outfile) {
   ptdiagnoses <- merge(pts, diagnoses[,c("coding", "Mapping")], by="coding", all.x=TRUE)
   
   # Save a long version with the earliest year of diagnosis per coded condition
+  ptdiagnoses$year[is.na(ptdiagnoses$year)] <- -1
   ptdiagnoses <- aggregate(year ~ ID + coding + Mapping, data=ptdiagnoses, min)
+  ptdiagnoses$year[ptdiagnoses$year==-1] <- NA
   saveRDS(ptdiagnoses, file=paste0(outfile,"_long.rds"))
   
   # Pivot to get a column for each mapped condition

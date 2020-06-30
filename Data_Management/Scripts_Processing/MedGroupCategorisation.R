@@ -6,6 +6,7 @@ library(yaml)
 config = yaml.load_file("K:/TEU/APOE on Dementia/config.yml")
 
 altdiag <- readRDS(file=paste0(config$exclusions$htn, "VIhypAltDiagnoses.rds"))
+altdiag[altdiag==0] <- NA
 load(paste0(config$cleaning$organised, "VIhypmeds.RData"))
 bac <- readRDS(paste0(config$cleaning$organised, "basechar.rds"))
 eth <- readRDS(paste0(config$cleaning$organised, "ethnicity.rds"))
@@ -34,7 +35,8 @@ VImeds$step12 <- VImeds$line1 & is.na(VImeds[["Thiazide"]]) & !VImeds$line2 & is
 VImeds$step3 <- VImeds$line1 & !is.na(VImeds[["Thiazide"]]) & !VImeds$line2 & is.na(VImeds[["Other"]])
 # Step 4: Taking a step 3 combination of drugs AND AB, BB or other diuretic
 # AND does not have diagnosis of heart failure
-VImeds$step4 <- VImeds$line1 & !is.na(VImeds[["Thiazide"]]) & VImeds$line2 & is.na(VImeds[["Other"]]) & is.na(VImeds$heart_failure)
+VImeds$step4 <- VImeds$line1 & !is.na(VImeds[["Thiazide"]]) & VImeds$line2 & is.na(VImeds[["Other"]]) & 
+  is.na(VImeds$heart_failure)
 # Step 5 'resistant hypertension': Taking at least 3 meds from steps 1-4
 # AND any of hydralazine, minoxidil, clonidine
 # AND does not have diagnosis of heart failure
@@ -45,7 +47,7 @@ VImeds$step5 <- VImeds$line1 & !is.na(VImeds[["Thiazide"]]) & VImeds$line2 & !is
 # Standard exceptions to treatment algorithms
 #--------------------------------------------------------------------------------------------------------------
 # Thiazides only: atypical step 1 if Black OR age < 55
-VImeds$step1_b55 <- !is.na(VImeds[["Thiazide"]]) & VImeds$onlyone & (VImeds$eth_group=="Black or Black British" | VImeds$age<55)
+VImeds$step1_b55 <- !is.na(VImeds[["Thiazide"]]) & VImeds$onlyone & (VImeds$eth_group=="Black" | VImeds$age<55)
 # BB only: atypical step 1 if female age <45 (childbearing age) AND does not have diagnosis of heart failure
 VImeds$step1_f45 <- !is.na(VImeds[["BB"]]) & VImeds$onlyone & VImeds$gender=="Female" & VImeds$age<45 & is.na(VImeds$heart_failure)
 
@@ -83,36 +85,39 @@ VImeds$HTN_txalg <- dplyr::case_when(
   TRUE ~ VImeds$hypmeds
   )
 
+test <- VImeds[which(VImeds$ID %in% r1$ID),]
 
 #--------------------------------------------------------------------------------------------------------------
 # Definitely not on medication for hypertension
 #--------------------------------------------------------------------------------------------------------------
-# # Has heart failure AND is on ACEI/ARB and BB without thiazide
-# VImeds$defnot[!is.na(VImeds$heart_failure) &
-#                 (!is.na(VImeds[["ACEI"]]) | !is.na(VImeds[["ARBs"]])) & !is.na(VImeds[["BB"]]) &
-#                 is.na(VImeds[["Thiazide"]])
-#               ] <- TRUE
-# # Has arrhythmia AND is on BB only
-# VImeds$defnot[!is.na(VImeds$heart_arrhythmia) &
-#                 !is.na(VImeds[["BB"]]) & VImeds$onlyone
-#               ] <- TRUE
-# # Has liver failure/lymphoedema AND is on a (non-thiazide) diuretic
-# VImeds$defnot[(!is.na(VImeds$liver_failure) | !is.na(VImeds$lymphoedema)) & 
-#                 !is.na(VImeds[["Potassium-sparing diuretic"]]) & VImeds$onlyone
-#               ] <- TRUE
-# # Has kidney failure AND is on a (non-thiazide) diuretic +/- ACEI/ARB
-# VImeds$defnot[!is.na(VImeds$kidney_failure) & 
-#                 !is.na(VImeds[["Potassium-sparing diuretic"]]) & 
-#                 VImeds$onlyone
-#               ] <- TRUE
-# VImeds$defnot[!is.na(VImeds$kidney_failure) & 
-#                 !is.na(VImeds[["Potassium-sparing diuretic"]]) & (!is.na(VImeds[["ACEI"]]) | !is.na(VImeds[["ARBs"]])) &
-#                 rowSums(VImeds[,hypclasslist], na.rm=TRUE)==2
-#               ] <- TRUE
-# # Has angina AND is on BB
-# VImeds$defnot[!is.na(VImeds$angina) &
-#                 !is.na(VImeds[["BB"]]) & VImeds$onlyone
-#               ] <- TRUE
+## Heart, liver and kidney failure are excluded so this doesn't change resulting dataset
+# Has heart failure AND is on ACEI/ARB and BB without thiazide
+VImeds$defnot[!is.na(VImeds$heart_failure) &
+                (!is.na(VImeds[["ACEI"]]) | !is.na(VImeds[["ARBs"]])) & !is.na(VImeds[["BB"]]) &
+                is.na(VImeds[["Thiazide"]])
+              ] <- TRUE
+# Has liver failure/lymphoedema AND is on a (non-thiazide) diuretic
+VImeds$defnot[(!is.na(VImeds$liver_failure) | !is.na(VImeds$lymphoedema)) &
+                !is.na(VImeds[["Potassium-sparing diuretic"]]) & VImeds$onlyone
+              ] <- TRUE
+# Has kidney failure AND is on a (non-thiazide) diuretic +/- ACEI/ARB
+VImeds$defnot[!is.na(VImeds$kidney_failure) &
+                !is.na(VImeds[["Potassium-sparing diuretic"]]) &
+                VImeds$onlyone
+              ] <- TRUE
+VImeds$defnot[!is.na(VImeds$kidney_failure) &
+                !is.na(VImeds[["Potassium-sparing diuretic"]]) & (!is.na(VImeds[["ACEI"]]) | !is.na(VImeds[["ARBs"]])) &
+                rowSums(VImeds[,hypclasslist], na.rm=TRUE)==2
+              ] <- TRUE
+# These are relevant
+# Has arrhythmia AND is on BB only
+VImeds$defnot[!is.na(VImeds$heart_arrhythmia) &
+                !is.na(VImeds[["BB"]]) & VImeds$onlyone
+              ] <- TRUE
+# Has angina AND is on BB
+VImeds$defnot[!is.na(VImeds$angina) &
+                !is.na(VImeds[["BB"]]) & VImeds$onlyone
+              ] <- TRUE
 # 
 # # Anything else is not definitely not
 # VImeds$defnot[is.na(VImeds$defnot)] <- FALSE
