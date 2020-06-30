@@ -1,7 +1,7 @@
 ---
 title: "Prevalence and correlates of hypertension control among almost 100,000 middle-aged adults receiving treatment for hypertension in the UK: Tables and Figures"
 author: "Jennifer Collister"
-date: "10/06/2020"
+date: "`r format(Sys.time(), '%d %B %Y')`"
 output: 
   word_document:
       reference_docx: "K:/TEU/APOE on Dementia/RMarkdownStyle.docx"
@@ -21,19 +21,20 @@ library(plyr)
 library(dplyr)
 library(reshape2)
 
-source("K:/TEU/APOE on Dementia/Statistical Analysis/JCfunctions.R")
-options(knitr.kable.NA='')
+source("K:/TEU/APOE on Dementia/Statistical_Analysis/JCfunctions.R")
+options(knitr.kable.NA='', knitr.table.format = "markdown")
+options(kableExtra.auto_format = FALSE)
 
 #-------------------------------------------------------------------------------------------------------------------
 # Load the data 
 
-data <- readRDS(file="K:\\TEU\\APOE on Dementia\\Data Management\\R_Dataframes_TLA\\38358\\Organised\\Hypertension\\Neo\\HTN_excl.rds")
+data <- readRDS(file="K:\\TEU\\APOE on Dementia\\Data_Management\\Data\\HTN\\HTN_excl.rds")
 
-treated <- readRDS(file="K:\\TEU\\APOE on Dementia\\Data Management\\R_Dataframes_TLA\\38358\\Organised\\Hypertension\\Neo\\HTN_trt.rds")
+treated <- readRDS(file="K:\\TEU\\APOE on Dementia\\Data_Management\\Data\\HTN\\HTN_trt.rds")
 
 
 # Comorbidities of interest
-comorbs <- readRDS("K:\\TEU\\APOE on Dementia\\Data Management\\R_Dataframes_TLA\\38358\\Organised\\Hypertension\\Neo\\VI_HTNcomorb.rds")
+comorbs <- readRDS("K:\\TEU\\APOE on Dementia\\Data_Management\\Data\\HTN\\VI_HTNcomorb.rds")
 colnames(comorbs) <- c("ID", paste0("VI_", colnames(comorbs)[-1]))
 print(colnames(comorbs)[-1])
 comorbs_raw <- c("VI_CVD", "VI_diabetes", "VI_afib_or_aflutter", "VI_asthma_or_COPD", "VI_migraine", "VI_epilepsy",
@@ -95,7 +96,7 @@ footnote_no <- 1
 
 # Figure `r figure`. Flowchart illustrating selection of analytic dataset (n = `r nrow(treated)`).
 `r figure <- figure + 1`
-![Missing BP data was fewer than 2 BP measurements, or missing answers to the prior diagnosis and treatment questions. Hypertension was defined as self-report of hypertensive medication use, or self-report of a prior diagnosis of hypertension, or mean BP >= 140 /90 mmHg at baseline assessment. Awareness was defined as self-report of a prior diagnosis of hypertension among those who were hypertensive. Treatment was defined as self-report of hypertensive medication among those who were aware. Control was defined as mean BP < 140/90 mmHg at baseline assessment, among those who were treated.](K:/TEU/APOE on Dementia/Statistical Analysis/NeoHypertension/RMarkdown/ExclFlowchartTree.png){height=700px}
+![Missing BP data was fewer than 2 BP measurements, or missing answers to the prior diagnosis and treatment questions. Hypertension was defined as self-report of hypertensive medication use, or self-report of a prior diagnosis of hypertension, or mean BP >= 140 /90 mmHg at baseline assessment. Awareness was defined as self-report of a prior diagnosis of hypertension among those who were hypertensive. Treatment was defined as self-report of hypertensive medication among those who were aware. Control was defined as mean BP < 140/90 mmHg at baseline assessment, among those who were treated.](K:/TEU/APOE on Dementia/Statistical_Analysis/NeoHypertension/RMarkdown/ExclFlowchartTree.png){height=700px}
 
 # Table `r table`. Characteristics of participants included in the analysis (treated hypertensives, n = `r nrow(treated)`).
 `r table <- table + 1`
@@ -295,12 +296,12 @@ scatter <- ggplot(data = treated, aes(DBP, SBP, color = plot_color)) +
                                 "High SBP" = "orange",
                                 "Both high" = "red"))
 
-ggsave(filename="K:/TEU/APOE on Dementia/Statistical Analysis/NeoHypertension/RMarkdown/ScatterHTN.png",
+ggsave(filename="K:/TEU/APOE on Dementia/Statistical_Analysis/NeoHypertension/RMarkdown/ScatterHTN.png",
        plot=scatter, width=7, height=4, unit="in")
 
 ```
 
-![](K:/TEU/APOE on Dementia/Statistical Analysis/NeoHypertension/RMarkdown/ScatterHTN.png){height=300px}
+![](K:/TEU/APOE on Dementia/Statistical_Analysis/NeoHypertension/RMarkdown/ScatterHTN.png){height=300px}
 
 # Supplementary Figure `r suppfig`. Prevalence of hypertension categories by gender and age among UKB participants with complete BP data and no serious comorbidities (n = `r nrow(data)`).
 `r suppfig <- suppfig + 1`
@@ -350,8 +351,8 @@ prevpct <- ggplot(byAge, aes(age_yr)) +
                                "Controlled hypertensive" = "forestgreen")) +
   coord_flip()
 
-ggsave(filename="K:/TEU/APOE on Dementia/Statistical Analysis/NeoHypertension/RMarkdown/PrevPct.png",
+ggsave(filename="K:/TEU/APOE on Dementia/Statistical_Analysis/NeoHypertension/RMarkdown/PrevPct.png",
        plot=prevpct, width=7, height=4, unit="in")
 ```
 
-![Hypertension is defined as self-report of a prior diagnosis of hypertension in touchscreen questionnaire (TQ) or verbal interview (VI), or self-report of hypertensive medication in TQ or in VI by our rubric, or mean SBP >= 140 mmHg or mean DBP >= 90 mmHg at baseline assessment. Among those with hypertension, participants are considered to be unaware hypertensives if they did not self-report a prior diagnosis of hypertension in TQ or VI, or self-report hypertensive medication in TQ or in VI by our rubric; otherwise aware. Among those who are aware of their hypertension, participants are considered to be untreated hypertensives if they did not report hypertensive medication in TQ or in VI by our rubric; otherwise treated. Among those who self-reported treatment for their hypertension, they are considered to be inadequately treated if mean SBP >= 140 mmHg or mean DBP >= 90 mmHg at baseline assessment; otherwise controlled. ](K:/TEU/APOE on Dementia/Statistical Analysis/NeoHypertension/RMarkdown/PrevPct.png){height=300px}
+![Hypertension is defined as self-report of a prior diagnosis of hypertension in touchscreen questionnaire (TQ) or verbal interview (VI), or self-report of hypertensive medication in TQ or in VI by our rubric, or mean SBP >= 140 mmHg or mean DBP >= 90 mmHg at baseline assessment. Among those with hypertension, participants are considered to be unaware hypertensives if they did not self-report a prior diagnosis of hypertension in TQ or VI, or self-report hypertensive medication in TQ or in VI by our rubric; otherwise aware. Among those who are aware of their hypertension, participants are considered to be untreated hypertensives if they did not report hypertensive medication in TQ or in VI by our rubric; otherwise treated. Among those who self-reported treatment for their hypertension, they are considered to be inadequately treated if mean SBP >= 140 mmHg or mean DBP >= 90 mmHg at baseline assessment; otherwise controlled. ](K:/TEU/APOE on Dementia/Statistical_Analysis/NeoHypertension/RMarkdown/PrevPct.png){height=300px}
