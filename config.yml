@@ -12,3 +12,6 @@ outputs:
  markdown: "K:/TEU/APOE on Dementia/Statistical_Analysis/NeoHypertension/RMarkdown/"
  flowcharts: "K:/TEU/TEU_Members/Jennifer_Collister/ukb_hypertension/Statistical_Analysis/NeoHypertension/RMarkdown/"
 functions: "K:/TEU/APOE on Dementia/Statistical_Analysis/JCfunctions.R"
+scripts:
+ cleaning: "./Data_Management/Scripts_Cleaning/"
+ processing: "./Data_Management/Scripts_Processing/"

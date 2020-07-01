@@ -116,7 +116,7 @@ data$treated_ <- factor(as.numeric(data$treated), levels=c(0,1), labels=c("Did n
 data$evidenceHTN_ <- factor(as.numeric(data$evidenceHTN), levels=c(0,1), labels=c("No evidence of hypertension", "Hypertensive"))
 
 
-# saveRDS(data, file="K:\\TEU\\APOE on Dementia\\Data Management\\R_Dataframes_TLA\\38358\\Organised\\Hypertension\\HTN_excl.rds")
+# saveRDS(data, file=paste0(config$exclusions$htn, "HTN_excl1.rds"))
 
 # data <- readRDS(file="K:\\TEU\\APOE on Dementia\\Data Management\\R_Dataframes_TLA\\38358\\Organised\\Hypertension\\HTN_excl.rds")
 #--------------------------------------------------------------------------------------------------------------
@@ -131,6 +131,7 @@ excl$pregnant <- nrow(data)
 
 # Exclude individuals who have serious health conditions
 # n = 489006 - 483794 = 5212
+# seriouscomorbid <- readRDS("K:/TEU/APOE on Dementia/Data_Management/Data/archive/Organised/Hypertension/Neo/VIhypExclude.rds")
 seriouscomorbid <- readRDS(paste0(config$exclusions$htn, "VIhypExclude.rds"))
 data <- data[!data$ID %in% seriouscomorbid$ID[!is.na(seriouscomorbid$Yes)],]
 
@@ -179,6 +180,7 @@ for(variable in c("evidenceHTN", "aware", "treated", "controlled")){
 # Create exclusion flowchart
 export_svg(DiagrammeR::grViz(paste0(config$outputs$flowcharts, "ExclusionFlowchartTree.gv"))
            ) %>% charToRaw %>% rsvg %>% png::writePNG(paste0(config$outputs$markdown, "ExclFlowchartTree.png"))
+
 
 #--------------------------------------------------------------------------------------------------------------
 # Neo's specific variants of covariate variables
