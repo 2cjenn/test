@@ -7,8 +7,9 @@ library(reshape2)
 library(dplyr)
 library(yaml)
 
-config = yaml.load_file("K:/TEU/APOE on Dementia/config.yml")
-
+if(!exists("config")){
+  config = yaml.load_file("K:/TEU/APOE on Dementia/config.yml")
+}
 #--------------------------------------------------------------------------------------------------------------
 
 # Read in the raw data
@@ -20,7 +21,8 @@ medhist <- readRDS(paste0(config$cleaning$rawdata, "HMH_base.rds"))
 # Combine medications across male and females
 medhist$medf <- coalesce(medhist$HMH_MedCholBPDiabHorm.0, medhist$HMH_MedCholBPDiabHorm.1, medhist$HMH_MedCholBPDiabHorm.2, medhist$HMH_MedCholBPDiabHorm.3)
 medhist$medm <- coalesce(medhist$HMH_MedCholBPDiab.0, medhist$HMH_MedCholBPDiab.1, medhist$HMH_MedCholBPDiab.2)
-medhist$medcombine <- coalesce(medhist$medf, medhist$medm)
+medhist$medcombine <- coalesce(as.character(medhist$medf), as.character(medhist$medm))
+medhist$medcombine <- factor(medhist$medcombine)
 # Create a new medication variable: yes/no/do not know/prefer not to answer/NA
 medlist <- c("Cholesterol lowering medication", "Blood pressure medication", "Oral contraceptive pill or minipill", "Hormone replacement therapy", "Insulin")
 medhist$medication <- ifelse(medhist$medcombine %in% medlist, "Yes", NA)
