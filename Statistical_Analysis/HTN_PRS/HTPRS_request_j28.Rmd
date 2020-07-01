@@ -1,0 +1,57 @@
+---
+title: "BP PRS Analysis"
+author: "Jennifer Collister"
+date: "`r format(Sys.time(), '%d %B %Y')`"
+output: 
+  word_document:
+      reference_docx: "K:/TEU/TEU Guides/TEU_DocStyle_2020.dotx"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(include=TRUE, echo=FALSE)
+
+library(kableExtra)
+library(knitr)
+library(yaml)
+library(here)
+
+# Specify the markdown format for knitr tables, otherwise they're not compatible with kableExtra
+options(knitr.kable.NA='', knitr.table.format = "markdown")
+options(kableExtra.auto_format = FALSE)
+# Set the root directory to the project directory (otherwise knitr works in the directory of the Rmd file by default)
+knitr::opts_knit$set(root.dir = here())
+
+# Load the project config file for filepaths etc
+config = yaml.load_file(here("./config.yml"))
+
+# Load data
+data <- readRDS(file=paste0(config$analysisdata$htn, "HTN_excl.rds"))
+prs <- readRDS(file=paste0(config$analysisdata$prs, "Evangelou2018_PRS.rds"))
+
+
+```
+
+1. Confirm the overall PRS on the whole data set match what Jemma’s group get – at least to the first decimal place.  If not, explore why.
+
+Waiting to hear back from Jemma's team
+
+2. Table 1 analysis.  Construct a Table 1a.  Horizontal Quintiles 1, 3, 5 of SBP PRS.  Table 1b: Same for DBP PRS.  Vertical risk factors: As for Table 1 in HTNTables_JC20200624.doc.    If there are non-trivial differences by age and/or sex will need to standardize the other risk factors (unlikely to be needed).
+
+```{r}
+
+
+```
+
+3. Table 2 analysis.  Add the SBP PRS and DBP PRS individually, and together (i.e. 3 multivariate analyses).
+
+```{r}
+
+
+```
+
+4. Compute observed SBP and DBP by quintile of each PRS (watchout for influence of outliers).  A box and whisker plot would be good.
+
+```{r}
+
+
+```

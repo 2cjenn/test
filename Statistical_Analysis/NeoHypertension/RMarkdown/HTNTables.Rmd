@@ -183,7 +183,7 @@ rownames(tab3) <- NULL
 
 tab3 <- rbind(c("Coefficient", "Level", "n^1^", "% Controlled^2^", "OR", "95% CI", "p", "OR", "95% CI", "p"),
               as.matrix(tab3))
-colnames(tab3) <- c("","","","", 
+colnames(tab3) <- c("","","","","", 
                     "Age- and sex-adjusted", "", "", 
                     "Multivariable- adjusted", "", "")
 
