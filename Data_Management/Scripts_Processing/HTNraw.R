@@ -23,7 +23,7 @@ cogfunc <- readRDS(paste0(config$cleaning$organised, "cognitivefunction.rds"))
 covars <- readRDS(paste0(config$cleaning$organised, "covars.rds"))
 rubric <- readRDS(paste0(config$exclusions$htn, "HTNMedsRubric.rds"))
 
-# prs <- readRDS("K:\\TEU\\UKB_Genetic_Data\\BP675\\converted_data\\HTN_PRS.rds")
+prs <- readRDS(file=paste0(config$analysisdata$prs, "Evangelou2018_PRS.rds"))
 pc <- readRDS(paste0(config$cleaning$organised, "principalcomponents.rds"))
 
 # Combine the baseline characteristics with the ethnicities
@@ -49,7 +49,7 @@ data <- merge(data, rubric[,c("ID", "hypmedsno", "HTN_probablemeds")], by="ID", 
 
 
 # Merge with the calculated PRS scores for SBP and DBP
-# data <- merge(data, prs, by="ID", all.x=TRUE)
+data <- merge(data, prs, by="ID", all.x=TRUE)
 data <- merge(data, pc, by="ID", all.x=TRUE)
 
 saveRDS(data, file=paste0(config$exclusions$raw, "HTN_raw.rds"))
