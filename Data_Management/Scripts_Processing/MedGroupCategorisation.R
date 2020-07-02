@@ -40,7 +40,8 @@ VImeds$step4 <- VImeds$line1 & !is.na(VImeds[["Thiazide"]]) & VImeds$line2 & is.
 # Step 5 'resistant hypertension': Taking at least 3 meds from steps 1-4
 # AND any of hydralazine, minoxidil, clonidine
 # AND does not have diagnosis of heart failure
-VImeds$step5 <- VImeds$line1 & !is.na(VImeds[["Thiazide"]]) & VImeds$line2 & !is.na(VImeds[["Other"]]) & is.na(VImeds$heart_failure)
+VImeds$step5 <- VImeds$line1 & !is.na(VImeds[["Thiazide"]]) & VImeds$line2 & !is.na(VImeds[["Other"]]) & 
+  is.na(VImeds$heart_failure)
 
 
 #--------------------------------------------------------------------------------------------------------------
@@ -49,7 +50,8 @@ VImeds$step5 <- VImeds$line1 & !is.na(VImeds[["Thiazide"]]) & VImeds$line2 & !is
 # Thiazides only: atypical step 1 if Black OR age < 55
 VImeds$step1_b55 <- !is.na(VImeds[["Thiazide"]]) & VImeds$onlyone & (VImeds$eth_group=="Black" | VImeds$age<55)
 # BB only: atypical step 1 if female age <45 (childbearing age) AND does not have diagnosis of heart failure
-VImeds$step1_f45 <- !is.na(VImeds[["BB"]]) & VImeds$onlyone & VImeds$gender=="Female" & VImeds$age<45 & is.na(VImeds$heart_failure)
+VImeds$step1_f45 <- !is.na(VImeds[["BB"]]) & VImeds$onlyone & VImeds$gender=="Female" & VImeds$age<45 & 
+  is.na(VImeds$heart_arrhythmia) & is.na(VImeds$heart_failure) & is.na(VImeds$angina)
 
 
 #--------------------------------------------------------------------------------------------------------------
@@ -59,13 +61,16 @@ VImeds$step1_f45 <- !is.na(VImeds[["BB"]]) & VImeds$onlyone & VImeds$gender=="Fe
 
 # Thiazide only AND does not have:
 # liver failure, kidney failure, pulmonary oedema, lymphoedema
-VImeds$thiaonly <- !is.na(VImeds[["Thiazide"]]) & VImeds$onlyone & is.na(VImeds$liver_failure) & is.na(VImeds$kidney_failure) & is.na(VImeds$heart_failure) & is.na(VImeds$lymphoedema)
+VImeds$thiaonly <- !is.na(VImeds[["Thiazide"]]) & VImeds$onlyone & 
+  is.na(VImeds$liver_failure) & is.na(VImeds$kidney_failure) & is.na(VImeds$heart_failure) & is.na(VImeds$lymphoedema)
 # ACEI/ARB AND does not have any of the following:
 # diabetes, heart failure, prior heart attack
-VImeds$ACEARBonly <- (!is.na(VImeds[["ACEI"]]) | !is.na(VImeds[["ARBs"]])) & VImeds$onlyone & is.na(VImeds$diabetes) & is.na(VImeds$heart_failure) & is.na(VImeds$heart_attack)
+VImeds$ACEARBonly <- (!is.na(VImeds[["ACEI"]]) | !is.na(VImeds[["ARBs"]])) & VImeds$onlyone & 
+  is.na(VImeds$diabetes) & is.na(VImeds$heart_failure) & is.na(VImeds$heart_attack)
 # BB AND does not have any of the following:
 # heart arrhythmia, heart failure, angina
-VImeds$BBonly <- !is.na(VImeds[["BB"]]) & VImeds$onlyone & is.na(VImeds$heart_arrhythmia) & is.na(VImeds$heart_failure) & is.na(VImeds$angina)
+VImeds$BBonly <- !is.na(VImeds[["BB"]]) & VImeds$onlyone & 
+  is.na(VImeds$heart_arrhythmia) & is.na(VImeds$heart_failure) & is.na(VImeds$angina)
 # VImeds$weird1 <- VImeds$line1 & is.na(VImeds[["Thiazide"]]) & VImeds$line2 & is.na(VImeds[["Other"]])
 # VImeds$weird2 <- !VImeds$line1 & !is.na(VImeds[["Thiazide"]]) & VImeds$line2 & is.na(VImeds[["Other"]])
 
@@ -85,7 +90,6 @@ VImeds$HTN_txalg <- dplyr::case_when(
   TRUE ~ VImeds$hypmeds
   )
 
-test <- VImeds[which(VImeds$ID %in% r1$ID),]
 
 #--------------------------------------------------------------------------------------------------------------
 # Definitely not on medication for hypertension
@@ -118,25 +122,13 @@ VImeds$defnot[!is.na(VImeds$heart_arrhythmia) &
 VImeds$defnot[!is.na(VImeds$angina) &
                 !is.na(VImeds[["BB"]]) & VImeds$onlyone
               ] <- TRUE
-# 
-# # Anything else is not definitely not
-# VImeds$defnot[is.na(VImeds$defnot)] <- FALSE
-# 
-# # 
-# VImeds$HTN_txalg[is.na(VImeds$HTN_txalg) & VImeds$defnot==TRUE] <- "Taking potential BP medication for other indications"
-# VImeds$HTN_txalg[is.na(VImeds$HTN_txalg)] <- VImeds$hypmeds[is.na(VImeds$HTN_txalg)]
-# 
-# #--------------------------------------------------------------------------------------------------------------
-# # Load the full hypertension study data set
-# #--------------------------------------------------------------------------------------------------------------
-# data <- readRDS(file="K:\\TEU\\APOE on Dementia\\Data Management\\R_Dataframes_TLA\\38358\\Organised\\Hypertension\\Neo\\HTN_excl.rds")
-# 
-# # And merge
-# medsdata <- merge(data, VImeds[,c("ID", "hypmeds", "hypmedsno", "HTN_txalg")], all.x=TRUE)
-# 
-# # Joining the two datasets introduced a bunch of NAs because of people who aren't taking any medication, and therefore don't feature in the VImeds dataset
-# medsdata$hypmeds[is.na(medsdata$hypmeds)] <- "Not taking any medication"
-# medsdata$HTN_txalg[is.na(medsdata$HTN_txalg)] <- "Not taking any medication"
+
+# Anything else is not definitely not
+VImeds$defnot[is.na(VImeds$defnot)] <- FALSE
+
+#
+VImeds$HTN_txalg[VImeds$defnot==TRUE] <- "Taking potential BP medication for other indications"
+
 
 #--------------------------------------------------------------------------------------------------------------
 # Once the potential BP medication has been categorised, any remaining are non-standard combinations
@@ -144,14 +136,15 @@ VImeds$defnot[!is.na(VImeds$angina) &
 VImeds$HTN_txalg[VImeds$HTN_txalg=="Taking potential BP medication"] <- "Probably not BP medication"
 # Make the groups a factor, with appropriate ordering of levels
 VImeds$HTN_txalg <- factor(VImeds$HTN_txalg, levels=c("Step 1/2", "Step 3", "Step 4", "Step 5",
-                                                          "Step 1 for Black OR age<55", "Step 1 for female of childbearing age",
-                                                          "Thiazide only, no alternative diagnosis", 
-                                                          "ACEI/ARB only, no alternative diagnosis", 
-                                                          "BB only, no alternative diagnosis", 
-                                                          "Probably not BP medication",
-                                                          "Taking non-BP medication"))
+                                                      "Step 1 for Black OR age<55", "Step 1 for female of childbearing age",
+                                                      "Thiazide only, no alternative diagnosis",
+                                                      "ACEI/ARB only, no alternative diagnosis",
+                                                      "BB only, no alternative diagnosis",
+                                                      "Taking potential BP medication for other indications",
+                                                      "Probably not BP medication",
+                                                      "Taking non-BP medication"))
 
-table(VImeds$HTN_txalg)
+table(VImeds$HTN_txalg, useNA='ifany')
 
 
 VImeds$HTN_probablemeds[
