@@ -8,7 +8,7 @@ output:
 ---
 
 ```{r setup, include=FALSE}
-knitr::opts_chunk$set(include=TRUE, echo=FALSE)
+knitr::opts_chunk$set(include=TRUE, echo=FALSE, warning=FALSE)
 
 library(kableExtra)
 library(knitr)

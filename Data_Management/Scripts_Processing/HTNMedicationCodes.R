@@ -6,7 +6,8 @@ library(tidyr)
 library(readxl)
 library(reshape2)
 library(dplyr)
-library(data.table)
+library(yaml)
+# library(data.table)
 
 config = yaml.load_file("K:/TEU/APOE on Dementia/config.yml")
 
@@ -34,8 +35,8 @@ htmedslong <- htmedslong[!is.na(htmedslong$generic),]
 # Add a column of 1s to be used as the value
 htmedslong$test <- 1
 # Long to wide - a column per generic drug name or class
-codegeneric <- dcast(htmedslong, coding~generic, value.var="test")
-codeclass <- dcast(htmedslong, coding~class, value.var="test")
+codegeneric <- reshape2::dcast(htmedslong, coding~generic, value.var="test")
+codeclass <- reshape2::dcast(htmedslong, coding~class, value.var="test")
 
 # Remove the NA column from the end (this was to allow blanks in the dropdown in excel)
 codeclass <- codeclass[,1:(ncol(codeclass)-1)]
@@ -83,6 +84,7 @@ VImeds %<>% group_by(ID) %>%
 sum(rowSums(VImeds[,-c(1)], na.rm=TRUE)==0)
 
 VImeds$hypmedsno <- rowSums(VImeds[,setdiff(names(VImeds), c("ID", hypclasslist))], na.rm=TRUE)
+# Check the ones where they're taking more individual medications than categories of medication
 consider <- VImeds[rowSums(VImeds[,c(hypclasslist)], na.rm=TRUE)!=VImeds$hypmedsno,]
 
 VImeds$hypmeds <- ifelse(VImeds$hypmedsno!=0, "Taking potential BP medication", "Taking non-BP medication")
