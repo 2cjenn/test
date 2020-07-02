@@ -26,8 +26,88 @@ config = yaml.load_file(here("./config.yml"))
 
 # Load data
 data <- readRDS(file=paste0(config$analysisdata$htn, "HTN_excl.rds"))
-prs <- readRDS(file=paste0(config$analysisdata$prs, "Evangelou2018_PRS.rds"))
 
+S_quintiles <- quantile(data$PRS_SBP, probs=seq(0, 1, 0.2), na.rm=TRUE)
+data$PRS_SBP_quint <- dplyr::case_when(
+  data$PRS_SBP <= S_quintiles[2] ~ "Q1: Lowest score",
+  data$PRS_SBP > S_quintiles[2] & data$PRS_SBP <= S_quintiles[3] ~ "Q2",
+  data$PRS_SBP > S_quintiles[3] & data$PRS_SBP <= S_quintiles[4] ~ "Q3",
+  data$PRS_SBP > S_quintiles[4] & data$PRS_SBP <= S_quintiles[5] ~ "Q4",
+  data$PRS_SBP > S_quintiles[5] & data$PRS_SBP <= S_quintiles[6] ~ "Q5: Highest score",
+  TRUE ~ "Unanswered"
+)
+data$PRS_SBP_quint <- factor(data$PRS_SBP_quint,
+                              levels=c("Q1: Lowest score", "Q2", "Q3", "Q4", "Q5: Highest score"))
+data$PRS_SBP_quint_ <- factor(data$PRS_SBP_quint,
+                              levels=c("Q3", "Q1: Lowest score", "Q2", "Q4", "Q5: Highest score"),
+                              labels=c("Q3 (ref)", "Q1: Lowest score", "Q2", "Q4", "Q5: Highest score"))
+
+D_quintiles <- quantile(data$PRS_DBP, probs=seq(0, 1, 0.2), na.rm=TRUE)
+data$PRS_DBP_quint <- dplyr::case_when(
+  data$PRS_DBP <= D_quintiles[2] ~ "Q1: Lowest score",
+  data$PRS_DBP > D_quintiles[2] & data$PRS_DBP <= D_quintiles[3] ~ "Q2",
+  data$PRS_DBP > D_quintiles[3] & data$PRS_DBP <= D_quintiles[4] ~ "Q3",
+  data$PRS_DBP > D_quintiles[4] & data$PRS_DBP <= D_quintiles[5] ~ "Q4",
+  data$PRS_DBP > D_quintiles[5] & data$PRS_DBP <= D_quintiles[6] ~ "Q5: Highest score",
+  TRUE ~ "Unanswered"
+)
+data$PRS_DBP_quint <- factor(data$PRS_DBP_quint,
+                             levels=c("Q1: Lowest score", "Q2", "Q3", "Q4", "Q5: Highest score"))
+data$PRS_DBP_quint_ <- factor(data$PRS_DBP_quint,
+                              levels=c("Q3", "Q1: Lowest score", "Q2", "Q4", "Q5: Highest score"),
+                             labels=c("Q3 (ref)", "Q1: Lowest score", "Q2", "Q4", "Q5: Highest score"))
+
+
+#-------------------------------------------------------------------------------------------------------------------
+# Pretty variable names
+
+pretty_names <- list(age = "age, years",
+                     agegrp = "age group, years",
+                     gender = "gender",
+                     ethnicity = "ethnicity",
+                     eth_group = "ethnic group",
+                     genWhiteBrit = "genetically categorised as White British",
+                     BMIcat = "BMI (categorical)",
+                     Smo_Status = "smoking status",
+                     weekly_alcunits = "alcohol units reported per week",
+                     weekly_alccat = "alcohol units per week (categorical)",
+                     PhA_METsWkAllAct = "weekly physical activity, MET minutes",
+                     METs_over1200 = "weekly physical activity",
+                     townsend_quint = "Townsend Deprivation Index, quintiles",
+                     income = "household Income, GBP",
+                     employment = "occupation type",
+                     employcat = "occupation category",
+                     ISCED = "highest level of education (ISCED)",
+                     BirthCountryIncomeLevel = "country of birth, by income level",
+                     countryResidence = "UK country of residence",
+                     BowelCancerScreening = "ever screened for bowel cancer",
+                     HTNdx_duration = "reported duration of hypertension, years",
+                     HTNdx_durcat = "repoted duration of hypertension",
+                     antiHTNmedsno = "number of antihypertensive medications",
+                     FamilyHist_CVD_ = "family history of CVD",
+                     comorbNumber_ = "no. of comorbidities",
+                     VI_afib_or_aflutter_ = "arrhythmia (afib/flutter)",
+                     VI_anxiety_or_stress_ = "anxiety",
+                     VI_asthma_or_COPD_ = "asthma or COPD",
+                     VI_depression_or_bipolar_ = "depression",
+                     VI_diabetes_ = "diabetes",
+                     VI_epilepsy_ = "epilepsy",
+                     VI_CVD_ = "cardiovascular disease",
+                     VI_migraine_ = "migraines",
+                     VI_substance_use_ = "substance use",
+                     VI_Osteoarthritis_ = "osteoarthritis",
+                     VI_Other_joint_disorder_ = "other joint disorder",
+                     PRS = "polygenic risk score",
+                     PRS_quint = "polygenic risk score, quintiles"
+                     )
+
+#-------------------------------------------------------------------------------------------------------------------
+# Setup
+
+figure <- 1
+table <- 1
+suppfig <- 1
+footnote_no <- 1
 
 ```
 
@@ -39,8 +119,25 @@ Waiting to hear back from Jemma's team
 
 ```{r}
 
+varlist=c("agegrp", "gender", "eth_group",
+          "income", "employcat", "ISCED", "countryResidence",
+          "BMIcat", "Smo_Status",
+          "HTNdx_duration", "antiHTNmedsno",
+          "comorbNumber_")
+
+for(prs in c("PRS_SBP_quint", "PRS_DBP_quint")){
+  tab <- c()
+  for(var in varlist){
+    t <- table(data[[var]], data[[prs]])
+    tab <- rbind(tab, t)
+  }
+  print(kable(tab))
+}
+
 
 ```
+
+
 
 3. Table 2 analysis.  Add the SBP PRS and DBP PRS individually, and together (i.e. 3 multivariate analyses).
 
@@ -53,5 +150,9 @@ Waiting to hear back from Jemma's team
 
 ```{r}
 
+means_Squint <- aggregate(data[,c("SBP", "DBP")], list(data$PRS_SBP_quint), mean)
+means_Dquint <- aggregate(data[,c("SBP", "DBP")], list(data$PRS_DBP_quint), mean)
+
+boxplot(SBP~PRS_SBP_quint,  data=data, main="", xlab="SBP PRS score, quintiles", ylab="Systolic Blood pressure at baseline")
 
 ```
