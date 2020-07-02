@@ -18,10 +18,10 @@ library(here)
 # Specify the markdown format for knitr tables, otherwise they're not compatible with kableExtra
 options(knitr.kable.NA='', knitr.table.format = "markdown")
 # Set the root directory to the project directory (otherwise knitr works in the directory of the Rmd file by default)
-knitr::opts_knit$set(root.dir = here())
+knitr::opts_knit$set(root.dir = here::here())
 
 # Load the project config file for filepaths etc
-config = yaml.load_file(here("./config.yml"))
+config = yaml.load_file(here::here("./config.yml"))
 
 
 ```
