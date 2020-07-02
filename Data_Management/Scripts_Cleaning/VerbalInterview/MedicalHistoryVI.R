@@ -15,7 +15,9 @@ VI_diag <- readRDS(paste0(config$cleaning$organised, "VeI_diag_base.rds"))
 VI_diagdur <- readRDS(paste0(config$cleaning$organised, "VeI_diagdur_base.rds"))
 
 # Use the "year" columns for duration
+VI_diagage <- VI_diagdur[,c(1, grep("VeI_NonCancerAge.",  colnames(VI_diagdur),  fixed=TRUE))]
 VI_diagdur <- VI_diagdur[,c(1, grep("VeI_NonCancerYear.", colnames(VI_diagdur), fixed=TRUE))]
+
 
 coding6 <- read.table("K:/TEU/CancerPRS/Data_Dictionary/Mappings/coding6.tsv", sep="\t", header=TRUE, quote="", comment.char="$", fill=FALSE)
 
@@ -57,20 +59,32 @@ VI_diaglong <- VI_diaglong %>% tidyr::separate(medno, into=c("VeI", "NonCancerCo
 VI_durlong <- gather(data=VI_diagdur, key=medno, value=year, VeI_NonCancerYear.0:VeI_NonCancerYear.33, factor_key=FALSE)
 VI_durlong <- VI_durlong[!is.na(VI_durlong$year),]
 VI_durlong <- VI_durlong %>% tidyr::separate(medno, into=c("VeI", "NonCancerYear", "instance"))
+# And ages
+VI_agelong <- gather(data=VI_diagage, key=medno, value=age, VeI_NonCancerAge.0:VeI_NonCancerAge.33, factor_key=FALSE)
+VI_agelong <- VI_agelong[!is.na(VI_agelong$age),]
+VI_agelong <- VI_agelong %>% tidyr::separate(medno, into=c("VeI", "NonCancerAge", "instance"))
 # Merge the diagnosis codes with the corresponding durations
-VI_diaglong <- merge(VI_diaglong[,c("ID", "instance", "coding")], VI_durlong[,c("ID", "instance", "year")], by=c("ID", "instance"), all.x=TRUE)
+VI_diaglong <- merge(VI_diaglong[,c("ID", "instance", "coding")], VI_durlong[,c("ID", "instance", "year")], 
+                     by=c("ID", "instance"), all.x=TRUE)
+VI_diaglong <- merge(VI_diaglong, VI_agelong[,c("ID", "instance", "age")], 
+                     by=c("ID", "instance"), all.x=TRUE)
 # Note that when the year is coded -1 it means unknown, and -3 means preferred not to answer
 VI_diaglong$year[VI_diaglong$year %in% c(-1,-3)] <- NA
+VI_diaglong$age[VI_diaglong$age %in% c(-1,-3)] <- NA
 # remove rows where individuals have the same illness recorded twice - 
 # two subtly different conditions that fit in the same UKB category?
-VI_diaglong <- unique(VI_diaglong[,c("ID", "coding", "year")])
+VI_diaglong <- unique(VI_diaglong[,c("ID", "coding", "year", "age")])
 # Save this ready to be joined to any diagnosis mapping
 saveRDS(VI_diaglong, paste0(config$cleaning$organised, "VIDiagnosisCodes_long.rds"))
 
 VIhyp <- VI_diaglong[VI_diaglong$coding %in% bpcodes$coding,]
-VIhypfirst <- VIhyp %>% group_by(ID) %>% slice(which.min(year))
-VIhypfirst$VIhypdx_yr <- VIhypfirst$year
+VIhypfirstyr <- VIhyp %>% group_by(ID) %>% slice(which.min(year))
+VIhypfirstyr$VIhypdx_yr <- VIhypfirstyr$year
+VIhypyoungest <- VIhyp %>% group_by(ID) %>% slice(which.min(age))
+VIhypyoungest$VIhypdx_age <- VIhypyoungest$age
 
-veint_HTNhist <- merge(veint_HTNhist, VIhypfirst[,c("ID", "VIhypdx_yr")], by="ID", all.x=TRUE)
-saveRDS(veint_HTNhist[,c("ID", "VIstroke", "VIhyp", "VIhypdx_yr", "VIdementia", "VeI_NNonCancer.0")], 
+veint_HTNhist <- merge(veint_HTNhist[,c("ID", "VIstroke", "VIhyp", "VIdementia", "VeI_NNonCancer.0")], 
+                       VIhypfirstyr[,c("ID", "VIhypdx_yr")], by="ID", all.x=TRUE)
+veint_HTNhist <- merge(veint_HTNhist, VIhypyoungest[,c("ID", "VIhypdx_age")], by="ID", all.x=TRUE)
+saveRDS(veint_HTNhist[,c("ID", "VIstroke", "VIhyp", "VIhypdx_yr", "VIhypdx_age", "VIdementia", "VeI_NNonCancer.0")], 
         file=paste0(config$cleaning$organised, "veint_HTNhist.rds"))
