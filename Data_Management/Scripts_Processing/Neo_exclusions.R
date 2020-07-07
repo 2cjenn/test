@@ -31,7 +31,7 @@ data$HTNdx_VI <- round(decimal_date(data$recdate) - data$VIhypdx_yr,1)
 data$HTNdx_duration <- coalesce(data$HTNdx_VI, data$HTNdx_TQ)
 # Any durations less than 0 are clearly errors (only 2)
 # Any diagnoses before the age of about 20 are probably due to other causes
-data$HTNdx_duration[(data$HTNdx_duration < 0 | data$HTNdx_duration > data$HBPAge-20)& !is.na(data$HTNdx_duration)] <- NA
+data$HTNdx_duration[(data$HTNdx_duration < 0 | data$HTNdx_duration > data$age-20)& !is.na(data$HTNdx_duration)] <- NA
 
 # Single variable for self-reported hypertension
 # If reported in either touchscreen questionnaire or verbal interview

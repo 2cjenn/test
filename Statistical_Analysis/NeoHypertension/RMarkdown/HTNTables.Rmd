@@ -104,7 +104,7 @@ footnote_no <- 1
 varlist=c("age", "agegrp", "gender", "eth_group",
           "income", "employcat", "ISCED", "countryResidence",
           "BMIcat", "Smo_Status",
-          "HTNdx_duration", "antiHTNmedsno",
+          "HTNdx_duration", "antiHTNmedsno", "VI_CVD_", "VI_diabetes_",
           "comorbNumber_")
 
 footnote_list <- c("employcat", "ISCED", "countryResidence", "BMIcat", "comorbNumber_")
