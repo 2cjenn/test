@@ -24,6 +24,8 @@ knitr::opts_knit$set(root.dir = here::here())
 # Load the project config file for filepaths etc
 config = yaml.load_file(here::here("./config.yml"))
 
+source("K:/TEU/APOE on Dementia/Statistical_Analysis/JCfunctions.R")
+
 # Load data
 data <- readRDS(file=paste0(config$analysisdata$htn, "HTN_excl.rds"))
 
@@ -117,6 +119,8 @@ Waiting to hear back from Jemma's team
 
 2. Table 1 analysis.  Construct a Table 1a.  Horizontal Quintiles 1, 3, 5 of SBP PRS.  Table 1b: Same for DBP PRS.  Vertical risk factors: As for Table 1 in HTNTables_JC20200624.doc.    If there are non-trivial differences by age and/or sex will need to standardize the other risk factors (unlikely to be needed).
 
+# Table 1a. Baseline characteristics by quintile of SBP PRS
+
 ```{r}
 
 varlist=c("agegrp", "gender", "eth_group",
@@ -124,16 +128,38 @@ varlist=c("agegrp", "gender", "eth_group",
           "BMIcat", "Smo_Status",
           "HTNdx_duration", "antiHTNmedsno",
           "comorbNumber_")
+  
+categories <- c("Q1: Lowest score", "Q3", "Q5: Highest score")
+catvar = "PRS_SBP_quint"
 
-for(prs in c("PRS_SBP_quint", "PRS_DBP_quint")){
-  tab <- c()
-  for(var in varlist){
-    t <- table(data[[var]], data[[prs]])
-    tab <- rbind(tab, t)
+desctabmulti <- function(catvar, categories, varlist, pretty_names){
+  tab <- descriptivetable(df=data[data[[catvar]]==categories[1],], 
+                             varlist=varlist,
+                             contavg='median',
+                             pretty_names=pretty_names)
+  for(cat in categories[-1]){
+    tabq <- descriptivetable(df=data[data[[catvar]]==cat,], 
+                             varlist=varlist,
+                             contavg='median',
+                             pretty_names=pretty_names)
+    tab <- cbind(tab, tabq[,-(1:2)])
   }
-  print(kable(tab))
+  tab <- rbind(colnames(tab), tab)
+  colnames(tab) <- c(NA, NA, c(rbind(categories, rep(NA, length(categories)))))
+  return(tab)
 }
 
+tab <- desctabmulti(catvar="PRS_SBP_quint", categories=categories, varlist=varlist, pretty_names=pretty_names)
+kable(tab)
+
+```
+
+# Table 1b. Baseline characteristics by quintile of DBP PRS
+
+```{r}
+
+tab <- desctabmulti(catvar="PRS_DBP_quint", categories=categories, varlist=varlist, pretty_names=pretty_names)
+kable(tab)
 
 ```
 
@@ -151,7 +177,10 @@ for(prs in c("PRS_SBP_quint", "PRS_DBP_quint")){
 ```{r}
 
 means_Squint <- aggregate(data[,c("SBP", "DBP")], list(data$PRS_SBP_quint), mean)
+kable(means_Squint)
+
 means_Dquint <- aggregate(data[,c("SBP", "DBP")], list(data$PRS_DBP_quint), mean)
+kable(means_Dquint)
 
 boxplot(SBP~PRS_SBP_quint,  data=data, main="", xlab="SBP PRS score, quintiles", ylab="Systolic Blood pressure at baseline")
 
