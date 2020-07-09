@@ -20,16 +20,26 @@ library(epitools)
 library(tab)
 library(popEpi)
 
-source("K:/TEU/APOE on Dementia/Statistical Analysis/JCfunctions.R")
-```
+library(yaml)
+library(here)
 
-```{r loaddata, include=FALSE, echo=FALSE}
-data <- readRDS(file="K:\\TEU\\APOE on Dementia\\Data Management\\R_Dataframes_TLA\\38358\\Organised\\Hypertension\\APOE\\apoe_excl.rds")
+# Specify the markdown format for knitr tables, otherwise they're not compatible with kableExtra
+options(knitr.kable.NA='', knitr.table.format = "markdown")
+options(kableExtra.auto_format = FALSE)
+# Set the root directory to the project directory (otherwise knitr works in the directory of the Rmd file by default)
+knitr::opts_knit$set(root.dir = here::here())
+
+# Load the project config file for filepaths etc
+config = yaml.load_file(here::here("./config.yml"))
+
+# Load data
+data <- readRDS(file=paste0(config$analysisdata$apoe, "apoe_excl.rds"))
+
+source("K:/TEU/APOE on Dementia/Statistical_Analysis/JCfunctions.R")
+
 # Exclude individuals below the age of 60
 data <- data[data$age>=60,]
-
 ```
-
 
 
 ```{r test, include=TRUE, echo=FALSE, results='asis'}

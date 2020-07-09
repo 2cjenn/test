@@ -19,32 +19,30 @@ library(timereg)
 library(epitools)
 library(tab)
 library(popEpi)
+library(yaml)
+library(here)
 
-source("K:/TEU/APOE on Dementia/Statistical Analysis/JCfunctions.R")
+# Specify the markdown format for knitr tables, otherwise they're not compatible with kableExtra
+options(knitr.kable.NA='', knitr.table.format = "markdown")
+options(kableExtra.auto_format = FALSE)
+# Set the root directory to the project directory (otherwise knitr works in the directory of the Rmd file by default)
+knitr::opts_knit$set(root.dir = here::here())
+
+# Load the project config file for filepaths etc
+config = yaml.load_file(here::here("./config.yml"))
+
+# Load data
+data <- readRDS(file=paste0(config$analysisdata$apoe, "apoe_excl.rds"))
+
+source("K:/TEU/APOE on Dementia/Statistical_Analysis/JCfunctions.R")
 ```
 
 ```{r loaddata, include=FALSE, echo=FALSE}
-data <- readRDS(file="K:\\TEU\\APOE on Dementia\\Data Management\\R_Dataframes_TLA\\38358\\Organised\\Hypertension\\APOE\\apoe_excl.rds")
 # Exclude individuals below the age of 50
 data <- data[data$age>=60,]
-# Create a couple of factor variables
-# data$selfrephyp <- data$prevHBP==TRUE | data$VIhyp==TRUE
-# data$aware <- data$selfrephyp==TRUE | data$HBPmeds==TRUE
-# data$control <- !(data$SBP>=140 | data$DBP>=90)
 
 # Center age on the minimum
 data$c_age <- data$age - 50
-
-# # Make the key dichotomous variables into factors to improve readability of outputs
-# data$evidenceHTN <- data$definedhypertension
-# data$evidenceHTN_ <- factor(as.numeric(data$evidenceHTN), levels=c(0,1), labels=c("No evidence of hypertension", "Evidence of hypertension"))
-# data$selfrephyp_ <- factor(as.numeric(data$selfrephyp), levels=c(0,1), labels=c("Did not report prior HTN diagnosis", "Self-reported prior HTN diagnosis"))
-# data$treated <- data$HBPmeds
-# data$treated_ <- factor(as.numeric(data$treated), levels=c(0,1), labels=c("Did not report any medication", "Self-reported BP medication"))
-# data$aware_ <- factor(as.numeric(data$aware), levels=c(0,1), labels=c("Unaware of hypertension", "Aware of hypertension"))
-# data$measuredHTN <- data$measuredhyp
-# data$measuredHTN_ <- factor(as.numeric(data$measuredHTN), levels=c(0,1), labels=c("BP < 140/90 at baseline", "BP >= 140/90 at baseline"))
-# data$control_ <- factor(as.numeric(data$control), levels=c(0,1), labels=c("Inadequately controlled", "Successfully controlled"))
 
 ```
 

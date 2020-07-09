@@ -20,7 +20,21 @@ library(timereg)
 library(epitools)
 library(tab)
 library(popEpi)
-source("K:/TEU/APOE on Dementia/Statistical Analysis/JCfunctions.R")
+source("K:/TEU/APOE on Dementia/Statistical_Analysis/JCfunctions.R")
+library(yaml)
+library(here)
+
+# Specify the markdown format for knitr tables, otherwise they're not compatible with kableExtra
+options(knitr.kable.NA='', knitr.table.format = "markdown")
+options(kableExtra.auto_format = FALSE)
+# Set the root directory to the project directory (otherwise knitr works in the directory of the Rmd file by default)
+knitr::opts_knit$set(root.dir = here::here())
+
+# Load the project config file for filepaths etc
+config = yaml.load_file(here::here("./config.yml"))
+
+# Load data
+data <- readRDS(file=paste0(config$analysisdata$apoe_old, "apoe_excl.rds"))
 
 # printcoxresults <- function(modeloutput){
 #   results <- summary(modeloutput)$coefficients[,c(1:3,5)]
@@ -31,7 +45,6 @@ source("K:/TEU/APOE on Dementia/Statistical Analysis/JCfunctions.R")
 ```
 
 ```{r loaddata, include=FALSE, echo=FALSE}
-data <- readRDS(file="K:\\TEU\\APOE on Dementia\\Data Management\\R_Dataframes_TLA\\38358\\Organised\\apoe_excl.rds")
 # Exclude individuals below the age of 50
 data <- data[data$age>=50,]
 # Create a couple of factor variables
@@ -77,7 +90,7 @@ knitr::include_graphics('./controlTree_L2.png')
 model1 <- coxph(Surv(time_to_dementia, dementia_status) ~ age + gender + control, 
                 data=data[data$selfrephyp=="Self-reported hypertensive" & data$HBPmeds=="Self-reported BP medication",])
 kable(printcoxresults(model1), caption="Cox regression of BP control against time to dementia, among those who reported a previous diagnosis of hypertension and said they are taking BP medication, n=79,967")
-knitr::include_graphics('./controlTree_L3.png')
+# knitr::include_graphics('./controlTree_L3.png')
 
 ```
 
@@ -96,7 +109,7 @@ subset <- data[data$age< 70 & data$age>=60,]
 ### 1. Previous diagnosis?
 ```{r L1, include=TRUE, echo=FALSE}
 
-knitr::include_graphics('./controlTree_L1.png')
+# knitr::include_graphics('./controlTree_L1.png')
 tab <- table(subset$selfrephyp, subset$dementia_status)
 colnames(tab) <- c("Healthy", "Dementia")
 kable(propped(tab), caption="Dementia status by self-reported hypertensive status among individuals aged 60-70")
@@ -109,7 +122,7 @@ kable(printcoxresults(model1), caption="Cox regression of self-reported hyperten
 
 ```{r L2, include=TRUE, echo=FALSE}
 
-knitr::include_graphics('./controlTree_L2.png')
+# knitr::include_graphics('./controlTree_L2.png')
 tab <- table(subset$HBPmeds[subset$selfrephyp=="Self-reported hypertensive" & !is.na(subset$selfrephyp)], subset$dementia_status[subset$selfrephyp=="Self-reported hypertensive" & !is.na(subset$selfrephyp)])
 colnames(tab) <- c("Healthy", "Dementia")
 kable(propped(tab), caption="Dementia status by self-reported BP medication status among individuals aged 60-70 who self-reported a diagnosis of hypertension")
@@ -124,7 +137,7 @@ kable(printcoxresults(model1), caption="Cox regression of self-reported BP medic
 
 ```{r L3, include=TRUE, echo=FALSE}
 
-knitr::include_graphics('./controlTree_L3.png')
+# knitr::include_graphics('./controlTree_L3.png')
 tab <- table(subset$control[subset$selfrephyp=="Self-reported hypertensive"  & !is.na(subset$selfrephyp) & subset$HBPmeds=="Self-reported BP medication" & !is.na(subset$HBPmeds)], subset$dementia_status[subset$selfrephyp=="Self-reported hypertensive"  & !is.na(subset$selfrephyp) & subset$HBPmeds=="Self-reported BP medication"  & !is.na(subset$HBPmeds)])
 colnames(tab) <- c("Healthy", "Dementia")
 kable(propped(tab), caption="Dementia status by BP control status among individuals aged 60-70 who self-reported a diagnosis of hypertension and self-reported BP medication")

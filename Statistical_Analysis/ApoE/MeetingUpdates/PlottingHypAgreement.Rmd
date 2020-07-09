@@ -14,14 +14,26 @@ library(dplyr)
 library(vcd)
 library(knitr)
 library(kableExtra)
+library(yaml)
+library(here)
 
-source("K:/TEU/APOE on Dementia/Statistical Analysis/JCfunctions.R")
+# Specify the markdown format for knitr tables, otherwise they're not compatible with kableExtra
+options(knitr.kable.NA='', knitr.table.format = "markdown")
+options(kableExtra.auto_format = FALSE)
+# Set the root directory to the project directory (otherwise knitr works in the directory of the Rmd file by default)
+knitr::opts_knit$set(root.dir = here::here())
+
+# Load the project config file for filepaths etc
+config = yaml.load_file(here::here("./config.yml"))
+
+# Load data
+data <- readRDS(file=paste0(config$analysisdata$apoe, "apoe_excl.rds"))
+data <- data[data$age >= 50 & data$age < 70,]
+
+source("K:/TEU/APOE on Dementia/Statistical_Analysis/JCfunctions.R")
 ```
 
 ```{r loaddata, include=FALSE}
-data <- readRDS(file="K:\\TEU\\APOE on Dementia\\Data Management\\R_Dataframes_TLA\\38358\\Organised\\apoe_excl.rds")
-data <- data[data$age >= 50 & data$age < 70,]
-
 # Create a couple of factor variables
 data$selfrephyp <- data$prevHBP==TRUE | data$VIhyp==TRUE
 data$control <- !(data$SBP>=140 | data$DBP>=90)

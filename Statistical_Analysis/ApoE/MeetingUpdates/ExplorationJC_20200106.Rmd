@@ -20,6 +20,20 @@ library(epitools)
 library(tab)
 library(popEpi)
 source("K:/TEU/APOE on Dementia/Statistical_Analysis/JCfunctions.R")
+library(yaml)
+library(here)
+
+# Specify the markdown format for knitr tables, otherwise they're not compatible with kableExtra
+options(knitr.kable.NA='', knitr.table.format = "markdown")
+options(kableExtra.auto_format = FALSE)
+# Set the root directory to the project directory (otherwise knitr works in the directory of the Rmd file by default)
+knitr::opts_knit$set(root.dir = here::here())
+
+# Load the project config file for filepaths etc
+config = yaml.load_file(here::here("./config.yml"))
+
+# Load data
+data <- readRDS(file=paste0(config$analysisdata$apoe_old, "apoe_excl.rds"))
 
 ```
 
@@ -27,7 +41,6 @@ Individuals below the age of 50 are excluded.
 Blood pressure categories have been tweaked to include/exclude endpoints as specified.
 
 ```{r risk, include=TRUE, echo=FALSE}
-data <- readRDS(file="K:\\TEU\\APOE on Dementia\\Data_Management\\Data\\archive\\Organised\\ApoE\\apoe_excl.rds")
 data$selfrephyp <- data$prevHBP==TRUE | data$VIhyp==TRUE
 data$controlled <- !(data$SBP>=140 | data$DBP>=90)
 data$age <- data$age - 50
