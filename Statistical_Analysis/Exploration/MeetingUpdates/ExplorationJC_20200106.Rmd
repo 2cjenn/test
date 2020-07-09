@@ -19,7 +19,7 @@ library(timereg)
 library(epitools)
 library(tab)
 library(popEpi)
-source("K:/TEU/APOE on Dementia/Statistical Analysis/JCfunctions.R")
+source("K:/TEU/APOE on Dementia/Statistical_Analysis/JCfunctions.R")
 
 ```
 
@@ -27,10 +27,11 @@ Individuals below the age of 50 are excluded.
 Blood pressure categories have been tweaked to include/exclude endpoints as specified.
 
 ```{r risk, include=TRUE, echo=FALSE}
-data <- readRDS(file="K:\\TEU\\APOE on Dementia\\Data Management\\R_Dataframes_TLA\\38358\\Organised\\apoe_excl.rds")
+data <- readRDS(file="K:\\TEU\\APOE on Dementia\\Data_Management\\Data\\archive\\Organised\\ApoE\\apoe_excl.rds")
 data$selfrephyp <- data$prevHBP==TRUE | data$VIhyp==TRUE
 data$controlled <- !(data$SBP>=140 | data$DBP>=90)
 data$age <- data$age - 50
+data$definedhypertension <- data$SBP >= 140 | data$DBP >= 90
 
 # Make the key dichotomous variables into factors to improve readability of outputs
 data$selfrephyp <- factor(as.numeric(data$selfrephyp), levels=c(0,1), labels=c("Self-reported normotensive", "Self-reported hypertensive"))

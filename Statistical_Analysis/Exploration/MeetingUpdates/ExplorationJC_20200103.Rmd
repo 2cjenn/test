@@ -16,14 +16,14 @@ library(knitr)
 library(timereg)
 library(epitools)
 library(popEpi)
-source("K:/TEU/APOE on Dementia/Statistical Analysis/JCfunctions.R")
+source("K:/TEU/APOE on Dementia/Statistical_Analysis/JCfunctions.R")
 
 ```
 
 ```{r exclusions, include=FALSE}
 # Read in the dataset
 # n = 514,776
-apoe <- readRDS("K:\\TEU\\APOE on Dementia\\Data Management\\R_Dataframes_TLA\\38358\\Organised\\apoe_surv.rds")
+apoe <- readRDS("K:\\TEU\\APOE on Dementia\\Data_Management\\Data\\archive\\Organised\\ApoE\\apoe_surv.rds")
 
 apoe$e4carrier <- apoe$apoe4>0
 apoe$apoe4 <- factor(apoe$apoe4)
@@ -38,43 +38,32 @@ apoe$diab <- apoe$diabetes=="Yes"
 # Exclude individuals with APOE e1 because it's rare and don't know much about it
 # Exclude individuals with genotype e2/e4 because they cancel out?
 # Also can't be definitively sure if genotype is e1/e3 or e2/e4
-# n = 11,493
 apoe <- apoe[apoe$apoe1==0 & !is.na(apoe$apoe1),]
 
 # Exclude individuals with genetic/reported sex mismatch
-# n=337
 apoe$Sex <- factor(apoe$Sex, ordered=FALSE)
 apoe <- apoe[apoe$Sex == apoe$gender,]
-
 
 
 ## Other important exclusions
 
 # Exclude individuals with missing BP data
-# n = 432
-apoe <- apoe[!is.na(apoe$SBP) & !is.na(apoe$DBP),]
-apoe <- apoe[!is.na(apoe$definedhypertension),]
+apoe <- apoe[!is.nan(apoe$SBP) & !is.nan(apoe$DBP),]
+apoe$definedhypertension <- apoe$SBP >= 140 | apoe$DBP >= 90
 
 # Restrict to self-report "white"
-apoe$cauc <- apoe$group=="White"
-apoe <- apoe[apoe$cauc==TRUE,]
-
+apoe <- apoe[apoe$group=="White",]
 
 # Exclude individuals with prevalent dementia
-# n = 155
 apoe <- apoe[!apoe$VIdementia,]
 apoe <- apoe[is.na(apoe$dement_date) | (apoe$dement_date>apoe$recdate & !is.na(apoe$dement_date)),]
 
 
 # Exclude individuals with no age data
-# n = 0
 apoe <- apoe[!is.na(apoe$age),]
 # Exclude those outside the 40-70 age range
-# n = 2247
 apoe <- apoe[apoe$age >= 50 & apoe$age < 70,]
 
-# Remaining n = 474,343
-saveRDS(apoe, file="K:\\TEU\\APOE on Dementia\\Data Management\\R_Dataframes_TLA\\38358\\Organised\\apoe_excl.rds")
 
 ```
 ## Exclusions
@@ -92,21 +81,21 @@ In the Kaplan-Meier curves we see that APOE e4 carriers have a higher dementia r
 
 ```{r km, include=TRUE, echo=FALSE}
 # Survival analysis: time to dementia
-surv <- Surv(apoe$ytime, apoe$status)
+surv <- Surv(apoe$time_to_dementia_yrs, apoe$dementia_status)
 
 ggsurvplot(survfit(surv~e4carrier, data=apoe), data=apoe, ylim=c(0.95,1), risk.table=TRUE, ylab="Proportion without dementia", title="Kaplan-Meier plot of time to dementia diagnosis \nby APOE e4 carrier status", xlab="Time, years", censor=FALSE)
 
-ggsurvplot(survfit(surv~hypertension, data=apoe), data=apoe, ylim=c(0.95,1), risk.table=TRUE, ylab="Proportion without dementia", title="Kaplan-Meier plot of time to dementia diagnosis \nby hypertension status", xlab="Time, years", censor=FALSE)
+ggsurvplot(survfit(surv~definedhypertension, data=apoe), data=apoe, ylim=c(0.95,1), risk.table=TRUE, ylab="Proportion without dementia", title="Kaplan-Meier plot of time to dementia diagnosis \nby hypertension status", xlab="Time, years", censor=FALSE)
 ```
 
 ## Incidence rates
 
 ```{r incidencerates, include=TRUE, echo=FALSE}
-apoe <- readRDS(apoe, file="K:\\TEU\\APOE on Dementia\\Data Management\\R_Dataframes_TLA\\38358\\Organised\\apoe_excl.rds")
+
 
 # Risk of dementia in each category
-case <- table(apoe$hypertension[apoe$status==TRUE], apoe$e4carrier[apoe$status==TRUE])
-pop <- table(apoe$hypertension, apoe$e4carrier)
+case <- table(apoe$definedhypertension[apoe$dementia_status==TRUE], apoe$e4carrier[apoe$dementia_status==TRUE])
+pop <- table(apoe$definedhypertension, apoe$e4carrier)
 inc <- round(100*case/pop,2)
 names(dimnames(inc)) <- c("Hypertension", "APOE e4 carrier")
 inc
@@ -116,12 +105,12 @@ apoe$agegrp <- cut(apoe$age, c(50, 55, 60, 65, 70), right=FALSE)
 # Number of individuals in each age group
 agepop <- table(apoe$agegrp)
 # Number of person-years in each age group
-pyears <- aggregate(apoe$ytime, by=list(apoe$agegrp), FUN=sum)
+pyears <- aggregate(apoe$time_to_dementia_yrs, by=list(apoe$agegrp), FUN=sum)
 
 
 # Crude incidence rate per age group in the whole population
 # Number of individuals in each age group by dementia status
-agedement <- table(apoe$agegrp, apoe$status)
+agedement <- table(apoe$agegrp, apoe$dementia_status)
 # Divide dementia cases by person-years in each age group
 wholepop <- agedement[,2]/(pyears[,2]/100000)
 
@@ -132,12 +121,12 @@ incrates <- c(wholepop)
 adjrates <- c()
 for (df in list(apoe[apoe$e4carrier==TRUE,], 
                 apoe[apoe$e4carrier==FALSE,],
-                apoe[apoe$hypertension==TRUE,],
-                apoe[apoe$hypertension==FALSE,])
+                apoe[apoe$definedhypertension==TRUE,],
+                apoe[apoe$definedhypertension==FALSE,])
      ) {
   
-  agedement <- table(df$agegrp, df$status)
-  pyears <- aggregate(df$ytime, by=list(df$agegrp), FUN=sum)
+  agedement <- table(df$agegrp, df$dementia_status)
+  pyears <- aggregate(df$time_to_dementia_yrs, by=list(df$agegrp), FUN=sum)
   
   # Crude incidence rates
   incrate <- round(agedement[,2]/(pyears[,2]/100000),2)
@@ -158,13 +147,13 @@ kable(adjrates, caption="Comparing age-adjusted incidence rates per 100,000 pers
 # Pair-wise groups
 incrates <- c(wholepop)
 adjrates <- c()
-for (df in list(apoe[apoe$e4carrier==FALSE & apoe$hypertension==FALSE,], 
-                apoe[apoe$e4carrier==TRUE & apoe$hypertension==FALSE,],
-                apoe[apoe$e4carrier==FALSE & apoe$hypertension==TRUE,],
-                apoe[apoe$e4carrier==TRUE & apoe$hypertension==TRUE,])
+for (df in list(apoe[apoe$e4carrier==FALSE & apoe$definedhypertension==FALSE,], 
+                apoe[apoe$e4carrier==TRUE & apoe$definedhypertension==FALSE,],
+                apoe[apoe$e4carrier==FALSE & apoe$definedhypertension==TRUE,],
+                apoe[apoe$e4carrier==TRUE & apoe$definedhypertension==TRUE,])
      ) {
-  agedement <- table(df$agegrp, df$status)
-  pyears <- aggregate(df$ytime, by=list(df$agegrp), FUN=sum)
+  agedement <- table(df$agegrp, df$dementia_status)
+  pyears <- aggregate(df$time_to_dementia_yrs, by=list(df$agegrp), FUN=sum)
   
   # Crude incidence rates
   incrate <- round(agedement[,2]/(pyears[,2]/100000),2)
@@ -189,7 +178,7 @@ kable(adjrates, caption="Comparing age-adjusted incidence rates per 100,000 pers
 ```{r basemodel, include=TRUE, echo=FALSE}
 
 # Interaction between hypertension and APOE e4
-base <- coxph(Surv(stime, status) ~ age + gender + hypertension + e4carrier, data=apoe)
+base <- coxph(Surv(time_to_dementia, dementia_status) ~ age + gender + definedhypertension + e4carrier, data=apoe)
 base
 L0 <- logLik(base)
 ```
@@ -198,7 +187,7 @@ L0 <- logLik(base)
 ```{r interactmodel, include=TRUE, echo=FALSE}
 
 # Interaction between hypertension and APOE e4
-interact <- coxph(Surv(stime, status) ~ age + gender + hypertension * e4carrier, data=apoe)
+interact <- coxph(Surv(time_to_dementia, dementia_status) ~ age + gender + definedhypertension * e4carrier, data=apoe)
 interact
 L1 <- logLik(interact)
 ```
@@ -219,17 +208,17 @@ k <- 4
 ```{r strat, include=TRUE, echo=TRUE}
 # Stratified analysis
 # Among APOE e4 carriers
-coxph(Surv(stime, status) ~ age + gender + hypertension, data=apoe[apoe$e4carrier==TRUE,])
+coxph(Surv(time_to_dementia, dementia_status) ~ age + gender + definedhypertension, data=apoe[apoe$e4carrier==TRUE,])
 # Among hypertensives
-coxph(Surv(stime, status) ~ age + gender + e4carrier, data=apoe[apoe$hypertension==TRUE,])
+coxph(Surv(time_to_dementia, dementia_status) ~ age + gender + e4carrier, data=apoe[apoe$definedhypertension==TRUE,])
 ```
 
 ## Joint effects analysis
 ```{r joint, include=TRUE, echo=FALSE}
 # Joint effects analysis
-apoe$joint <- interaction(as.numeric(apoe$e4carrier), as.numeric(apoe$hypertension))
+apoe$joint <- interaction(as.numeric(apoe$e4carrier), as.numeric(apoe$definedhypertension))
 apoe$joint <- factor(as.numeric(apoe$joint)-1, labels=c("not a carrier, no hypertension", "e4 carrier, no hypertension", "not a carrier, hypertensive", "e4 carrier, hypertensive"))
-coxph(Surv(stime, status) ~ age + gender + joint, data=apoe)
+coxph(Surv(time_to_dementia, dementia_status) ~ age + gender + joint, data=apoe)
 ```
 
 Based on the joint-effect results, and assuming additivity, we would expect the hazards ratio of hypertensive e4 carriers to be 2.74 + 1.14 - 1 = 2.88, and we can see that this deviates from the observed hazard ratio of 3.61.

@@ -17,4 +17,5 @@ scripts:
  processing: "./Data_Management/Scripts_Processing/"
 analysisdata:
  htn: "K:/TEU/APOE on Dementia/Data_Management/Data/HTN/"
+ apoe: "K:/TEU/APOE on Dementia/Data_Management/Data/ApoE/"
  prs: "K:/TEU/UKB_Genetic_Data/bmrc-ukb-repo/htn/outputs/Evangelou2018/"
