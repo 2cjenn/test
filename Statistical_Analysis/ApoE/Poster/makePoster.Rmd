@@ -41,9 +41,21 @@ library(lmtest)
 library(kableExtra)
 library(knitr)
 library(timereg)
-source("K:/TEU/APOE on Dementia/Statistical Analysis/JCfunctions.R")
+library(yaml)
+library(here)
 
-apoe <- readRDS("K:\\TEU\\APOE on Dementia\\Data Management\\R_Dataframes_TLA\\38358\\Organised\\apoe_surv.rds")
+# Specify the markdown format for knitr tables, otherwise they're not compatible with kableExtra
+options(knitr.kable.NA='', knitr.table.format = "markdown")
+options(kableExtra.auto_format = FALSE)
+# Set the root directory to the project directory (otherwise knitr works in the directory of the Rmd file by default)
+knitr::opts_knit$set(root.dir = here::here())
+
+# Load the project config file for filepaths etc
+config = yaml.load_file(here::here("./config.yml"))
+
+source("K:/TEU/APOE on Dementia/Statistical_Analysis/JCfunctions.R")
+
+apoe <- readRDS(file=paste0(config$analysisdata$apoe, "apoe_surv.rds"))
 
 apoe$e4carrier <- apoe$apoe4>0
 apoe$apoe4 <- factor(apoe$apoe4)
@@ -52,7 +64,7 @@ apoe$alcdaily <- apoe$Alc_Freq=="Daily or almost daily"
 apoe$diab <- apoe$diabetes=="Yes"
 
 # Restrict to White individuals
-apoe$cauc <- apoe$group=="White"
+apoe$cauc <- apoe$eth_group=="White"
 apoe <- apoe[apoe$cauc==TRUE,]
 # 487310 - 459240 = 28,070 excluded
 ```
