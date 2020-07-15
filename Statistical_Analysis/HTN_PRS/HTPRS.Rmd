@@ -4,7 +4,7 @@ author: "Jennifer Collister"
 date: "`r format(Sys.time(), '%d %B %Y')`"
 output: 
   word_document:
-      reference_docx: "K:/TEU/TEU Guides/TEU_DocStyle_2020.dotx"
+      reference_docx: "K:/TEU/TEU Guides/TEU_DocStyle_Rmd_2020.dotx"
 ---
 
 ```{r setup, include=FALSE}
@@ -28,6 +28,7 @@ source("K:/TEU/APOE on Dementia/Statistical_Analysis/JCfunctions.R")
 
 # Load data
 data <- readRDS(file=paste0(config$analysisdata$htn, "HTN_excl.rds"))
+data <- data[data$treated==TRUE & !is.na(data$treated),]
 
 S_quintiles <- quantile(data$PRS_SBP, probs=seq(0, 1, 0.2), na.rm=TRUE)
 data$PRS_SBP_quint <- dplyr::case_when(
@@ -60,7 +61,7 @@ data$PRS_DBP_quint_ <- factor(data$PRS_DBP_quint,
                              labels=c("Q3 (ref)", "Q1: Lowest score", "Q2", "Q4", "Q5: Highest score"))
 
 data <- data[!is.na(data$PRS_DBP_quint) & !is.na(data$PRS_SBP_quint),]
-treated <- data[data$treated==TRUE & !is.na(data$treated),]
+treated <- data
 
 # Comorbidities of interest
 comorbs <- readRDS("K:\\TEU\\APOE on Dementia\\Data_Management\\Data\\HTN\\VI_HTNcomorb.rds")
@@ -110,7 +111,9 @@ pretty_names <- list(age = "age, years",
                      VI_Osteoarthritis_ = "osteoarthritis",
                      VI_Other_joint_disorder_ = "other joint disorder",
                      PRS = "polygenic risk score",
-                     PRS_quint = "polygenic risk score, quintiles"
+                     PRS_quint = "polygenic risk score, quintiles",
+                     PRS_SBP_quint_ = "SBP PRS score, quintiles",
+                     PRS_DBP_quint_ = "DBP PRS score, quintiles"
                      )
 
 #-------------------------------------------------------------------------------------------------------------------
@@ -123,11 +126,29 @@ footnote_no <- 1
 
 ```
 
-# 1. Confirm the overall PRS on the whole data set match what Jemma’s group get – at least to the first decimal place.  If not, explore why.
+# Confirm the overall PRS on the whole data set match what Jemma’s group get – at least to the first decimal place.  If not, explore why.
 
-Waiting to hear back from Jemma's team
+On our simplest case comparison our results matched those of Jemma's team to (at least) 2dp.
 
-# 2. Table 1 analysis.  Construct a Table 1a.  Horizontal Quintiles 1, 3, 5 of SBP PRS.  Table 1b: Same for DBP PRS.  Vertical risk factors: As for Table 1 in HTNTables_JC20200624.doc.    If there are non-trivial differences by age and/or sex will need to standardize the other risk factors (unlikely to be needed).
+This comparison was:
+
+* All individuals with genetic data available
+* Individuals who had withdrawn from UKB were excluded
+* No exclusions for genetic data outliers/sex discordance/ethnicity were made
+* Total n = 487296
+* The PRS scores have not been adjusted or standardised in any way
+* No SNPs have been excluded due to ambiguity/HWE etc
+* Total of 884 SNPs for SBP and 885 SNPs for DBP
+
+This very preliminary PRS has been calculated for all individuals.
+
+The exclusion criteria for Neo's HTN study have now been applied, resulting in a dataset of `r nrow(data)` individuals, of whom `r nrow(treated)` are considered "treated hypertensives".
+
+Quintiles for each PRS score were calculated within the treated hypertensive population.
+
+**The following analyses are conducted on this population of `r nrow(treated)` "treated hypertensives".**
+
+# Table 1 analysis.  Construct a Table 1a.  Horizontal Quintiles 1, 3, 5 of SBP PRS.  Table 1b: Same for DBP PRS.  Vertical risk factors: As for Table 1 in HTNTables_JC20200624.doc.    If there are non-trivial differences by age and/or sex will need to standardize the other risk factors (unlikely to be needed).
 
 ## Table 1a. Baseline characteristics by quintile of SBP PRS
 
@@ -142,24 +163,28 @@ varlist=c("agegrp", "gender", "eth_group",
 categories <- c("Q1: Lowest score", "Q3", "Q5: Highest score")
 catvar = "PRS_SBP_quint"
 
-desctabmulti <- function(catvar, categories, varlist, pretty_names){
+desctabmulti <- function(data, catvar, categories, varlist, pretty_names){
+  colnames <- c()
   tab <- descriptivetable(df=data[data[[catvar]]==categories[1],], 
                              varlist=varlist,
                              contavg='median',
                              pretty_names=pretty_names)
+  colnames <- c(colnames, paste0(categories[1], ", n=", nrow(data[data[[catvar]]==categories[1],])))
   for(cat in categories[-1]){
     tabq <- descriptivetable(df=data[data[[catvar]]==cat,], 
                              varlist=varlist,
                              contavg='median',
                              pretty_names=pretty_names)
     tab <- cbind(tab, tabq[,-(1:2)])
+    colnames <- c(colnames, paste0(cat, ", n=", nrow(data[data[[catvar]]==cat,])))
   }
   tab <- rbind(colnames(tab), tab)
-  colnames(tab) <- c(NA, NA, c(rbind(categories, rep(NA, length(categories)))))
+  colnames(tab) <- c(NA, NA, c(rbind(colnames, rep(NA, length(categories)))))
   return(tab)
 }
 
-tab <- desctabmulti(catvar="PRS_SBP_quint", categories=categories, varlist=varlist, pretty_names=pretty_names)
+tab <- desctabmulti(data=treated, catvar="PRS_SBP_quint", 
+                    categories=categories, varlist=varlist, pretty_names=pretty_names)
 kable(tab)
 
 ```
@@ -168,16 +193,17 @@ kable(tab)
 
 ```{r}
 
-tab <- desctabmulti(catvar="PRS_DBP_quint", categories=categories, varlist=varlist, pretty_names=pretty_names)
+tab <- desctabmulti(data=treated, catvar="PRS_DBP_quint", 
+                    categories=categories, varlist=varlist, pretty_names=pretty_names)
 kable(tab)
 
 ```
 
 
 
-# 3. Table 2 analysis.  Add the SBP PRS and DBP PRS individually, and together (i.e. 3 multivariate analyses).
+# Table 2 analysis.  Add the SBP PRS and DBP PRS individually, and together (i.e. 3 multivariate analyses).
 
-## Table 2a. Multivariable logistic regression with SBP PRS
+## Table 2a: With SBP PRS. Identifying factors associated with hypertension control, among middle-aged UK adults on anti-hypertensive treatment with genetic data available (n=`r nrow(data)`)
 
 ```{r table2_SBP, include=TRUE, echo=FALSE}
 
@@ -191,9 +217,9 @@ varlist=c("agegrp", "gender", "eth_group", "PRS_SBP_quint_",
 footnote_list <- c("townsend_quint", "employcat", "ISCED", "BirthCountryIncomeLevel", "countryResidence", "BMIcat", "METs_over1200", "comorbNumber_")
 footnote_no <- 3
 
-desctable2 <- function(df){
+desctable2 <- function(df, var){
   n <- nrow(df)
-  control <- prop.test(x=nrow(df[df$controlled==TRUE & !is.na(df$controlled),]),
+  control <- prop.test(x=nrow(df[df[[var]]==TRUE & !is.na(df[[var]]),]),
                            n=nrow(df), alternative="two.sided", conf.level=0.95)
   pct_control <- pretty_dp(control$estimate, dp=1, pct=TRUE)
   
@@ -211,7 +237,7 @@ n <- data.frame(descriptivetable(df=treated,
 pct_ctrl <- c()
 for(var in varlist){
   for(level in levels(treated[[var]])){
-    newrow <- desctable2(treated[treated[var]==level,])
+    newrow <- desctable2(treated[treated[var]==level,], var="controlled")
     pct_ctrl <- rbind(pct_ctrl, cbind(level, newrow))
   }
 }
@@ -250,7 +276,7 @@ add_footnote(kable(tab3), label=c("Number of individuals in levels of a categori
 
 ```
 
-## Table 2b. Multivariable logistic regression with DBP PRS
+## Table 2b: With DBP PRS. Identifying factors associated with hypertension control, among middle-aged UK adults on anti-hypertensive treatment with genetic data available (n=`r nrow(data)`)
 
 ```{r table2_DBP, include=TRUE, echo=FALSE}
 
@@ -323,7 +349,7 @@ add_footnote(kable(tab3), label=c("Number of individuals in levels of a categori
 
 ```
 
-## Table 2c. Multivariable logistic regression with both SBP and DBP PRS
+## Table 2c: With both SBP and DBP PRS. Identifying factors associated with hypertension control, among middle-aged UK adults on anti-hypertensive treatment with genetic data available (n=`r nrow(data)`)
 
 ```{r table2_SBPDBP, include=TRUE, echo=FALSE}
 
@@ -396,16 +422,89 @@ add_footnote(kable(tab3), label=c("Number of individuals in levels of a categori
 
 ```
 
-# 4. Compute observed SBP and DBP by quintile of each PRS (watchout for influence of outliers).  A box and whisker plot would be good.
+# Compute observed SBP and DBP by quintile of each PRS (watchout for influence of outliers).  A box and whisker plot would be good.
+
+## Mean and median observed SBP and DBP by quintile of SBP PRS
 
 ```{r}
 
 means_Squint <- aggregate(data[,c("SBP", "DBP")], list(data$PRS_SBP_quint), mean)
-kable(means_Squint)
+means_Squint[,c("SBP", "DBP")] <- pretty_dp(means_Squint[,c("SBP", "DBP")], 2)
+medians_Squint <- aggregate(data[,c("SBP", "DBP")], list(data$PRS_SBP_quint), median)
+medians_Squint[,c("SBP", "DBP")] <- pretty_dp(medians_Squint[,c("SBP", "DBP")], 2)
+S_obs <- merge(means_Squint, medians_Squint, by="Group.1", suffixes=c(" Mean", " Median"))
+kable(S_obs)
+
+```
+
+## Mean and median observed SBP and DBP by quintile of DBP PRS
+
+```{r}
 
 means_Dquint <- aggregate(data[,c("SBP", "DBP")], list(data$PRS_DBP_quint), mean)
-kable(means_Dquint)
+means_Dquint[,c("SBP", "DBP")] <- pretty_dp(means_Dquint[,c("SBP", "DBP")], 2)
+medians_Dquint <- aggregate(data[,c("SBP", "DBP")], list(data$PRS_DBP_quint), median)
+medians_Dquint[,c("SBP", "DBP")] <- pretty_dp(medians_Dquint[,c("SBP", "DBP")], 2)
+D_obs <- merge(means_Dquint, medians_Dquint, by="Group.1", suffixes=c(" Mean", " Median"))
+kable(D_obs)
 
-boxplot(SBP~PRS_SBP_quint,  data=data, main="", xlab="SBP PRS score, quintiles", ylab="Systolic Blood pressure at baseline")
+```
+
+## Boxplots
+
+```{r}
+
+boxplot(SBP~PRS_SBP_quint,  data=data, main="SBP by quintile of SBP PRS", 
+        xlab="SBP PRS score, quintiles", ylab="Systolic BP at baseline")
+
+boxplot(DBP~PRS_DBP_quint,  data=data, main="DBP by quintile of DBP PRS", 
+        xlab="DBP PRS score, quintiles", ylab="Diastolic BP at baseline")
+
+```
+
+## Removing outlying BP values:
+
+Define outliers as those values below Q1 - 1.5 IQR or above Q3 + 1.5 IQR (note here Q = quartile not quintile!)
+
+```{r}
+
+Squartile <- quantile(data$SBP, probs=seq(0, 1, 0.25), na.rm=TRUE)
+SIQR <- Squartile[4] - Squartile[2]
+
+Dquartile <- quantile(data$DBP, probs=seq(0, 1, 0.25), na.rm=TRUE)
+DIQR <- Dquartile[4] - Dquartile[2]
+
+data_out <- data[(data$SBP>=(Squartile[2]-(1.5*SIQR)) & data$SBP<=(Squartile[4]+(1.5*SIQR))) &
+                    (data$DBP>=(Dquartile[2]-(1.5*DIQR)) & data$DBP<=(Dquartile[4]+(1.5*DIQR))),]
+
+```
+
+Exclude individuals from the dataset for whom either their SBP or DBP value is an outlier. There are `r nrow(data_out)` individuals remaining.
+
+Repeat the above tables without outliers:
+
+### Mean and median observed SBP and DBP by quintile of SBP PRS, outliers removed
+
+```{r}
+
+means_Squint <- aggregate(data_out[,c("SBP", "DBP")], list(data_out$PRS_SBP_quint), mean)
+means_Squint[,c("SBP", "DBP")] <- pretty_dp(means_Squint[,c("SBP", "DBP")], 2)
+medians_Squint <- aggregate(data_out[,c("SBP", "DBP")], list(data_out$PRS_SBP_quint), median)
+medians_Squint[,c("SBP", "DBP")] <- pretty_dp(medians_Squint[,c("SBP", "DBP")], 2)
+S_obs <- merge(means_Squint, medians_Squint, by="Group.1", suffixes=c(" Mean", " Median"))
+kable(S_obs)
+
+```
+
+### Mean and median observed SBP and DBP by quintile of DBP PRS, outliers removed
+
+```{r}
+
+means_Dquint <- aggregate(data_out[,c("SBP", "DBP")], list(data_out$PRS_DBP_quint), mean)
+means_Dquint[,c("SBP", "DBP")] <- pretty_dp(means_Dquint[,c("SBP", "DBP")], 2)
+medians_Dquint <- aggregate(data_out[,c("SBP", "DBP")], list(data_out$PRS_DBP_quint), median)
+medians_Dquint[,c("SBP", "DBP")] <- pretty_dp(medians_Dquint[,c("SBP", "DBP")], 2)
+D_obs <- merge(means_Dquint, medians_Dquint, by="Group.1", suffixes=c(" Mean", " Median"))
+kable(D_obs)
 
 ```
