@@ -14,6 +14,8 @@ library(kableExtra)
 library(knitr)
 library(yaml)
 library(here)
+library(glue)
+library(docstring)
 
 # Specify the markdown format for knitr tables, otherwise they're not compatible with kableExtra
 options(knitr.kable.NA='', knitr.table.format = "markdown")
@@ -28,40 +30,55 @@ source("K:/TEU/APOE on Dementia/Statistical_Analysis/JCfunctions.R")
 
 # Load data
 data <- readRDS(file=paste0(config$analysisdata$htn, "HTN_excl.rds"))
-data <- data[data$treated==TRUE & !is.na(data$treated),]
 
-S_quintiles <- quantile(data$PRS_SBP, probs=seq(0, 1, 0.2), na.rm=TRUE)
-data$PRS_SBP_quint <- dplyr::case_when(
-  data$PRS_SBP <= S_quintiles[2] ~ "Q1: Lowest score",
-  data$PRS_SBP > S_quintiles[2] & data$PRS_SBP <= S_quintiles[3] ~ "Q2",
-  data$PRS_SBP > S_quintiles[3] & data$PRS_SBP <= S_quintiles[4] ~ "Q3",
-  data$PRS_SBP > S_quintiles[4] & data$PRS_SBP <= S_quintiles[5] ~ "Q4",
-  data$PRS_SBP > S_quintiles[5] & data$PRS_SBP <= S_quintiles[6] ~ "Q5: Highest score",
-  TRUE ~ "Unanswered"
-)
-data$PRS_SBP_quint <- factor(data$PRS_SBP_quint,
+## Remove participants with no genetic data
+data <- data[!is.na(data$PRS_DBP) & !is.na(data$PRS_SBP),]
+
+# Calculated combined BP PRS score
+data$PRS_BPavg <- rowMeans(data[,c("PRS_SBP", "PRS_DBP")])
+
+# Restrict to treated individuals
+treated <- data[data$treated==TRUE & !is.na(data$treated),]
+
+# Produce quintiles of the PRS scores
+
+labelQuint <- function(df, var, quint, newvarname){
+  df[[newvarname]] <- dplyr::case_when(
+    df[[var]] <= quint[2] ~ "Q1: Lowest score",
+    df[[var]] > quint[2] & df[[var]] <= quint[3] ~ "Q2",
+    df[[var]] > quint[3] & df[[var]] <= quint[4] ~ "Q3",
+    df[[var]] > quint[4] & df[[var]] <= quint[5] ~ "Q4",
+    df[[var]] > quint[5] & df[[var]] <= quint[6] ~ "Q5: Highest score",
+  )
+  df[[newvarname]] <- factor(df[[newvarname]],
                               levels=c("Q1: Lowest score", "Q2", "Q3", "Q4", "Q5: Highest score"))
-data$PRS_SBP_quint_ <- factor(data$PRS_SBP_quint,
-                              levels=c("Q3", "Q1: Lowest score", "Q2", "Q4", "Q5: Highest score"),
-                              labels=c("Q3 (ref)", "Q1: Lowest score", "Q2", "Q4", "Q5: Highest score"))
+  df[[paste0(newvarname, "_")]] <- factor(df[[newvarname]],
+                                          levels=c("Q3", "Q1: Lowest score", "Q2", "Q4", "Q5: Highest score"),
+                                          labels=c("Q3 (ref)", "Q1: Lowest score", "Q2", "Q4", "Q5: Highest score"))
+  return(df)
+}
 
-D_quintiles <- quantile(data$PRS_DBP, probs=seq(0, 1, 0.2), na.rm=TRUE)
-data$PRS_DBP_quint <- dplyr::case_when(
-  data$PRS_DBP <= D_quintiles[2] ~ "Q1: Lowest score",
-  data$PRS_DBP > D_quintiles[2] & data$PRS_DBP <= D_quintiles[3] ~ "Q2",
-  data$PRS_DBP > D_quintiles[3] & data$PRS_DBP <= D_quintiles[4] ~ "Q3",
-  data$PRS_DBP > D_quintiles[4] & data$PRS_DBP <= D_quintiles[5] ~ "Q4",
-  data$PRS_DBP > D_quintiles[5] & data$PRS_DBP <= D_quintiles[6] ~ "Q5: Highest score",
-  TRUE ~ "Unanswered"
-)
-data$PRS_DBP_quint <- factor(data$PRS_DBP_quint,
-                             levels=c("Q1: Lowest score", "Q2", "Q3", "Q4", "Q5: Highest score"))
-data$PRS_DBP_quint_ <- factor(data$PRS_DBP_quint,
-                              levels=c("Q3", "Q1: Lowest score", "Q2", "Q4", "Q5: Highest score"),
-                             labels=c("Q3 (ref)", "Q1: Lowest score", "Q2", "Q4", "Q5: Highest score"))
+S_quintiles <- quantile(treated$PRS_SBP, probs=seq(0, 1, 0.2), na.rm=TRUE)
+treated <- labelQuint(treated, var="PRS_SBP", quint=S_quintiles, newvarname="PRS_SBP_quint")
 
-data <- data[!is.na(data$PRS_DBP_quint) & !is.na(data$PRS_SBP_quint),]
-treated <- data
+D_quintiles <- quantile(treated$PRS_DBP, probs=seq(0, 1, 0.2), na.rm=TRUE)
+treated <- labelQuint(treated, var="PRS_DBP", quint=D_quintiles, newvarname="PRS_DBP_quint")
+
+BP_quintiles <- quantile(treated$PRS_BPavg, probs=seq(0, 1, 0.2), na.rm=TRUE)
+treated <- labelQuint(treated, var="PRS_BPavg", quint=BP_quintiles, newvarname="PRS_BPavg_quint")
+
+# Restrict to white individuals
+
+treatedwhite <- treated[!is.na(treated$GeP_ethnic.m0),]
+
+S_quintiles_w <- quantile(treatedwhite$PRS_SBP, probs=seq(0, 1, 0.2), na.rm=TRUE)
+treatedwhite <- labelQuint(treatedwhite, var="PRS_SBP", quint=S_quintiles_w, newvarname="PRS_SBP_quint")
+
+D_quintiles_w <- quantile(treatedwhite$PRS_DBP, probs=seq(0, 1, 0.2), na.rm=TRUE)
+treatedwhite <- labelQuint(treatedwhite, var="PRS_DBP", quint=D_quintiles_w, newvarname="PRS_DBP_quint")
+
+BP_quintiles_w <- quantile(treatedwhite$PRS_BPavg, probs=seq(0, 1, 0.2), na.rm=TRUE)
+treatedwhite <- labelQuint(treatedwhite, var="PRS_BPavg", quint=BP_quintiles_w, newvarname="PRS_BPavg_quint")
 
 # Comorbidities of interest
 comorbs <- readRDS("K:\\TEU\\APOE on Dementia\\Data_Management\\Data\\HTN\\VI_HTNcomorb.rds")
@@ -113,8 +130,16 @@ pretty_names <- list(age = "age, years",
                      PRS = "polygenic risk score",
                      PRS_quint = "polygenic risk score, quintiles",
                      PRS_SBP_quint_ = "SBP PRS score, quintiles",
-                     PRS_DBP_quint_ = "DBP PRS score, quintiles"
+                     PRS_DBP_quint_ = "DBP PRS score, quintiles",
+                     PRS_BPavg_quint_ = "Combined BP PRS score, quintiles"
                      )
+
+pclist <- c()
+for(i in seq(1:10)){
+  pci <- glue("GeP_PC.m{i}")
+  pclist <- c(pclist, pci)
+  pretty_names[[pci]] <- glue("Genetic PC {i}")
+}
 
 #-------------------------------------------------------------------------------------------------------------------
 # Setup
@@ -148,9 +173,7 @@ Quintiles for each PRS score were calculated within the treated hypertensive pop
 
 **The following analyses are conducted on this population of `r nrow(treated)` "treated hypertensives".**
 
-# Table 1 analysis.  Construct a Table 1a.  Horizontal Quintiles 1, 3, 5 of SBP PRS.  Table 1b: Same for DBP PRS.  Vertical risk factors: As for Table 1 in HTNTables_JC20200624.doc.    If there are non-trivial differences by age and/or sex will need to standardize the other risk factors (unlikely to be needed).
-
-## Table 1a. Baseline characteristics by quintile of SBP PRS
+# Table 1. Baseline characteristics by quintile of combined BP PRS
 
 ```{r}
 
@@ -161,7 +184,6 @@ varlist=c("agegrp", "gender", "eth_group",
           "comorbNumber_")
   
 categories <- c("Q1: Lowest score", "Q3", "Q5: Highest score")
-catvar = "PRS_SBP_quint"
 
 desctabmulti <- function(data, catvar, categories, varlist, pretty_names){
   colnames <- c()
@@ -183,39 +205,29 @@ desctabmulti <- function(data, catvar, categories, varlist, pretty_names){
   return(tab)
 }
 
-tab <- desctabmulti(data=treated, catvar="PRS_SBP_quint", 
+tab <- desctabmulti(data=treated, catvar="PRS_BPavg_quint", 
                     categories=categories, varlist=varlist, pretty_names=pretty_names)
 kable(tab)
 
 ```
 
-## Table 1b. Baseline characteristics by quintile of DBP PRS
+# Multivariable regressions
 
-```{r}
+* Including the first 10 principal components
+* Restricted to Whites only
+* Including first 10 PCs **and** restricted to whites only
 
-tab <- desctabmulti(data=treated, catvar="PRS_DBP_quint", 
-                    categories=categories, varlist=varlist, pretty_names=pretty_names)
-kable(tab)
-
-```
-
-
-
-# Table 2 analysis.  Add the SBP PRS and DBP PRS individually, and together (i.e. 3 multivariate analyses).
-
-## Table 2a: With SBP PRS. Identifying factors associated with hypertension control, among middle-aged UK adults on anti-hypertensive treatment with genetic data available (n=`r nrow(data)`)
+## Table 2a: With combined BP PRS and first 10 principal components. Identifying factors associated with hypertension control, among middle-aged UK adults on anti-hypertensive treatment with genetic data available (n=`r nrow(treated)`)
 
 ```{r table2_SBP, include=TRUE, echo=FALSE}
 
-varlist=c("agegrp", "gender", "eth_group", "PRS_SBP_quint_",
+varlist=c("agegrp", "gender", "eth_group", "PRS_BPavg_quint_",
           "townsend_quint", "income", "employcat", "ISCED", "BirthCountryIncomeLevel", "countryResidence",
           "BMIcat", "Smo_Status", "weekly_alccat", "METs_over1200",
           "antiHTNmedsno",  "FamilyHist_CVD_",
           "BowelCancerScreening",
-          "comorbNumber_")
+          "comorbNumber_", pclist)
 
-footnote_list <- c("townsend_quint", "employcat", "ISCED", "BirthCountryIncomeLevel", "countryResidence", "BMIcat", "METs_over1200", "comorbNumber_")
-footnote_no <- 3
 
 desctable2 <- function(df, var){
   n <- nrow(df)
@@ -230,8 +242,7 @@ desctable2 <- function(df, var){
 n <- data.frame(descriptivetable(df=treated, 
                          varlist=varlist,
                          contavg='median',
-                         pretty_names=pretty_names,
-                         footnote_list=footnote_list),
+                         pretty_names=pretty_names),
                 stringsAsFactors = FALSE)
 
 pct_ctrl <- c()
@@ -242,6 +253,7 @@ for(var in varlist){
   }
 }
 
+
 adj <- regressiontable(df=treated, outcome="controlled", varlist=varlist, 
                        regresstype="adjusted", adjvarlist=c("agegrp", "gender"))
 multi <- regressiontable(df=treated, outcome="controlled", varlist=varlist, 
@@ -249,75 +261,52 @@ multi <- regressiontable(df=treated, outcome="controlled", varlist=varlist,
 
 tab3 <- merge(adj, multi, by=c("IDcol", "Coefficient", "Level"), sort=FALSE)
 # Add n column
-tab3 <- cbind(n[,1:3], pct_ctrl[,3], tab3[,4:9])
+tab3 <- cbind(n[,1:3], c(pct_ctrl[,3], rep(NA, 10)), tab3[,4:9])
 
 # Hide "unanswered"/"unknown"/"do not know" categories
 tab3 <- tab3[-which(tab3$Level %in% c("Unknown", "Unanswered", "Do not know", "Prefer not to answer")),]
 rownames(tab3) <- NULL
 
-tab3 <- rbind(c("Coefficient", "Level", "n^1^", "% Controlled^2^", "OR", "95% CI", "p", "OR", "95% CI", "p"),
+tab3 <- rbind(c("Coefficient", "Level", "n", "% Controlled", "OR", "95% CI", "p", "OR", "95% CI", "p"),
               as.matrix(tab3))
 colnames(tab3) <- c("","","","", 
                     "Age- and sex-adjusted", "", "", 
                     "Multivariable- adjusted", "", "")
 
 # Output the resulting table
-add_footnote(kable(tab3), label=c("Number of individuals in levels of a categorical variable may not add up to total n because 'Do not know' and 'Prefer not to answer' categories have been removed from results table",
-                                  "Hypertension control is defined as mean systolic BP >= 140 mmHg or mean diastolic BP >= 90 mmHg at baseline assessment, among treated hypertensives.",
-                                  "The Townsend index is a measure of material deprivation calculated at the level of census output areas.", 
-                                  "Occupation categories have been condensed from those recorded in UKB. Professional and Administrative: Managers and Senior Officials, Professional Occupations, Associate Professional and Technical Occupations, Administrative and Secretarial Occupations. Skilled trades: Skilled Trades Occupations. Services: Personal Service Occupations, Sales and Customer Service Occupations. Manual and Industrial: Process, Plant and Machine Operatives, Elementary Occupations. Other employment: free text entry that was not coded by UKB.", 
-                                  "Self-reported highest education achieved was mapped to the International Standard Classification of Education (ISCED) categories",
-                                  "Self-reported country of birth was mapped to the World Bank Analytical Classifications for calendar year 2010.",
-                                  "The assessment centre the participant attended was used as a proxy for country of residence",
-                                  "BMI has been categorised as: Underweight < 18.5 kg/m^2^; Normal 18.5 - 24.9 kg/m^2^; Overweight 25.0 - 29.9 kg/m^2^; Obese >= 30.0 kg/m^2^.", 
-                                  "The total Metabolic Equivalent Task (MET) minutes per week is based on self-reported frequency and duration of walking, moderate and vigorous activity, and was then dichotomized based on WHO physical activity guideline thresholds.",
-                                  paste0("The number of comorbidities considered to be of interest - ", paste(sapply(comorbs_string, prettyfunc,  pnames=pretty_names, upper=FALSE), collapse=", "), ".")
-                                  ), notation="number")
+kable(tab3)
 
 ```
 
-## Table 2b: With DBP PRS. Identifying factors associated with hypertension control, among middle-aged UK adults on anti-hypertensive treatment with genetic data available (n=`r nrow(data)`)
+## Table 2b: With combined BP PRS, restricted to "genetically Caucasian". Identifying factors associated with hypertension control, among middle-aged UK adults on anti-hypertensive treatment with genetic data available (n=`r nrow(treatedwhite)`)
 
 ```{r table2_DBP, include=TRUE, echo=FALSE}
 
-varlist=c("agegrp", "gender", "eth_group", "PRS_DBP_quint_",
+varlist=c("agegrp", "gender", "PRS_BPavg_quint_",
           "townsend_quint", "income", "employcat", "ISCED", "BirthCountryIncomeLevel", "countryResidence",
           "BMIcat", "Smo_Status", "weekly_alccat", "METs_over1200",
           "antiHTNmedsno",  "FamilyHist_CVD_",
           "BowelCancerScreening",
           "comorbNumber_")
 
-footnote_list <- c("townsend_quint", "employcat", "ISCED", "BirthCountryIncomeLevel", "countryResidence", "BMIcat", "METs_over1200", "comorbNumber_")
-footnote_no <- 3
 
-desctable2 <- function(df){
-  n <- nrow(df)
-  control <- prop.test(x=nrow(df[df$controlled==TRUE & !is.na(df$controlled),]),
-                           n=nrow(df), alternative="two.sided", conf.level=0.95)
-  pct_control <- pretty_dp(control$estimate, dp=1, pct=TRUE)
-  
-  table <- cbind(n, pct_control)
-  return(table)
-}
-
-n <- data.frame(descriptivetable(df=treated, 
+n <- data.frame(descriptivetable(df=treatedwhite, 
                          varlist=varlist,
                          contavg='median',
-                         pretty_names=pretty_names,
-                         footnote_list=footnote_list),
+                         pretty_names=pretty_names),
                 stringsAsFactors = FALSE)
 
 pct_ctrl <- c()
 for(var in varlist){
-  for(level in levels(treated[[var]])){
-    newrow <- desctable2(treated[treated[var]==level,])
+  for(level in levels(treatedwhite[[var]])){
+    newrow <- desctable2(treatedwhite[treatedwhite[var]==level,], var="controlled")
     pct_ctrl <- rbind(pct_ctrl, cbind(level, newrow))
   }
 }
 
-adj <- regressiontable(df=treated, outcome="controlled", varlist=varlist, 
+adj <- regressiontable(df=treatedwhite, outcome="controlled", varlist=varlist, 
                        regresstype="adjusted", adjvarlist=c("agegrp", "gender"))
-multi <- regressiontable(df=treated, outcome="controlled", varlist=varlist, 
+multi <- regressiontable(df=treatedwhite, outcome="controlled", varlist=varlist, 
                          regresstype="multivariable")
 
 tab3 <- merge(adj, multi, by=c("IDcol", "Coefficient", "Level"), sort=FALSE)
@@ -328,125 +317,77 @@ tab3 <- cbind(n[,1:3], pct_ctrl[,3], tab3[,4:9])
 tab3 <- tab3[-which(tab3$Level %in% c("Unknown", "Unanswered", "Do not know", "Prefer not to answer")),]
 rownames(tab3) <- NULL
 
-tab3 <- rbind(c("Coefficient", "Level", "n^1^", "% Controlled^2^", "OR", "95% CI", "p", "OR", "95% CI", "p"),
+tab3 <- rbind(c("Coefficient", "Level", "n", "% Controlled", "OR", "95% CI", "p", "OR", "95% CI", "p"),
               as.matrix(tab3))
 colnames(tab3) <- c("","","","", 
                     "Age- and sex-adjusted", "", "", 
                     "Multivariable- adjusted", "", "")
 
 # Output the resulting table
-add_footnote(kable(tab3), label=c("Number of individuals in levels of a categorical variable may not add up to total n because 'Do not know' and 'Prefer not to answer' categories have been removed from results table",
-                                  "Hypertension control is defined as mean systolic BP >= 140 mmHg or mean diastolic BP >= 90 mmHg at baseline assessment, among treated hypertensives.",
-                                  "The Townsend index is a measure of material deprivation calculated at the level of census output areas.", 
-                                  "Occupation categories have been condensed from those recorded in UKB. Professional and Administrative: Managers and Senior Officials, Professional Occupations, Associate Professional and Technical Occupations, Administrative and Secretarial Occupations. Skilled trades: Skilled Trades Occupations. Services: Personal Service Occupations, Sales and Customer Service Occupations. Manual and Industrial: Process, Plant and Machine Operatives, Elementary Occupations. Other employment: free text entry that was not coded by UKB.", 
-                                  "Self-reported highest education achieved was mapped to the International Standard Classification of Education (ISCED) categories",
-                                  "Self-reported country of birth was mapped to the World Bank Analytical Classifications for calendar year 2010.",
-                                  "The assessment centre the participant attended was used as a proxy for country of residence",
-                                  "BMI has been categorised as: Underweight < 18.5 kg/m^2^; Normal 18.5 - 24.9 kg/m^2^; Overweight 25.0 - 29.9 kg/m^2^; Obese >= 30.0 kg/m^2^.", 
-                                  "The total Metabolic Equivalent Task (MET) minutes per week is based on self-reported frequency and duration of walking, moderate and vigorous activity, and was then dichotomized based on WHO physical activity guideline thresholds.",
-                                  paste0("The number of comorbidities considered to be of interest - ", paste(sapply(comorbs_string, prettyfunc,  pnames=pretty_names, upper=FALSE), collapse=", "), ".")
-                                  ), notation="number")
+kable(tab3)
 
 ```
 
-## Table 2c: With both SBP and DBP PRS. Identifying factors associated with hypertension control, among middle-aged UK adults on anti-hypertensive treatment with genetic data available (n=`r nrow(data)`)
+## Table 2c: With combined BP PRS, restricted to "genetically Caucasian", including first 10 PCs. Identifying factors associated with hypertension control, among middle-aged UK adults on anti-hypertensive treatment with genetic data available (n=`r nrow(treatedwhite)`)
 
 ```{r table2_SBPDBP, include=TRUE, echo=FALSE}
 
-varlist=c("agegrp", "gender", "eth_group", "PRS_SBP_quint_", "PRS_DBP_quint_",
+varlist=c("agegrp", "gender", "PRS_BPavg_quint_",
           "townsend_quint", "income", "employcat", "ISCED", "BirthCountryIncomeLevel", "countryResidence",
           "BMIcat", "Smo_Status", "weekly_alccat", "METs_over1200",
           "antiHTNmedsno",  "FamilyHist_CVD_",
           "BowelCancerScreening",
-          "comorbNumber_")
+          "comorbNumber_", pclist)
 
-footnote_list <- c("townsend_quint", "employcat", "ISCED", "BirthCountryIncomeLevel", "countryResidence", "BMIcat", "METs_over1200", "comorbNumber_")
-footnote_no <- 3
 
-desctable2 <- function(df){
-  n <- nrow(df)
-  control <- prop.test(x=nrow(df[df$controlled==TRUE & !is.na(df$controlled),]),
-                           n=nrow(df), alternative="two.sided", conf.level=0.95)
-  pct_control <- pretty_dp(control$estimate, dp=1, pct=TRUE)
-  
-  table <- cbind(n, pct_control)
-  return(table)
-}
-
-n <- data.frame(descriptivetable(df=treated, 
+n <- data.frame(descriptivetable(df=treatedwhite, 
                          varlist=varlist,
                          contavg='median',
-                         pretty_names=pretty_names,
-                         footnote_list=footnote_list),
+                         pretty_names=pretty_names),
                 stringsAsFactors = FALSE)
 
 pct_ctrl <- c()
 for(var in varlist){
-  for(level in levels(treated[[var]])){
-    newrow <- desctable2(treated[treated[var]==level,])
+  for(level in levels(treatedwhite[[var]])){
+    newrow <- desctable2(treatedwhite[treatedwhite[var]==level,], var="controlled")
     pct_ctrl <- rbind(pct_ctrl, cbind(level, newrow))
   }
 }
 
-adj <- regressiontable(df=treated, outcome="controlled", varlist=varlist, 
+adj <- regressiontable(df=treatedwhite, outcome="controlled", varlist=varlist, 
                        regresstype="adjusted", adjvarlist=c("agegrp", "gender"))
-multi <- regressiontable(df=treated, outcome="controlled", varlist=varlist, 
+multi <- regressiontable(df=treatedwhite, outcome="controlled", varlist=varlist, 
                          regresstype="multivariable")
 
 tab3 <- merge(adj, multi, by=c("IDcol", "Coefficient", "Level"), sort=FALSE)
 # Add n column
-tab3 <- cbind(n[,1:3], pct_ctrl[,3], tab3[,4:9])
+tab3 <- cbind(n[,1:3], c(pct_ctrl[,3], rep(NA, 10)), tab3[,4:9])
 
 # Hide "unanswered"/"unknown"/"do not know" categories
 tab3 <- tab3[-which(tab3$Level %in% c("Unknown", "Unanswered", "Do not know", "Prefer not to answer")),]
 rownames(tab3) <- NULL
 
-tab3 <- rbind(c("Coefficient", "Level", "n^1^", "% Controlled^2^", "OR", "95% CI", "p", "OR", "95% CI", "p"),
+tab3 <- rbind(c("Coefficient", "Level", "n", "% Controlled", "OR", "95% CI", "p", "OR", "95% CI", "p"),
               as.matrix(tab3))
 colnames(tab3) <- c("","","","", 
                     "Age- and sex-adjusted", "", "", 
                     "Multivariable- adjusted", "", "")
 
 # Output the resulting table
-add_footnote(kable(tab3), label=c("Number of individuals in levels of a categorical variable may not add up to total n because 'Do not know' and 'Prefer not to answer' categories have been removed from results table",
-                                  "Hypertension control is defined as mean systolic BP >= 140 mmHg or mean diastolic BP >= 90 mmHg at baseline assessment, among treated hypertensives.",
-                                  "The Townsend index is a measure of material deprivation calculated at the level of census output areas.", 
-                                  "Occupation categories have been condensed from those recorded in UKB. Professional and Administrative: Managers and Senior Officials, Professional Occupations, Associate Professional and Technical Occupations, Administrative and Secretarial Occupations. Skilled trades: Skilled Trades Occupations. Services: Personal Service Occupations, Sales and Customer Service Occupations. Manual and Industrial: Process, Plant and Machine Operatives, Elementary Occupations. Other employment: free text entry that was not coded by UKB.", 
-                                  "Self-reported highest education achieved was mapped to the International Standard Classification of Education (ISCED) categories",
-                                  "Self-reported country of birth was mapped to the World Bank Analytical Classifications for calendar year 2010.",
-                                  "The assessment centre the participant attended was used as a proxy for country of residence",
-                                  "BMI has been categorised as: Underweight < 18.5 kg/m^2^; Normal 18.5 - 24.9 kg/m^2^; Overweight 25.0 - 29.9 kg/m^2^; Obese >= 30.0 kg/m^2^.", 
-                                  "The total Metabolic Equivalent Task (MET) minutes per week is based on self-reported frequency and duration of walking, moderate and vigorous activity, and was then dichotomized based on WHO physical activity guideline thresholds.",
-                                  paste0("The number of comorbidities considered to be of interest - ", paste(sapply(comorbs_string, prettyfunc,  pnames=pretty_names, upper=FALSE), collapse=", "), ".")
-                                  ), notation="number")
+kable(tab3)
 
 ```
 
-# Compute observed SBP and DBP by quintile of each PRS (watchout for influence of outliers).  A box and whisker plot would be good.
-
-## Mean and median observed SBP and DBP by quintile of SBP PRS
+# Mean and median observed SBP and DBP by quintile of combined BP PRS (among treated population, n=`r nrow(treated)`)
 
 ```{r}
 
-means_Squint <- aggregate(data[,c("SBP", "DBP")], list(data$PRS_SBP_quint), mean)
+means_Squint <- aggregate(treated[,c("SBP", "DBP")], list(treated$PRS_BPavg_quint), mean)
 means_Squint[,c("SBP", "DBP")] <- pretty_dp(means_Squint[,c("SBP", "DBP")], 2)
-medians_Squint <- aggregate(data[,c("SBP", "DBP")], list(data$PRS_SBP_quint), median)
+medians_Squint <- aggregate(treated[,c("SBP", "DBP")], list(treated$PRS_BPavg_quint), median)
 medians_Squint[,c("SBP", "DBP")] <- pretty_dp(medians_Squint[,c("SBP", "DBP")], 2)
 S_obs <- merge(means_Squint, medians_Squint, by="Group.1", suffixes=c(" Mean", " Median"))
 kable(S_obs)
-
-```
-
-## Mean and median observed SBP and DBP by quintile of DBP PRS
-
-```{r}
-
-means_Dquint <- aggregate(data[,c("SBP", "DBP")], list(data$PRS_DBP_quint), mean)
-means_Dquint[,c("SBP", "DBP")] <- pretty_dp(means_Dquint[,c("SBP", "DBP")], 2)
-medians_Dquint <- aggregate(data[,c("SBP", "DBP")], list(data$PRS_DBP_quint), median)
-medians_Dquint[,c("SBP", "DBP")] <- pretty_dp(medians_Dquint[,c("SBP", "DBP")], 2)
-D_obs <- merge(means_Dquint, medians_Dquint, by="Group.1", suffixes=c(" Mean", " Median"))
-kable(D_obs)
 
 ```
 
@@ -454,11 +395,11 @@ kable(D_obs)
 
 ```{r}
 
-boxplot(SBP~PRS_SBP_quint,  data=data, main="SBP by quintile of SBP PRS", 
-        xlab="SBP PRS score, quintiles", ylab="Systolic BP at baseline")
+boxplot(SBP~PRS_BPavg_quint,  data=treated, main="SBP by quintile of combined BP PRS", 
+        xlab="Combined BP PRS score, quintiles", ylab="Systolic BP at baseline")
 
-boxplot(DBP~PRS_DBP_quint,  data=data, main="DBP by quintile of DBP PRS", 
-        xlab="DBP PRS score, quintiles", ylab="Diastolic BP at baseline")
+boxplot(DBP~PRS_BPavg_quint,  data=treated, main="DBP by quintile of combined BP PRS", 
+        xlab="Combined BP PRS score, quintiles", ylab="Diastolic BP at baseline")
 
 ```
 
@@ -468,43 +409,30 @@ Define outliers as those values below Q1 - 1.5 IQR or above Q3 + 1.5 IQR (note h
 
 ```{r}
 
-Squartile <- quantile(data$SBP, probs=seq(0, 1, 0.25), na.rm=TRUE)
+Squartile <- quantile(treated$SBP, probs=seq(0, 1, 0.25), na.rm=TRUE)
 SIQR <- Squartile[4] - Squartile[2]
 
-Dquartile <- quantile(data$DBP, probs=seq(0, 1, 0.25), na.rm=TRUE)
+Dquartile <- quantile(treated$DBP, probs=seq(0, 1, 0.25), na.rm=TRUE)
 DIQR <- Dquartile[4] - Dquartile[2]
 
-data_out <- data[(data$SBP>=(Squartile[2]-(1.5*SIQR)) & data$SBP<=(Squartile[4]+(1.5*SIQR))) &
-                    (data$DBP>=(Dquartile[2]-(1.5*DIQR)) & data$DBP<=(Dquartile[4]+(1.5*DIQR))),]
+treated_out <- treated[(treated$SBP>=(Squartile[2]-(1.5*SIQR)) & data$SBP<=(Squartile[4]+(1.5*SIQR))) &
+                    (treated$DBP>=(Dquartile[2]-(1.5*DIQR)) & data$DBP<=(Dquartile[4]+(1.5*DIQR))),]
 
 ```
 
-Exclude individuals from the dataset for whom either their SBP or DBP value is an outlier. There are `r nrow(data_out)` individuals remaining.
+Exclude individuals from the dataset for whom either their SBP or DBP value is an outlier. There are `r nrow(treated_out)` individuals remaining.
 
 Repeat the above tables without outliers:
 
-### Mean and median observed SBP and DBP by quintile of SBP PRS, outliers removed
+### Mean and median observed SBP and DBP by quintile of combined BP PRS, outliers removed
 
 ```{r}
 
-means_Squint <- aggregate(data_out[,c("SBP", "DBP")], list(data_out$PRS_SBP_quint), mean)
+means_Squint <- aggregate(treated_out[,c("SBP", "DBP")], list(treated_out$PRS_BPavg_quint), mean)
 means_Squint[,c("SBP", "DBP")] <- pretty_dp(means_Squint[,c("SBP", "DBP")], 2)
-medians_Squint <- aggregate(data_out[,c("SBP", "DBP")], list(data_out$PRS_SBP_quint), median)
+medians_Squint <- aggregate(treated_out[,c("SBP", "DBP")], list(treated_out$PRS_BPavg_quint), median)
 medians_Squint[,c("SBP", "DBP")] <- pretty_dp(medians_Squint[,c("SBP", "DBP")], 2)
 S_obs <- merge(means_Squint, medians_Squint, by="Group.1", suffixes=c(" Mean", " Median"))
 kable(S_obs)
-
-```
-
-### Mean and median observed SBP and DBP by quintile of DBP PRS, outliers removed
-
-```{r}
-
-means_Dquint <- aggregate(data_out[,c("SBP", "DBP")], list(data_out$PRS_DBP_quint), mean)
-means_Dquint[,c("SBP", "DBP")] <- pretty_dp(means_Dquint[,c("SBP", "DBP")], 2)
-medians_Dquint <- aggregate(data_out[,c("SBP", "DBP")], list(data_out$PRS_DBP_quint), median)
-medians_Dquint[,c("SBP", "DBP")] <- pretty_dp(medians_Dquint[,c("SBP", "DBP")], 2)
-D_obs <- merge(means_Dquint, medians_Dquint, by="Group.1", suffixes=c(" Mean", " Median"))
-kable(D_obs)
 
 ```
