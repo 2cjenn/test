@@ -30,6 +30,11 @@ veint_HTNhist$VIstroke <- apply(veint_HTNhist[,grep("VeI_NonCancerCode", colname
 bpcodes <- coding6[grep("hypertension|essential hypertension", coding6$meaning),]
 veint_HTNhist$VIhyp <- apply(veint_HTNhist[,grep("VeI_NonCancerCode", colnames(veint_HTNhist), fixed=TRUE)], 1, function(x) any(x %in% bpcodes$coding))
 
+alscodes <- coding6[grep("motor neurone disease", coding6$meaning),]
+veint_HTNhist$VIals <- apply(veint_HTNhist[,grep("VeI_NonCancerCode", colnames(veint_HTNhist), fixed=TRUE)], 1, function(x) any(x %in% alscodes$coding))
+
+parkcodes <- coding6[grep("parkinsons disease", coding6$meaning),]
+veint_HTNhist$VIpark <- apply(veint_HTNhist[,grep("VeI_NonCancerCode", colnames(veint_HTNhist), fixed=TRUE)], 1, function(x) any(x %in% parkcodes$coding))
 
 
 # asthcodes <- coding6[grep("asthma", coding6$meaning),]
@@ -45,7 +50,8 @@ veint_HTNhist$VIdementia <- apply(VI_diag[,grep("VeI_NonCancerCode", colnames(VI
 # for(col in c("VIstroke", "VIhyp", "VIasth", "VIcopd", "VIdementia")){
 #   veint[[col]][is.na(veint$VeI_NonCancerCode.0)] <- NA
 # }
-
+alspark <- veint_HTNhist[veint_HTNhist$VIals | veint_HTNhist$VIpark,c("ID", "VIals", "VIpark")]
+saveRDS(alspark, file=paste0(config$cleaning$organised, "veint_ALSpark_hist.rds"))                      
 
 # Additionally, prepare a list of all participants and their diagnosis codes 
 # this can later be joined to mappings from codes to specific conditions of interest

@@ -19,26 +19,25 @@ alz_ICD10 <- c("F00")
 vasc_ICD10 <- c("F01")
 other_ICD10 <- c("F02", "F03")
 dement_ICD10 <- c(alz_ICD10, vasc_ICD10, other_ICD10)
-# ICD 9 codes for dementia
-alz_ICD9 <- c("3310")
-vasc_ICD9 <- c("2904")
-other_ICD9 <- c("2900", "2901", "2902", "2903", "2941", "2942", "3311")
-dement_ICD9 <- c(alz_ICD9, vasc_ICD9, other_ICD9)
 
 # ICD 10 codes for stroke
 haem_ICD10 <- c("I60", "I61")
 infarct_ICD10 <- c("I63")
 other_ICD10 <- c("I64")
 stroke_ICD10 <- c(haem_ICD10, infarct_ICD10, other_ICD10)
-# ICD 9 codes for stroke
-haem_ICD9 <- c("430", "431")
-infarct_ICD9 <- c("433")
-other_ICD9 <- c("434","436")
-stroke_ICD9 <- c(haem_ICD9, infarct_ICD9, other_ICD9)
+
+# ICD 10 codes for ALS (motor neurone disease)
+als_ICD10 <- c("G122")
+
+# ICD 10 codes for Parkinson disease
+park_ICD10 <- c("G20")
+
 
 deaths$deathdate <- pmin(deaths$Dth_Date.m0.i0, deaths$Dth_Date.m0.i1, na.rm=TRUE)
 deaths$demdeath <- apply(deaths[,grep("Dth_ICD10", colnames(deaths), fixed=TRUE)], 1, function(x) any(substr(x, 1, 3) %in% dement_ICD10))
 deaths$strdeath <- apply(deaths[,grep("Dth_ICD10", colnames(deaths), fixed=TRUE)], 1, function(x) any(substr(x, 1, 3) %in% stroke_ICD10))
+deaths$alsdeath <- apply(deaths[,grep("Dth_ICD10", colnames(deaths), fixed=TRUE)], 1, function(x) any(substr(x, 1, 4) %in% als_ICD10))
+deaths$parkdeath <- apply(deaths[,grep("Dth_ICD10", colnames(deaths), fixed=TRUE)], 1, function(x) any(substr(x, 1, 3) %in% park_ICD10))
 
-saveRDS(deaths[,c("ID", "deathdate", "demdeath", "strdeath", "Dth_Cause.m0.i0")], 
+saveRDS(deaths[,c("ID", "deathdate", "demdeath", "strdeath", "alsdeath", "parkdeath", "Dth_Cause.m0.i0")], 
         file=paste0(config$cleaning$organised, "deathdate.rds"))
