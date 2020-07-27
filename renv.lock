@@ -366,6 +366,13 @@
       "Repository": "CRAN",
       "Hash": "f697db7d92b7028c4b3436e9603fb636"
     },
+    "docstring": {
+      "Package": "docstring",
+      "Version": "1.0.0",
+      "Source": "Repository",
+      "Repository": "CRAN",
+      "Hash": "7ff4a5313d8e38ab2c27b7554b638cf3"
+    },
     "downloader": {
       "Package": "downloader",
       "Version": "0.4",

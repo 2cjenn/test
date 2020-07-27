@@ -4,7 +4,7 @@ author: "Jennifer Collister"
 date: "15/01/2020"
 output: 
   word_document:
-      reference_docx: "C:/Users/jenniferco/Documents/RMarkdownStyle.docx"
+      reference_docx: "K:/TEU/TEU Guides/TEU_DocStyle_Rmd_2020.dotx"
 ---
 
 ```{r setup, include=FALSE}

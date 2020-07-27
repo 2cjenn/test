@@ -415,8 +415,8 @@ SIQR <- Squartile[4] - Squartile[2]
 Dquartile <- quantile(treated$DBP, probs=seq(0, 1, 0.25), na.rm=TRUE)
 DIQR <- Dquartile[4] - Dquartile[2]
 
-treated_out <- treated[(treated$SBP>=(Squartile[2]-(1.5*SIQR)) & data$SBP<=(Squartile[4]+(1.5*SIQR))) &
-                    (treated$DBP>=(Dquartile[2]-(1.5*DIQR)) & data$DBP<=(Dquartile[4]+(1.5*DIQR))),]
+treated_out <- treated[(treated$SBP>=(Squartile[2]-(1.5*SIQR)) & treated$SBP<=(Squartile[4]+(1.5*SIQR))) &
+                    (treated$DBP>=(Dquartile[2]-(1.5*DIQR)) & treated$DBP<=(Dquartile[4]+(1.5*DIQR))),]
 
 ```
 
