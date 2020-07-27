@@ -19,4 +19,5 @@ analysisdata:
  htn: "K:/TEU/APOE on Dementia/Data_Management/Data/HTN/"
  apoe: "K:/TEU/APOE on Dementia/Data_Management/Data/ApoE/"
  apoe_old: "K:/TEU/APOE on Dementia/Data_Management/Data/archive/Organised/ApoE/"
- prs: "K:/TEU/UKB_Genetic_Data/bmrc-ukb-repo/htn/outputs/Evangelou2018/"
+ prs: "K:/TEU/UKB_Genetic_Data/bmrc-ukb-repo/prs/htn-evangelou2018/outputs/"
+

@@ -6,8 +6,9 @@ library(tidyr)
 library(reshape2)
 library(dplyr)
 library(yaml)
+library(here)
 
-config = yaml.load_file("K:/TEU/APOE on Dementia/config.yml")
+config = yaml.load_file(here("config.yml"))
 
 #--------------------------------------------------------------------------------------------------------------
 
@@ -23,7 +24,7 @@ cogfunc <- readRDS(paste0(config$cleaning$organised, "cognitivefunction.rds"))
 covars <- readRDS(paste0(config$cleaning$organised, "covars.rds"))
 rubric <- readRDS(paste0(config$exclusions$htn, "HTNMedsRubric.rds"))
 
-prs <- readRDS(file=paste0(config$analysisdata$prs, "Evangelou2018_PRS.rds"))
+prs <- readRDS(file=paste0(config$analysisdata$prs, "htn-evangelou2018_PRS.rds"))
 pc <- readRDS(paste0(config$cleaning$organised, "principalcomponents.rds"))
 
 # Combine the baseline characteristics with the ethnicities

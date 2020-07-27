@@ -4,7 +4,7 @@ author: "Jennifer Collister"
 date: "28/01/2020"
 output: 
   html_document:
-      reference_docx: "K:/TEU/APOE on Dementia/RMarkdownStyle.docx"
+      reference_docx: "K:/TEU/TEU Guides/TEU_DocStyle_Rmd_2020.dotx"
       out_width: "40%"
       out_height: "40%"
 ---
