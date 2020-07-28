@@ -2,9 +2,7 @@
 title: "Template Title"
 author: "Your Name"
 date: "`r format(Sys.time(), '%d %B %Y')`"
-output: 
-  word_document:
-      reference_docx: "K:/TEU/TEU Guides/TEU_DocStyle_2020.dotx"
+output: html_notebook
 ---
 
 ```{r setup, include=FALSE}
