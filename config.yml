@@ -1,7 +1,7 @@
 data:
  received: "K:/TEU/UKB33952_Data/Data_Downloads/v1_TLAtables/"
  derived: "Data/Derived/"
- analysed: "Data/Analysed"
+ analysed: "Data/Analysed/"
  prs: "K:/TEU/UKB_Genetic_Data/bmrc-ukb-repo/prs/htn-evangelou2018/outputs/"
 cleaning:
  withdrawals: "K:/TEU/UKB33952_Data/Data_Downloads/Withdrawals/WithdrawnIDs.csv"
