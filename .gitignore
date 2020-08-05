@@ -24,14 +24,6 @@ ICD10.csv
 # And anything that's .xls probably isn't important (could make this a team convention) #
 **.xls
 
-# Some directories don't contain any code #
-###########################################
-Admin/
-Refs/
-Stats Email/
-Study Dissemination/
-Z Misc/
-
 # Ignore the renv directories#
 ##############################
 **/renv/library/
@@ -43,3 +35,7 @@ Z Misc/
 **.Rproj.user
 .Rhistory
 .Rproj.user
+
+# Ignore archived stuff #
+##############################
+**/archive/
