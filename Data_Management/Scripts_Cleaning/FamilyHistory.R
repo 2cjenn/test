@@ -7,12 +7,12 @@ library(reshape2)
 library(dplyr)
 library(yaml)
 
-config = yaml.load_file("K:/TEU/APOE on Dementia/config.yml")
+config = yaml.load_file("config.yml")
 
 #--------------------------------------------------------------------------------------------------------------
 
 # Read in the raw data
-fam <- readRDS(paste0(config$cleaning$rawdata, "FaH_base.rds"))
+fam <- readRDS(paste0(config$data$received, "FaH_base.rds"))
 
 #--------------------------------------------------------------------------------------------------------------
 # Biological family
@@ -70,4 +70,4 @@ fam$FaH_Ad_Hypertension <- apply(fam[,c(grep("FaH_AdFatherIll.", colnames(fam), 
 
 saveRDS(fam[,c("ID", "FaH_CVD", "FaH_HeartDisease", "FaH_Stroke", "FaH_Hypertension",
                "FaH_Ad_CVD", "FaH_Ad_HeartDisease", "FaH_Ad_Stroke", "FaH_Ad_Hypertension")],
-        file=paste0(config$cleaning$organised, "familyhistory.rds"))
+        file=paste0(config$data$derived, "familyhistory.rds"))

@@ -9,7 +9,7 @@ library(dplyr)
 library(yaml)
 # library(data.table)
 
-config = yaml.load_file("K:/TEU/APOE on Dementia/config.yml")
+config = yaml.load_file("config.yml")
 
 #--------------------------------------------------------------------------------------------------------------
 # Load the excel of medications where hypertensive drugs are identified
@@ -58,7 +58,7 @@ rm(htmeds, htmedslong, codegeneric, codeclass)
 # Note: We are considering hypertensive medications ONLY
 #--------------------------------------------------------------------------------------------------------------
 
-veint <- readRDS(paste0(config$cleaning$organised, "VeI_medcodes_base.rds"))
+veint <- readRDS(paste0(config$data$derived, "VeI_medcodes_base.rds"))
 # We have this field for all 502520 individuals
 sum(rowSums(veint[,c(2:49)], na.rm=TRUE)==0)
 # But for 138537 individuals it is NA across all columns
@@ -89,7 +89,7 @@ consider <- VImeds[rowSums(VImeds[,c(hypclasslist)], na.rm=TRUE)!=VImeds$hypmeds
 
 VImeds$hypmeds <- ifelse(VImeds$hypmedsno!=0, "Taking potential BP medication", "Taking non-BP medication")
 
-saveRDS(VImeds, file=paste0(config$cleaning$organised, "VIhypmeds.rds"))
-save(hypclasslist, hypdruglist, VImeds, file=paste0(config$cleaning$organised, "VIhypmeds.RData"))
+saveRDS(VImeds, file=paste0(config$data$derived, "VIhypmeds.rds"))
+save(hypclasslist, hypdruglist, VImeds, file=paste0(config$data$derived, "VIhypmeds.RData"))
 
 

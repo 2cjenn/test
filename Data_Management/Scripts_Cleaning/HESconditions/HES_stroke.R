@@ -7,13 +7,13 @@ library(reshape2)
 library(dplyr)
 library(yaml)
 
-config = yaml.load_file("K:/TEU/APOE on Dementia/config.yml")
+config = yaml.load_file("config.yml")
 
 #--------------------------------------------------------------------------------------------------------------
 
 # Read in the raw data
 # https://www.ahajournals.org/doi/full/10.1161/01.STR.0000174293.17959.a1
-HES <- readRDS(paste0(config$cleaning$rawdata, "HES.rds"))
+HES <- readRDS(paste0(config$data$received, "HES.rds"))
 source(config$functions)
 
 # ICD 10 codes for stroke
@@ -54,4 +54,4 @@ names(stroke)[names(stroke)=="Date"] <- "stroke_date"
 names(stroke)[names(stroke)=="Code"] <- "stroke_code"
 names(stroke)[names(stroke)=="type"] <- "stroke_type"
 
-saveRDS(stroke, file=paste0(config$cleaning$organised, "stroke.rds"))
+saveRDS(stroke, file=paste0(config$data$derived, "stroke.rds"))

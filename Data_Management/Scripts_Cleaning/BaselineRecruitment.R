@@ -7,14 +7,14 @@ library(reshape2)
 library(dplyr)
 library(yaml)
 
-config = yaml.load_file("K:/TEU/APOE on Dementia/config.yml")
+config = yaml.load_file("config.yml")
 
 #--------------------------------------------------------------------------------------------------------------
 
 # Read in the raw data
-base <- readRDS(paste0(config$cleaning$rawdata, "BaC.rds"))
-rec <- readRDS(paste0(config$cleaning$rawdata, "Rec_base.rds"))
-gac <- readRDS(paste0(config$cleaning$rawdata, "GAC_base.rds"))
+base <- readRDS(paste0(config$data$received, "BaC.rds"))
+rec <- readRDS(paste0(config$data$received, "Rec_base.rds"))
+gac <- readRDS(paste0(config$data$received, "GAC_base.rds"))
 
 basechar <-merge(merge(base, rec, by="ID", all=TRUE), gac, by="ID", all=TRUE)
 
@@ -36,4 +36,4 @@ names(basechar)[names(basechar)=="Rec_AssessCentre"] <- "assess_centre"
 
 saveRDS(basechar[,c("ID", "dob", "age", "gender", "lfudate", "lfureason", "townsend_depind", 
                     "recdate", "assess_centre", "aide_memoir")], 
-        file=paste0(config$cleaning$organised, "basechar.rds"))
+        file=paste0(config$data$derived, "basechar.rds"))

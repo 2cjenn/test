@@ -7,19 +7,19 @@ library(reshape2)
 library(dplyr)
 library(yaml)
 
-config = yaml.load_file("K:/TEU/APOE on Dementia/config.yml")
+config = yaml.load_file("config.yml")
 
 #--------------------------------------------------------------------------------------------------------------
 
-VI_diag <- readRDS(paste0(config$cleaning$organised, "VeI_diag_base.rds"))
-VI_diagdur <- readRDS(paste0(config$cleaning$organised, "VeI_diagdur_base.rds"))
+VI_diag <- readRDS(paste0(config$data$derived, "VeI_diag_base.rds"))
+VI_diagdur <- readRDS(paste0(config$data$derived, "VeI_diagdur_base.rds"))
 
 # Use the "year" columns for duration
 VI_diagage <- VI_diagdur[,c(1, grep("VeI_NonCancerAge.",  colnames(VI_diagdur),  fixed=TRUE))]
 VI_diagdur <- VI_diagdur[,c(1, grep("VeI_NonCancerYear.", colnames(VI_diagdur), fixed=TRUE))]
 
 
-coding6 <- read.table("K:/TEU/CancerPRS/Data_Dictionary/Mappings/coding6.tsv", sep="\t", header=TRUE, quote="", comment.char="$", fill=FALSE)
+coding6 <- read.table(file.path(config$cleaning$coding, "coding6.tsv"), sep="\t", header=TRUE, quote="", comment.char="$", fill=FALSE)
 
 # Indicator variables for many health conditions of interest
 veint_HTNhist <- VI_diag
@@ -51,7 +51,7 @@ veint_HTNhist$VIdementia <- apply(VI_diag[,grep("VeI_NonCancerCode", colnames(VI
 #   veint[[col]][is.na(veint$VeI_NonCancerCode.0)] <- NA
 # }
 alspark <- veint_HTNhist[veint_HTNhist$VIals | veint_HTNhist$VIpark,c("ID", "VIals", "VIpark")]
-saveRDS(alspark, file=paste0(config$cleaning$organised, "veint_ALSpark_hist.rds"))                      
+saveRDS(alspark, file=paste0(config$data$derived, "veint_ALSpark_hist.rds"))                      
 
 # Additionally, prepare a list of all participants and their diagnosis codes 
 # this can later be joined to mappings from codes to specific conditions of interest
@@ -81,7 +81,7 @@ VI_diaglong$age[VI_diaglong$age %in% c(-1,-3)] <- NA
 # two subtly different conditions that fit in the same UKB category?
 VI_diaglong <- unique(VI_diaglong[,c("ID", "coding", "year", "age")])
 # Save this ready to be joined to any diagnosis mapping
-saveRDS(VI_diaglong, paste0(config$cleaning$organised, "VIDiagnosisCodes_long.rds"))
+saveRDS(VI_diaglong, paste0(config$data$derived, "VIDiagnosisCodes_long.rds"))
 
 VIhyp <- VI_diaglong[VI_diaglong$coding %in% bpcodes$coding,]
 VIhypfirstyr <- VIhyp %>% group_by(ID) %>% slice(which.min(year))
@@ -93,4 +93,4 @@ veint_HTNhist <- merge(veint_HTNhist[,c("ID", "VIstroke", "VIhyp", "VIdementia",
                        VIhypfirstyr[,c("ID", "VIhypdx_yr")], by="ID", all.x=TRUE)
 veint_HTNhist <- merge(veint_HTNhist, VIhypyoungest[,c("ID", "VIhypdx_age")], by="ID", all.x=TRUE)
 saveRDS(veint_HTNhist[,c("ID", "VIstroke", "VIhyp", "VIhypdx_yr", "VIhypdx_age", "VIdementia", "VeI_NNonCancer.0")], 
-        file=paste0(config$cleaning$organised, "veint_HTNhist.rds"))
+        file=paste0(config$data$derived, "veint_HTNhist.rds"))

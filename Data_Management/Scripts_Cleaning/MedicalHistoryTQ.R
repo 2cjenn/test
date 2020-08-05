@@ -8,12 +8,12 @@ library(dplyr)
 library(yaml)
 
 if(!exists("config")){
-  config = yaml.load_file("K:/TEU/APOE on Dementia/config.yml")
+  config = yaml.load_file("config.yml")
 }
 #--------------------------------------------------------------------------------------------------------------
 
 # Read in the raw data
-medhist <- readRDS(paste0(config$cleaning$rawdata, "HMH_base.rds"))
+medhist <- readRDS(paste0(config$data$received, "HMH_base.rds"))
 
 #--------------------------------------------------------------------------------------------------------------
 # Medications
@@ -75,4 +75,4 @@ medhist$HBPAge[medhist$HBPAge %in% c(-1,-3)] <- NA
 
 saveRDS(medhist[,c("ID", "medication", "HBPmeds", "diabmeds", "cholmeds", "contraceptive", "HRT", 
                    "vasc_cond", "prevHBP", "prevstroke", "prevCVD", "illdisab", "diabetes", "BowelCancerScreening", "HBPAge")],
-        file=paste0(config$cleaning$organised, "tq_medhist.rds"))
+        file=paste0(config$data$derived, "tq_medhist.rds"))

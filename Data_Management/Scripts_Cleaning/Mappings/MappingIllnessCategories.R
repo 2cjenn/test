@@ -4,13 +4,13 @@
 #--------------------------------------------------------------------------------------------------------------
 library(yaml)
 
-config = yaml.load_file("K:/TEU/APOE on Dementia/config.yml")
+config = yaml.load_file("config.yml")
 
 noncancerillness_mapping <- function(mappath, mapcol="Mapping", outfile) {
   require(reshape2)
   require(readxl)
   # Load the long-format data of participant IDs and verbal interview diagnosis codes
-  pts <- readRDS(paste0(config$cleaning$organised, "VIDiagnosisCodes_long.rds"))
+  pts <- readRDS(paste0(config$data$derived, "VIDiagnosisCodes_long.rds"))
   
   # Load the mapped diagnoses data
   diagnoses <- read_excel(mappath)
@@ -46,16 +46,16 @@ noncancerillness_mapping <- function(mappath, mapcol="Mapping", outfile) {
 # Really serious conditions to be excluded from the data set
 noncancerillness_mapping(mappath=paste0(config$cleaning$mapping, "UKBHtn_NonCancerIllness_Mapping.xlsx"),
                          mapcol="Exclude",
-                         outfile=paste0(config$exclusions$htn, "VIhypExclude"))
+                         outfile=paste0(config$data$derived, "VIhypExclude"))
 
 
 # Hopefully final set of comorbidities of interest
 noncancerillness_mapping(mappath=paste0(config$cleaning$mapping, "UKBHtn_NonCancerIllness_Mapping.xlsx"),
                          mapcol="ComorbidityCondition",
-                         outfile=paste0(config$exclusions$htn, "VI_HTNcomorb"))
+                         outfile=paste0(config$data$derived, "VI_HTNcomorb"))
 
 # Alternate diagnoses for "probable" BP med rubric
 noncancerillness_mapping(mappath=paste0(config$cleaning$mapping, "UKBHtn_NonCancerIllness_Mapping.xlsx"),
                         mapcol="AlternateDiagnoses",
-                          outfile=paste0(config$exclusions$htn, "VIhypAltDiagnoses"))
+                          outfile=paste0(config$data$derived, "VIhypAltDiagnoses"))
 

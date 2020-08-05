@@ -7,12 +7,12 @@ library(reshape2)
 library(dplyr)
 library(yaml)
 
-config = yaml.load_file("K:/TEU/APOE on Dementia/config.yml")
+config = yaml.load_file("config.yml")
 
 #--------------------------------------------------------------------------------------------------------------
 
 # Read in the raw data
-ethnicity <- readRDS(paste0(config$cleaning$rawdata, "Eth_base.rds"))
+ethnicity <- readRDS(paste0(config$data$received, "Eth_base.rds"))
 
 
 # Reorder the factor levels to make more sense
@@ -56,7 +56,7 @@ ethnicity$eth_exact <- factor(ethnicity$eth_exact)
 
 #--------------------------------------------------------------------------------------------------------------
 # Add the genetic ethnic data
-gep <- readRDS(paste0(config$cleaning$rawdata, "GeP.rds"))
+gep <- readRDS(paste0(config$data$received, "GeP.rds"))
 
 # "Genetic ethnic group: Indicates samples who self-identified as "White British" according to Field 2100 
 # (ethnicity$Eth_Ethnicity) and have very similar genetic ancestry based on a principal components analysis of the genotypes"
@@ -78,5 +78,5 @@ ethnicity <- merge(ethnicity, gep[,c("ID", "genWhiteBrit", "GeP_ethnic.m0", "GeP
 # save
 saveRDS(ethnicity[,c("ID", "Eth_Ethnicity", "eth_group", "eth_exact", 
                      "genWhiteBrit", "GeP_ethnic.m0", "GeP_Batch.m0")], 
-        file=paste0(config$cleaning$organised, "ethnicity.rds"))
+        file=paste0(config$data$derived, "ethnicity.rds"))
 

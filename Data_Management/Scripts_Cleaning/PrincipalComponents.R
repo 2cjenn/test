@@ -5,15 +5,15 @@
 
 library(yaml)
 
-config = yaml.load_file("K:/TEU/APOE on Dementia/config.yml")
+config = yaml.load_file("config.yml")
 
 # Read in the raw data
-gep <- readRDS(paste0(config$cleaning$rawdata, "GeP.rds"))
+gep <- readRDS(paste0(config$data$received, "GeP.rds"))
 
 # Let's keep the first 10 PCs
 pclist <- paste0("GeP_PC.m",seq(1,10))
 
 # save
 saveRDS(gep[,c("ID", pclist)], 
-        file=paste0(config$cleaning$organised, "principalcomponents.rds"))
+        file=paste0(config$data$derived, "principalcomponents.rds"))
 

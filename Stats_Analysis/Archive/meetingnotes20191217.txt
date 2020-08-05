@@ -1,0 +1,26 @@
+age
+sex
+assessment centre
+education
+smoking
+depressive symptoms
+alcohol
+household income
+length of follow-up
+pre-existing cardiovascular issues
+t2 diabetes
+2nd degree or closer relatedness
+deprivation scores
+
+exclusion:
+relatedness
+neurologic conditions
+self-report vs genetic sex mismatch
+non-white
+
+
+power calculations?
+
+adjust for principal components?
+
+

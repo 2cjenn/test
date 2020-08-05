@@ -7,13 +7,13 @@ library(reshape2)
 library(dplyr)
 library(yaml)
 
-config = yaml.load_file("K:/TEU/APOE on Dementia/config.yml")
+config = yaml.load_file("config.yml")
 
 #--------------------------------------------------------------------------------------------------------------
 
 # Read in the raw data
-HES <- readRDS(paste0(config$cleaning$rawdata, "HES.rds"))
-BaC <- readRDS(paste0(config$cleaning$organised, "basechar.rds"))
+HES <- readRDS(paste0(config$data$received, "HES.rds"))
+BaC <- readRDS(paste0(config$data$derived, "basechar.rds"))
 source(config$functions)
 
 # ICD 10 codes for ALS (motor neurone disease)
@@ -44,4 +44,4 @@ als <- merge(als, BaC[,c("ID", "recdate", "dob")], by="ID", order=FALSE)
 als <- als[als$Date > als$recdate,]
 als <- als[als$Date < Sys.Date(),]
 
-saveRDS(als, file=paste0(config$cleaning$organised, "als_incident.rds"))
+saveRDS(als, file=paste0(config$data$derived, "als_incident.rds"))

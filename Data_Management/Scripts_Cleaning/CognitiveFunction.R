@@ -7,14 +7,14 @@ library(reshape2)
 library(dplyr)
 library(yaml)
 
-config = yaml.load_file("K:/TEU/APOE on Dementia/config.yml")
+config = yaml.load_file("config.yml")
 
 #--------------------------------------------------------------------------------------------------------------
 
 # Read in the raw data
-cogfunc <- readRDS(paste0(config$cleaning$rawdata, "CoF_base.rds"))
+cogfunc <- readRDS(paste0(config$data$received, "CoF_base.rds"))
 
 names(cogfunc)[names(cogfunc)=="CoF_RTTTimeID"] <- "mean_reacttime"
 
 saveRDS(cogfunc[,c("ID", "mean_reacttime")],
-        file=paste0(config$cleaning$organised, "cognitivefunction.rds"))
+        file=paste0(config$data$derived, "cognitivefunction.rds"))

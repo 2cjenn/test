@@ -7,7 +7,7 @@ library(reshape2)
 library(dplyr)
 library(yaml)
 
-config = yaml.load_file("K:/TEU/APOE on Dementia/config.yml")
+config = yaml.load_file("config.yml")
 
 #--------------------------------------------------------------------------------------------------------------
 
@@ -76,19 +76,19 @@ level4 <- unique(level4)
 level4 <- level4[order(level4$TL, level4$L1, level4$L2, level4$L3, level4$L4),]
 
 # Save the full table of codings to a csv so mappings can be produced in an Excel
-write.csv(level4, paste0(config$cleaning$organised, "NonCancerIllness.csv"), 
+write.csv(level4, paste0(config$data$derived, "NonCancerIllness.csv"), 
           na="", row.names=FALSE)
 
 # And save it as an R data file, why not
-saveRDS(level4, paste0(config$cleaning$organised, "NonCancerIllness.rds"))
+saveRDS(level4, paste0(config$data$derived, "NonCancerIllness.rds"))
 
 
 #--------------------------------------------------------------------------------------------------------------
 # Finally, join the coded participant data to the code labels
 # Load the long-format verbal interview data
-veint <- readRDS(paste0(config$cleaning$organised, "VIDiagnosisCodes_long.rds"))
+veint <- readRDS(paste0(config$data$derived, "VIDiagnosisCodes_long.rds"))
 # And merge
 final <- merge(veint, level4, by="coding")
 
 # This is a version that lists the full tree-structure for each condition for each patient
-saveRDS(final, paste0(config$cleaning$organised, "NonCancerIllness_pts.rds"))
+saveRDS(final, paste0(config$data$derived, "NonCancerIllness_pts.rds"))

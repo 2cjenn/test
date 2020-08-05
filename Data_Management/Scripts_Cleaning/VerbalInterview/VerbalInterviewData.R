@@ -8,12 +8,12 @@ library(reshape2)
 library(dplyr)
 library(yaml)
 
-config = yaml.load_file("K:/TEU/APOE on Dementia/config.yml")
+config = yaml.load_file("config.yml")
 
 #--------------------------------------------------------------------------------------------------------------
 
 # Read in the raw data
-veint <- readRDS(paste0(config$cleaning$rawdata, "VeI_base.rds"))
+veint <- readRDS(paste0(config$data$received, "VeI_base.rds"))
 
 #--------------------------------------------------------------------------------------------------------------
 # Non-cancer illness codes and durations
@@ -29,8 +29,8 @@ veint <- veint[,-c(grep("VeI_NonCancerYear.", colnames(veint), fixed=TRUE),
                    grep("VeI_NonCancerYrAgeFirst.", colnames(veint), fixed=TRUE),
                    grep("VeI_MTimeNonCancerFst.", colnames(veint), fixed=TRUE))]
 
-saveRDS(VI_diag, paste0(config$cleaning$organised, "VeI_diag_base.rds"))
-saveRDS(VI_diagdur, paste0(config$cleaning$organised, "VeI_diagdur_base.rds"))
+saveRDS(VI_diag, paste0(config$data$derived, "VeI_diag_base.rds"))
+saveRDS(VI_diagdur, paste0(config$data$derived, "VeI_diagdur_base.rds"))
 
 #--------------------------------------------------------------------------------------------------------------
 # Cancer codes and durations
@@ -46,8 +46,8 @@ veint <- veint[,-c(grep("VeI_CancerYr.", colnames(veint), fixed=TRUE),
                    grep("VeI_CancerYrAgeFirst.", colnames(veint), fixed=TRUE),
                    grep("VeI_MTimeCancerFst.", colnames(veint), fixed=TRUE))]
 
-saveRDS(VI_cancer, paste0(config$cleaning$organised, "VeI_cancer_base.rds"))
-saveRDS(VI_cancerdur, paste0(config$cleaning$organised, "VeI_cancerdur_base.rds"))
+saveRDS(VI_cancer, paste0(config$data$derived, "VeI_cancer_base.rds"))
+saveRDS(VI_cancerdur, paste0(config$data$derived, "VeI_cancerdur_base.rds"))
 
 #--------------------------------------------------------------------------------------------------------------
 # Medication codes
@@ -55,7 +55,7 @@ VI_medcode <- veint[,c(1, grep("VeI_MedCode.", colnames(veint), fixed=TRUE),
                        grep("VeI_Ntreatments.", colnames(veint), fixed=TRUE))]
 veint <- veint[,-c(grep("VeI_MedCode.", colnames(veint), fixed=TRUE))]
 
-saveRDS(VI_medcode, paste0(config$cleaning$organised, "VeI_medcodes_base.rds"))
+saveRDS(VI_medcode, paste0(config$data$derived, "VeI_medcodes_base.rds"))
 
 #--------------------------------------------------------------------------------------------------------------
 # Operation codes and durations
@@ -71,13 +71,13 @@ veint <- veint[,-c(grep("VeI_OperationYear.", colnames(veint), fixed=TRUE),
                    grep("VeI_OpYrAgeFirst.", colnames(veint), fixed=TRUE),
                    grep("VeI_MTimeOperation.", colnames(veint), fixed=TRUE))]
 
-saveRDS(VI_operation, paste0(config$cleaning$organised, "VeI_operation_base.rds"))
-saveRDS(VI_opdur, paste0(config$cleaning$organised, "VeI_opdur_base.rds"))
+saveRDS(VI_operation, paste0(config$data$derived, "VeI_operation_base.rds"))
+saveRDS(VI_opdur, paste0(config$data$derived, "VeI_opdur_base.rds"))
 
 #--------------------------------------------------------------------------------------------------------------
 # Add country names to the remaining verbal interview data
 # Load the long-format verbal interview data
-countries <- readRDS(paste0(config$cleaning$organised, "CountryIncome.rds"))
+countries <- readRDS(paste0(config$data$derived, "CountryIncome.rds"))
 # And merge
 veint <- merge(veint, countries, by="VeI_BirthCountry", all.x=TRUE)
 names(veint)[names(veint)=="Country"] <- "BirthCountry"
@@ -86,4 +86,4 @@ names(veint)[names(veint)=="IncomeLevel"] <- "BirthCountryIncomeLevel"
 
 # Note that we've left the "Ncancer" etc - number of diagnoses or operations columns in the general veint dataframe,
 # as these can be useful as stand-alone covariates
-saveRDS(veint, paste0(config$cleaning$organised, "VeIcovars_base.rds"))
+saveRDS(veint, paste0(config$data$derived, "VeIcovars_base.rds"))

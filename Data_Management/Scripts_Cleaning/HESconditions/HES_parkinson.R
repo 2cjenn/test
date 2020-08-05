@@ -7,13 +7,13 @@ library(reshape2)
 library(dplyr)
 library(yaml)
 
-config = yaml.load_file("K:/TEU/APOE on Dementia/config.yml")
+config = yaml.load_file("config.yml")
 
 #--------------------------------------------------------------------------------------------------------------
 
 # Read in the raw data
-HES <- readRDS(paste0(config$cleaning$rawdata, "HES.rds"))
-BaC <- readRDS(paste0(config$cleaning$organised, "basechar.rds"))
+HES <- readRDS(paste0(config$data$received, "HES.rds"))
+BaC <- readRDS(paste0(config$data$derived, "basechar.rds"))
 source(config$functions)
 
 # ICD 10 codes for Parkinson disease
@@ -47,4 +47,4 @@ parkinson <- parkinson[parkinson$Date > parkinson$recdate,]
 parkinson <- parkinson[parkinson$Date < Sys.Date(),]
 
 
-saveRDS(parkinson, file=paste0(config$cleaning$organised, "parkinson_incident.rds"))
+saveRDS(parkinson, file=paste0(config$data$derived, "parkinson_incident.rds"))

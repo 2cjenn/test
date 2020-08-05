@@ -12,20 +12,20 @@ config = yaml.load_file(here("config.yml"))
 
 #--------------------------------------------------------------------------------------------------------------
 
-bp <- readRDS(paste0(config$cleaning$organised, "bp.rds"))
-ethnicity <- readRDS(paste0(config$cleaning$organised, "ethnicity.rds"))
-basechar <- readRDS(paste0(config$cleaning$organised, "basechar.rds"))
-dementia <- readRDS(paste0(config$cleaning$organised, "dementia.rds"))
-VImedhist <- readRDS(paste0(config$cleaning$organised, "veint_HTNhist.rds"))
-TQmedhist <- readRDS(paste0(config$cleaning$organised, "tq_medhist.rds"))
-famhist <- readRDS(paste0(config$cleaning$organised, "familyhistory.rds"))
-deathdate <- readRDS(paste0(config$cleaning$organised, "deathdate.rds"))
-cogfunc <- readRDS(paste0(config$cleaning$organised, "cognitivefunction.rds"))
-covars <- readRDS(paste0(config$cleaning$organised, "covars.rds"))
-rubric <- readRDS(paste0(config$exclusions$htn, "HTNMedsRubric.rds"))
+bp <- readRDS(paste0(config$data$derived, "bp.rds"))
+ethnicity <- readRDS(paste0(config$data$derived, "ethnicity.rds"))
+basechar <- readRDS(paste0(config$data$derived, "basechar.rds"))
+dementia <- readRDS(paste0(config$data$derived, "dementia.rds"))
+VImedhist <- readRDS(paste0(config$data$derived, "veint_HTNhist.rds"))
+TQmedhist <- readRDS(paste0(config$data$derived, "tq_medhist.rds"))
+famhist <- readRDS(paste0(config$data$derived, "familyhistory.rds"))
+deathdate <- readRDS(paste0(config$data$derived, "deathdate.rds"))
+cogfunc <- readRDS(paste0(config$data$derived, "cognitivefunction.rds"))
+covars <- readRDS(paste0(config$data$derived, "covars.rds"))
+rubric <- readRDS(paste0(config$data$derived, "HTNMedsRubric.rds"))
 
-prs <- readRDS(file=paste0(config$analysisdata$prs, "htn-evangelou2018_PRS.rds"))
-pc <- readRDS(paste0(config$cleaning$organised, "principalcomponents.rds"))
+prs <- readRDS(file=paste0(config$data$prs, "htn-evangelou2018_PRS.rds"))
+pc <- readRDS(paste0(config$data$derived, "principalcomponents.rds"))
 
 # Combine the baseline characteristics with the ethnicities
 data <- merge(basechar, ethnicity, by="ID", all=TRUE)
@@ -53,5 +53,5 @@ data <- merge(data, rubric[,c("ID", "hypmedsno", "HTN_probablemeds")], by="ID", 
 data <- merge(data, prs, by="ID", all.x=TRUE)
 data <- merge(data, pc, by="ID", all.x=TRUE)
 
-saveRDS(data, file=paste0(config$exclusions$raw, "HTN_raw.rds"))
+saveRDS(data, file=paste0(config$data$derived, "HTN_raw.rds"))
 

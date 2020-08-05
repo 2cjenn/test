@@ -1,0 +1,386 @@
+---
+title: "Potential supplementary figures for the HTN analysis"
+author: "Jennifer Collister"
+date: "13/05/2020"
+output: 
+  word_document:
+      reference_docx: "K:/TEU/TEU Guides/TEU_DocStyle_Rmd_2020.dotx"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE)
+library(kableExtra)
+library(knitr)
+library(DiagrammeR)
+library(DiagrammeRsvg)
+library(magrittr)
+library(svglite)
+library(rsvg)
+library(png)
+library(DescTools)
+library(ggplot2)
+library(forcats)
+library(gridExtra)
+library(scales)
+library(plyr)
+library(dplyr)
+library(reshape2)
+library(corrplot)
+
+source("K:/TEU/APOE on Dementia/Statistical Analysis/JCfunctions.R")
+options(knitr.kable.NA='')
+
+data <- readRDS(file="K:\\TEU\\APOE on Dementia\\Data Management\\R_Dataframes_TLA\\38358\\Organised\\Hypertension\\Neo\\HTN_excl.rds")
+
+
+# Comorbidities of interest
+comorbs <- readRDS("K:\\TEU\\APOE on Dementia\\Data Management\\R_Dataframes_TLA\\38358\\Organised\\Hypertension\\Neo\\VI_HTNcomorb.rds")
+colnames(comorbs) <- c("ID", paste0("VI_", colnames(comorbs)[-1]))
+print(colnames(comorbs)[-1])
+comorbs_raw <- c("VI_afib_or_aflutter", "VI_CVD", "VI_diabetes", "VI_asthma_or_COPD", "VI_migraine", "VI_epilepsy",
+                 "VI_anxiety_or_stress", "VI_depression_or_bipolar", "VI_Osteoarthritis", "VI_Other_joint_disorder")
+comorbs_string <- paste0(comorbs_raw, "_")
+
+# Principal components
+pclist <- paste0("GeP_PC.m",seq(1,10))
+
+#-------------------------------------------------------------------------------------------------------------------
+# Datasets:
+
+# For the SES descriptive analyses, we want to consider two subsets: all hypertensives and all treated individuals
+hypertensives <- data[data$evidenceHTN==TRUE & !is.na(data$evidenceHTN),]
+treated <- data[data$treated==TRUE & !is.na(data$treated),]
+
+# Among the treated, those who did not list any HTN meds in VI are assumed to be taking unlisted meds
+treated$antiHTNmedsno <- factor(treated$antiHTNmedsno, levels=c("1", "2", ">=3", "0"),
+                                labels=c("1", "2", ">=3",  "Medication list unavailable"))
+
+# For the genetic analyses, we will consider only the genetically caucasian individuals
+white <- data[data$genWhiteBrit=="White British",]
+white_trt <- treated[treated$genWhiteBrit=="White British",]
+
+pretty_names <- list(agegrp = "Age group",
+                     gender = "Gender",
+                     ethnicity = "Ethnicity",
+                     eth_group = "Ethnic group",
+                     genWhiteBrit = "Genetically categorised as White British",
+                     BMIcat = "BMI (categorical)",
+                     Smo_Status = "Smoking status",
+                     weekly_alcunits = "Alcohol units per week",
+                     weekly_alccat = "Alcohol units per week (categorical)",
+                     PhA_METsWkAllAct = "Weekly physical activity, in METs",
+                     METs_over1200 = "Sufficient physical activity",
+                     townsend_quint = "Townsend Deprivation Index, quintiles",
+                     income = "Household Income, GBP",
+                     employment = "Occupation type",
+                     employcat = "Occupation category",
+                     ISCED = "Highest level of education (ISCED)",
+                     BirthCountryIncomeLevel = "Country of birth, by income level",
+                     countryResidence = "UK country of residence",
+                     BowelCancerScreening = "Ever screened for bowel cancer",
+                     HTNdx_durcat = "Duration of hypertension (categorical)",
+                     antiHTNmedsno = "Number of antihypertensive medications",
+                     FamilyHist_CVD_ = "Family history of CVD",
+                     comorbNumber_ = "No. of comorbidities",
+                     VI_afib_or_aflutter_ = "Arrhythmia (afib/flutter)",
+                     VI_anxiety_or_stress_ = "Anxiety",
+                     VI_asthma_or_COPD_ = "Asthma or COPD",
+                     VI_depression_or_bipolar_ = "Depression",
+                     VI_diabetes_ = "Diabetes",
+                     VI_epilepsy_ = "Epilepsy",
+                     VI_CVD_ = "Cardiovascular disease",
+                     VI_migraine_ = "Migraines",
+                     VI_substance_use_ = "Substance use",
+                     VI_Osteoarthritis_ = "Osteoarthritis",
+                     VI_Other_joint_disorder_ = "Other joint disorder",
+                     PRS = "Polygenic risk score",
+                     PRS_quint = "Polygenic risk score, quintiles",
+                     GeP_PC.m1 = "Principal Component 1",
+                     GeP_PC.m2 = "PC 2",
+                     GeP_PC.m3 = "PC 3",
+                     GeP_PC.m4 = "PC 4",
+                     GeP_PC.m5 = "PC 5",
+                     GeP_PC.m6 = "PC 6",
+                     GeP_PC.m7 = "PC 7",
+                     GeP_PC.m8 = "PC 8",
+                     GeP_PC.m9 = "PC 9",
+                     GeP_PC.m10 = "PC 10"
+                     )
+prettyfunc <- function(x){
+  if(x %in% names(pretty_names)){
+     return(pretty_names[[x]])
+  } else {
+    return(x)
+  }
+}
+```
+
+# Correlation between socioeconomic status variables
+
+```{r corrSES, include=TRUE, echo=FALSE}
+complete <- treated[,c("agegrp", "gender", "eth_group",
+          "townsend_quint", "income", "employcat", "ISCED", "BirthCountryIncomeLevel", "countryResidence",
+          "BMIcat", "Smo_Status", "weekly_alccat", "METs_over1200",
+          "antiHTNmedsno",  "FamilyHist_CVD_",
+          "BowelCancerScreening",
+          "comorbNumber_")]
+complete$BMIcat <- factor(complete$BMIcat, levels=c("Underweight", "Normal (ref)", "Overweight", "Obese", "Unanswered"))
+
+complete <- complete[!(complete$income %in% c("Do not know", "Unanswered"))
+                    & complete$ISCED!="Unanswered"
+                    & complete$BMIcat!="Unanswered"
+                    & complete$Smo_Status!="Unanswered",
+                    #& !(treated$employcat %in% c("Other", "Unemployed/retired/unanswered")),
+                   ]
+for(col in colnames(complete)){
+  complete[[col]] <- as.numeric(complete[[col]])
+}
+
+res <- cor(complete[,c("townsend_quint", "agegrp", "income", "ISCED", "BMIcat", "Smo_Status", "weekly_alccat", "BirthCountryIncomeLevel",  "comorbNumber_")], method="spearman")
+kable(res)
+corrplot(res, type='upper')
+```
+
+
+# Hypertension tree
+```{r fig2, include=TRUE, echo=FALSE, results='asis', }
+
+dflist <- c(list("Whole population"=data, "Females"=data[data$gender=="Female",], "Males"=data[data$gender=="Male",]))
+# names(dflist) <- c("Whole population")
+filenames <- list("Wholepop", "Females", "Males")
+names(filenames) <- names(dflist)
+
+grlist <- list()
+for(dfname in names(dflist)){
+  df <- dflist[[dfname]]
+  nlist <- list(wholepop=nrow(df))
+  pctlist <- list()
+  for(variable in c("evidenceHTN", "aware", "treated", "controlled")){
+    var <- paste0(variable, "_")
+    tab <- table(df[[var]])
+    pct <- round(100*prop.table(tab),1)
+    nlist[[variable]] <- tab
+    pctlist[[variable]] <- pct
+  }
+  export_svg(DiagrammeR::grViz("K:\\TEU\\APOE on Dementia\\Statistical Analysis\\NeoHypertension\\RMarkdown\\HTNtree.gv")) %>% charToRaw %>% rsvg %>% png::writePNG(paste0('K:/TEU/APOE on Dementia/Statistical Analysis/NeoHypertension/RMarkdown/',filenames[[dfname]],'.png'))
+}
+
+```
+
+# Supplementary Figure 3?
+
+```{r fig3, include=TRUE, echo=FALSE}
+
+# Create a factor variable for the BP categories we want to colourcode
+treated$plot_color <- dplyr::case_when(
+  treated$SBP >= 140 & treated$DBP < 90 ~ "High SBP",
+  treated$SBP < 140 & treated$DBP >= 90 ~ "High DBP",
+  treated$SBP >= 140 & treated$DBP >= 90 ~ "Both high",
+  treated$SBP < 140 & treated$DBP < 90 ~ "BP controlled"
+)
+treated$plot_color <- factor(treated$plot_color, levels=c("BP controlled", "High DBP", "High SBP", "Both high"))
+
+# Scatterplot showing distribution of SBP and DBP values among participants
+scatter <- ggplot(data = treated, aes(DBP, SBP, color = plot_color)) +
+  geom_point(size=1) +
+  labs(x="DBP, mmHg", y="SBP, mmHg", 
+       title="Scatterplot of blood pressure among\ntreated participants",
+       color="Measured BP category") +
+  geom_vline(xintercept = 90, linetype="dotted") +
+  geom_hline(yintercept = 140, linetype="dotted") +
+  scale_color_manual(values = c("BP controlled" = "green",
+                               "High DBP" = "yellow", 
+                                "High SBP" = "orange",
+                                "Both high" = "red"))
+
+ggsave(filename="K:/TEU/APOE on Dementia/Statistical Analysis/NeoHypertension/RMarkdown/ScatterHTN.png",
+       plot=scatter, height=9, width=8, units='cm')
+# # Stacked barplot to show proportion in each category
+# counts <- table(treated$plot_color, treated$controlled_)
+# count_df <- data.frame(counts)
+# colnames(count_df) <- c("colour", "status", "count")
+# ggplot(data=count_df, aes(x=status, y=count, fill=colour)) +
+#   geom_bar(stat="identity") +
+#   labs(x="BP control status", y="Number of treated participants", 
+#        title="Stacked bar plot to show proportion of treated\nparticipants in each BP control category",
+#        fill="BP control category") +
+#   scale_fill_manual(values = c("BP controlled" = "green",
+#                                "High DBP" = "yellow", 
+#                                 "High SBP" = "orange",
+#                                 "Both high" = "red"))
+
+
+# Pie chart to show proportion in each category
+counts <- table(treated$plot_color)
+count_df <- data.frame(counts)
+colnames(count_df) <- c("status", "count")
+pie <- ggplot(data=count_df, aes(x="", y=count, fill=status)) +
+  geom_bar(stat="identity", width=1) +
+  coord_polar("y", start=0) +
+  labs(x="", y="", 
+       title="Pie chart to show proportion of treated\nparticipants in each measured BP category",
+       fill="Measured BP category") +
+  theme(axis.ticks.y = element_blank(),
+        axis.text.x=element_blank()) +
+  geom_text(aes(label = paste(pretty_dp(count / sum(count) * 100, 1), "%")),
+            position = position_stack(vjust = 0.5)) +
+  scale_fill_manual(values = c("BP controlled" = "green",
+                               "High DBP" = "yellow", 
+                                "High SBP" = "orange",
+                                "Both high" = "red"))
+
+ggsave(filename="K:/TEU/APOE on Dementia/Statistical Analysis/NeoHypertension/RMarkdown/PieHTN.png",
+       plot=pie)
+
+
+highBP <- data[data$SBP>200,]
+plot(highBP$SBP)
+```
+
+# There was a chart like this in yesterday's Richard Doll lecture, I thought it was pretty so gave it a go here! 
+
+```{r suppfig3, fig.height=3, fig.width=7}
+# https://learnr.wordpress.com/2009/09/24/ggplot2-back-to-back-bar-charts/
+# https://www.r-graph-gallery.com/48-grouped-barplot-with-ggplot2.html
+
+figdata <- data[,c("ID", "age", "gender", "evidenceHTN", "aware", "treated", "controlled")]
+
+figdata$label <- ifelse(figdata$evidenceHTN==TRUE,
+                        ifelse(figdata$aware==TRUE,
+                               ifelse(figdata$treated==TRUE,
+                                      ifelse(figdata$controlled==TRUE, 
+                                             "Controlled hypertensive", 
+                                             "Inadequately treated hypertensive"),
+                                      "Untreated hypertensive"),
+                               "Unaware hypertensive"),
+                        "Normotensive")
+figdata$label <- factor(figdata$label, levels=c("Controlled hypertensive", "Inadequately treated hypertensive",
+                                                "Untreated hypertensive", "Unaware hypertensive","Normotensive"))
+figdata$age_yr <- cut(figdata$age, seq(40, 70, 1), right=FALSE, labels=seq(from=40,to=69,by=1))
+figdata <- figdata[,c("age_yr", "gender", "label")]
+
+byAge <- melt(figdata, id.vars=c("label", "age_yr"))
+byAge$variable <- 1
+
+ggplot(byAge, aes(age_yr)) + 
+  geom_bar(data=subset(byAge, value == "Female"), 
+           aes(y = variable, fill = label), stat = "identity", position="fill") +
+  geom_bar(data=subset(byAge, value == "Male"),
+         aes(y = -variable, fill = label), stat = "identity", position="fill") +
+  labs(x="Age, years", fill="Hypertension category") + 
+  ggtitle("Prevalence of hypertension categories by gender and age") +
+  scale_y_continuous(name="Female     -       Male",
+                     labels=c("100%", "50%", "0%","50%","100%")) +
+  scale_x_discrete(breaks=seq(40,70,2)) +
+  geom_hline(yintercept = 0, linetype="dotted") +
+  theme(axis.ticks.y = element_blank(),
+          legend.title = element_text(size=8),
+          legend.text = element_text(size=7)) +
+  coord_flip()
+
+ggsave(filename="K:/TEU/APOE on Dementia/Statistical Analysis/NeoHypertension/RMarkdown/PrevPct.png",
+       plot=prevpct)
+```
+
+# Another possible supplementary figure, designed to complement Table 1 - dataset is treated participants (n = `r nrow(treated)`)
+
+Boxplots of SBP and DBP in each group of each covariate.
+Boxplots have a box spanning the interquartile range (25th-75th percentiles) with a line at the median (50th percentile) and whiskers from 1st to 99th percentiles. Min and max are shown as points.
+
+In this version, the mean has also been marked with a point to allow us to verify that there are no cases where it differs consequentially from the median.
+
+
+```{r suppfig, include=TRUE, echo=FALSE, results='asis', fig.height=3, fig.width=7}
+ 
+# Want to change the whisker definition to show 1st to 99th percentiles
+#https://stackoverflow.com/questions/4765482/changing-whisker-definition-in-geom-boxplot
+
+# define the summary function - box plot over IQR with whiskers up to 1% and 99%
+f <- function(x) {
+  r <- quantile(x, probs = c(0.01, 0.25, 0.5, 0.75, 0.99))
+  names(r) <- c("ymin", "lower", "middle", "upper", "ymax")
+  r
+}
+
+# Use the outlier functionality to show the min and max values
+# Don't show all values outside 1%-99% because dataset so large that those 2% are still lots!
+o <- function(x) {
+  subset(x, x == min(x) | x == max(x))
+}
+
+# Also show mean
+m <- function(x){
+  mean(x)
+}
+
+get_legend<-function(myggplot){
+  tmp <- ggplot_gtable(ggplot_build(myggplot))
+  leg <- which(sapply(tmp$grobs, function(x) x$name) == "guide-box")
+  legend <- tmp$grobs[[leg]]
+  return(legend)
+}
+
+# For each variable in this list
+varlist=c("agegrp", "gender", "eth_group",
+          "townsend_quint", "income", "employcat", "ISCED", "BirthCountryIncomeLevel", "countryResidence",
+          "BMIcat", "Smo_Status", "weekly_alccat", "METs_over1200",
+          "HTNdx_durcat", "antiHTNmedsno",  "FamilyHist_CVD_",
+          "comorbNumber_",
+          "BowelCancerScreening")
+
+
+# Plot it for SBP and DBP
+for(var in varlist){
+  treated[paste0(var, "_rev")] <- fct_rev(treated[[var]])
+
+  sbplot <- ggplot(treated, aes_string(x=paste0(var, "_rev"), y="SBP", color=var)) +
+    stat_summary(fun.data=f, geom="boxplot") +
+    stat_summary(fun.y = o, geom="point") +
+    stat_summary(fun.y = m, geom="point") +
+    labs(x=prettyfunc(var), y="SBP, mmHg", color=prettyfunc(var)) +
+    theme(axis.text.y = element_blank(),
+          axis.ticks.y = element_blank(),
+          legend.title = element_text(size=8),
+          legend.text = element_text(size=7)) +
+    coord_flip()
+
+  legend <- get_legend(myggplot=sbplot)
+
+  sbplot <- sbplot + theme(legend.position="none")
+
+  dbplot <- ggplot(treated, aes_string(x=paste0(var, "_rev"), y="DBP", color=var)) +
+    stat_summary(fun.data=f, geom="boxplot") +
+    stat_summary(fun.y = o, geom="point") +
+    stat_summary(fun.y = m, geom="point") +
+    labs(x="", y="DBP, mmHg") +
+    theme(axis.text.y = element_blank(),
+          axis.ticks.y = element_blank(),
+          legend.position="none") +
+    coord_flip()
+
+  grid.arrange(sbplot, dbplot, legend, ncol=3, widths=c(2.3,2.3,2.3))
+}
+
+```
+
+
+```{r job_income, include=TRUE, echo=FALSE}
+varlist <- c("agegrp", "gender", "eth_group",
+          "townsend_quint", "income", "employcat", "ISCED", "BirthCountryIncomeLevel", "countryResidence",
+          "BMIcat", "Smo_Status", "weekly_alccat", "METs_over1200",
+          "antiHTNmedsno",  "FamilyHist_CVD_",
+          "BowelCancerScreening",
+          "comorbNumber_")
+
+tab <- table(treated$townsend_quint, treated$antiHTNmedsno)
+df <- data.frame(tab)
+colnames(df) <- c("Townsend", "antiHTNmedsno", "n")
+
+ggplot(df, aes(y=n, x=antiHTNmedsno, fill=Townsend)) +
+  geom_bar(stat="identity", position="fill")
+
+kable(tab)
+
+kable(table(treated$TEU_EmpCat))
+
+```

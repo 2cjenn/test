@@ -1,0 +1,148 @@
+---
+title: "Hypertension Medication Exploration v3"
+author: "Jennifer Collister"
+date: "13/02/2020"
+output: 
+  word_document:
+      reference_docx: "K:/TEU/TEU Guides/TEU_DocStyle_Rmd_2020.dotx"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE)
+
+library(kableExtra)
+library(knitr)
+library(dplyr)
+library(reshape2)
+library(tidyr)
+
+source("K:/TEU/APOE on Dementia/Statistical Analysis/JCfunctions.R")
+
+```
+
+```{r loaddata, include=FALSE}
+
+load("K:\\TEU\\APOE on Dementia\\Data Management\\R_Dataframes_TLA\\38358\\Organised\\VIhypmeds.RData")
+
+medsdata <- readRDS(file="K:\\TEU\\APOE on Dementia\\Data Management\\R_Dataframes_TLA\\38358\\Organised\\Hypertension\\Neo\\ClassifiedHypMedGroups.rds")
+
+```
+
+There are 502,520 individuals in UKB, of whom 363,983 are recorded as taking at least one medication during the verbal interview. The others have NA, which probably means that they are not taking any medication, but could in some cases mean that they were not asked about it - I don't think we have any way of knowing for certain. There are 112,372 individuals taking medications which we have classified as potential anti-hypertensives.
+
+In the data-set we're using for the APOE analysis, we consider only individuals in the age range of [50,70) with white ethnicity, data on measured blood pressure at baseline, and no previous history of dementia. After these exclusions there are 442,767 individuals in our data set, 322,033 of whom are recorded as taking at least one medication, and 98,121 of these are taking medications we have classified as anti-hypertensives.
+
+
+```{r Groups, include=TRUE, echo=FALSE}
+
+kable(propped(table(medsdata$HBPmeds_, medsdata$selfrephyp_, useNA='ifany'), margin=2), caption="Recall that while agreement between self-reported hypertension diagnoses and BP medication were pretty good, a substantial proportion (~30%) of self-reported hypertensives did not report taking BP medication")
+
+```
+
+# First, tabulate the rough groups
+
+First, we split the individuals into those who are taking a medication we have categorised as potentially anti-hypertensive, those who are taking any other medication and those who did not report any medication.
+
+We can cross-tab these with our two main self-report variables for hypertension - BP medication and previous diagnosis of hypertension, to check agreement.
+
+```{r tabulate, include=TRUE, echo=FALSE}
+
+kable(propped(table(medsdata$hypmeds,medsdata$HBPmeds_, useNA='ifany'), margin=2), caption="Self-reported medication vs roughly categorised medication - before refining whether individuals taking potentially anti-hypertensive medication are likely to be taking them for BP control or other reasons")
+
+kable(propped(table(medsdata$hypmeds,medsdata$selfrephyp_, useNA='ifany'), margin=2), caption="Self-reported hypertensive diagnosis vs roughly categorised medication - before refining whether individuals taking potentially anti-hypertensive medication are likely to be taking them for BP control or other reasons")
+
+```
+
+# Next, split by drug class
+
+These are the classes of drug that we have categorised as being potential BP medication.
+
+```{r byclass, include=TRUE, echo=FALSE}
+sums <- colSums(VImeds[,hypclasslist], na.rm=TRUE)
+kable((sums), caption="Number of individuals taking each of the main drug classes (individuals can be taking drugs from multiple classes)")
+```
+
+# And define our hypertensive medication categories,
+
+* Step 1/2: Taking one or more of ACEi, ARB, CCB WITHOUT a thiazide-like diuretic
+* Step 3: Taking Step 1/2 drug(s) AND a thiazide-like diuretic
+* Step 4: Taking a Step 3 combination of drugs AND an AB, BB or other diuretic
+* Step 5 - Resistant hypertension: Taking a Step 4 combination of drugs AND a specialist drug
+* Thiazide only: Taking ONLY a thiazide-like diuretic
+* BB only: Taking ONLY a BB
+* Step 4 without thiazide: Taking one or more of ACEi, ARB, CCB AND an AB, BB or Spironolactone WITHOUT thiazide
+* Thiazide + AB/BB/Spiro: Taking a thiazide-like diuretic AND an AA, BB or Spironolactone WITHOUT ACEi/ARB or CCB
+* All other non-standard combinations: for example, taking a specialist drug without the full Step 4 combination of drugs
+
+Note: This amalgamates changing NICE guidelines from various years.
+
+If we consider only the individuals who are taking drugs which we have classified as potentially anti-hypertensive:
+
+```{r onmeds, include=TRUE, echo=FALSE}
+
+# kable(propped(table(medsdata$hypgrp, medsdata$HBPmeds, useNA='ifany'), margin=2), caption="Tabulation to check agreement between reported BP medication and actual meds taken, within the whole population")
+BPmedsdata <- medsdata[medsdata$hypmeds=="Taking potential BP medication",]
+BPmedsdata$hypgrp <- factor(BPmedsdata$hypgrp)
+
+kable(propped(table(BPmedsdata$hypgrp, BPmedsdata$HBPmeds_, useNA='ifany'), margin=2), caption="TABLE 1: Tabulation to check agreement between reported BP medication and actual meds taken, within participants who are taking potential BP medication")
+```
+
+# What about the individuals who did not report a diagnosis of hypertension but self-reported BP medication?
+
+There are 6497 individuals who did not report a prior diagnosis of hypertension but did report that they were taking BP medication.  Investigating the actual medication names they provided, we can see what classes of drugs they are taking.
+
+This might help us work out why they said they were taking BP meds even though they did not report a diagnosis of hypertension.
+
+```{r nohypbutmed, include=TRUE, echo=FALSE}
+
+kable(table(medsdata$hypmeds[medsdata$selfrephyp==FALSE&medsdata$HBPmeds==TRUE]), caption="How many individuals are taking drugs that we consider to be potential BP medication?")
+
+sums <- colSums(medsdata[medsdata$selfrephyp==FALSE&medsdata$HBPmeds==TRUE,hypclasslist], na.rm=TRUE)
+kable((sums), caption="TABLE 2: Of the individuals who are taking potential BP medication, what classes of drugs are they taking? (Total n = 5760, individuals can be taking drugs from multiple classes)")
+
+```
+
+# Data cleaning and sanity-checking
+
+**Note** that these tabulations are of the generic drugs not the drug classes - so for example in the BB only category, we have 38 patients who are taking two different Beta Blockers. The most common combinations seem to be either Atenolol or Bisoprolol Fumarate with either Propranolol Hydrochloride or Timolol Maleate.
+
+```{r dataclean, include=TRUE, echo=FALSE}
+
+kable(aggregate(medsdata$hypmedsno, list(medsdata$hypgrp), mean, na.rm=TRUE), caption="TABLE 3: Mean number of generic drugs that patients in each medication category are taking.")
+
+kable(table(medsdata$hypgrp, medsdata$hypmedsno), caption="Number of patients in each medication category that are taking different numbers of generic drugs")
+
+BBs <- medsdata[medsdata$hypgrp=="BB only" & medsdata$hypmedsno==2,]
+
+```
+
+# What about the individuals who reported that they were taking BP meds but only listed medications that we would not consider anti-hypertensives?
+
+There are 2845 individuals in this category - about 3% of all individuals who self-reported BP medication. This is going to be a huge table, but we can look at the brand names of the drugs that they are taking. 
+
+**Once you've had a first look at this table, maybe we can specify whatever feels like a sensible cut-off point - if fewer than say 20 of these 2845 individuals are taking a drug, we probably don't need to show it here? Unless any rare drugs are particularly of interest.**
+
+```{r othermedications, include=TRUE, echo=FALSE}
+
+othermeds <- medsdata[medsdata$hypmeds=="Taking non-BP medication" & medsdata$HBPmeds==TRUE & !is.na(medsdata$HBPmeds),]
+
+veint <- readRDS("K:\\TEU\\APOE on Dementia\\Data Management\\R_Dataframes_TLA\\38358\\VeI_base.rds")
+# We're only interested in the medication code columns from the verbal interview data
+veint <- veint[,c(1, grep("VeI_MedCode", colnames(veint), fixed=TRUE))]
+# Get this into long format, so we have one column of medcodes and can join our drug info to this
+veint <- gather(veint, medno, coding, VeI_MedCode.0:VeI_MedCode.47, factor_key=TRUE)
+veint <- veint[!is.na(veint$coding),]
+# And use the coding table to get the brand names
+coding4 <- read.table("K:/TEU/CancerPRS/Data_Dictionary/Mappings/coding4.tsv", sep="\t", header=TRUE, quote="", comment.char="$", fill=FALSE)
+
+veint <- merge(veint, coding4, by="coding")
+
+othermeds <- merge(othermeds, veint, by="ID")
+othermeds$meaning <- factor(othermeds$meaning)
+tbl <- table(othermeds$meaning)
+kable(sort(tbl, decreasing=TRUE), caption="TABLE 4: Brand-name medications taken by individuals who reported that they were taking BP medication but did not list any medications that we categorised as anti-hypertensives. Ordered by number of individuals taking each medicine.")
+
+```
+
+
+

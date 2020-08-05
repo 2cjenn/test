@@ -4,7 +4,7 @@
 library(readxl)
 library(yaml)
 
-config = yaml.load_file("K:/TEU/APOE on Dementia/config.yml")
+config = yaml.load_file("config.yml")
 #-----------------------------------------------------------------------------------------------------------------------
 # Combine the different tiers of country code
 #-----------------------------------------------------------------------------------------------------------------------
@@ -36,11 +36,11 @@ level1 <- unique(level1)
 level1$Country <- factor(level1$Country)
 
 # Save the full table of codings to a csv so mappings can be produced in an Excel
-write.csv(level1, paste0(config$cleaning$organised, "CountryCodes.csv"), 
+write.csv(level1, paste0(config$data$derived, "CountryCodes.csv"), 
           na="", row.names=FALSE)
 
 # And save it as an R data file, why not
-saveRDS(level1, paste0(config$cleaning$organised, "CountryCodes.rds"))
+saveRDS(level1, paste0(config$data$derived, "CountryCodes.rds"))
 
 
 #--------------------------------------------------------------------------------------------------------------
@@ -58,6 +58,6 @@ countries <- merge(level1, incomelevel[,c("IncomeLevel", "WBCountry", "Country")
 
 # View(countries[is.na(countries$FY20),])
 # And save it as an R data file
-saveRDS(countries, paste0(config$cleaning$organised, "CountryIncome.rds"))
+saveRDS(countries, paste0(config$data$derived, "CountryIncome.rds"))
 
 

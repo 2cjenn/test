@@ -1,0 +1,102 @@
+---
+title: "Data Cleaning"
+author: "Jennifer Collister"
+date: "`r format(Sys.time(), '%d %B %Y')`"
+output: html_notebook
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(include=TRUE, echo=FALSE, warning=FALSE)
+
+library(kableExtra)
+library(knitr)
+library(yaml)
+library(here)
+
+# Specify the markdown format for knitr tables, otherwise they're not compatible with kableExtra
+options(knitr.kable.NA='', knitr.table.format = "markdown")
+options(kableExtra.auto_format = FALSE)
+# Set the root directory to the project directory (otherwise knitr works in the directory of the Rmd file by default)
+knitr::opts_knit$set(root.dir = here::here())
+
+# Load the project config file for filepaths etc
+config = yaml.load_file(here::here("./config.yml"))
+
+
+```
+
+This R Markdown file is not intended to produce a particularly interesting output.
+It is just a convenient way to present code that can be run in chunks, with documentation.
+
+# Simple scripts with no dependencies
+
+These just take the raw TLA tables and do simple, single-variable cleaning operations
+eg fixing the levels of a factor
+
+```{r}
+
+source(paste0(config$scripts$cleaning,  "BaselineRecruitment.R"))
+source(paste0(config$scripts$cleaning,  "BloodPressure.R"))
+source(paste0(config$scripts$cleaning,  "CognitiveFunction.R"))
+source(paste0(config$scripts$cleaning,  "DeathRegistry.R"))
+source(paste0(config$scripts$cleaning,  "Ethnicity.R"))
+source(paste0(config$scripts$cleaning,  "FamilyHistory.R"))
+source(paste0(config$scripts$cleaning,  "MedicalHistoryTQ.R"))
+source(paste0(config$scripts$cleaning,  "PrincipalComponents.R"))
+
+```
+
+# For the HTN analysis, many covariates from separate TLA are gathered in one script
+
+Basically just because when only taking one variable from each table it felt silly having a whole script per table.
+Need to revisit this whole structure - want to start using FUNPACK for the initial extraction and cleaning
+
+```{r}
+
+# First, use the UKB coding to label the job categories
+source(paste0(config$scripts$cleaning,  "Mappings/JobCodes.R"))
+
+# Then all dependencies are satistifed to run the general covariates script
+source(paste0(config$scripts$cleaning,  "Covariates.R"))
+
+```
+
+# Separate out the verbal interview data, then run the scripts dependent on that
+
+* Non-cancer illness codes
+* Cancer codes
+* Medications
+* Operations
+* Other
+
+```{r}
+
+# First, prepare the country codes from the World Bank mapping sheet
+source(paste0(config$scripts$cleaning,  "Mappings/CountryCodes.R"))
+
+# Then, separate out the verbal interview data
+source(paste0(config$scripts$cleaning,  "VerbalInterview/VerbalInterviewData.R"))
+
+# Now that the diagnosis codes have been separated, we can run this script
+source(paste0(config$scripts$cleaning,  "VerbalInterview/MedicalHistoryVI.R"))
+
+# And we can use the coding sheets for medical conditions and cancers
+source(paste0(config$scripts$cleaning,  "Mappings/NonCancerIllnessCodes.R"))
+source(paste0(config$scripts$cleaning,  "Mappings/CancerCodes.R"))
+
+# Then apply our project specific mappings to get information on conditions of interest
+source(paste0(config$scripts$cleaning,  "Mappings/MappingIllnessCategories.R"))
+
+```
+
+# HES data
+
+For now, we have two separate scripts for our two conditions of interest - dementia and stroke
+Ultimately, we want something more generic and reusable.
+Come back to this when we next need to work with HES data.
+
+```{r}
+
+source(paste0(config$scripts$cleaning,  "HESconditions/HES_stroke.R"))
+
+```

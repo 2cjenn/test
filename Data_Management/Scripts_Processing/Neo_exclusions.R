@@ -14,12 +14,12 @@ library(rsvg)
 library(png)
 library(yaml)
 
-config = yaml.load_file("K:/TEU/APOE on Dementia/config.yml")
+config = yaml.load_file("config.yml")
 
 source(config$functions)
 
 #--------------------------------------------------------------------------------------------------------------
-data <- readRDS(paste0(config$exclusions$raw, "HTN_raw.rds"))
+data <- readRDS(paste0(config$data$derived, "HTN_raw.rds"))
 
 #--------------------------------------------------------------------------------------------------------------
 # Create some more complex variables
@@ -51,7 +51,7 @@ data$selfrepmeds[is.na(data$HBPmeds) & is.na(data$NumberMedications)] <-NA
 #--------------------------------------------------------------------------------------------------------------
 
 # Exclude individuals who have withdrawn from the study
-withdrawn <- read.csv(config$withdrawals, header=FALSE)
+withdrawn <- read.csv(config$cleaning$withdrawals, header=FALSE)
 data <- data[!data$ID %in% withdrawn$V1,]
 
 excl <- list(initial=nrow(data))
@@ -116,9 +116,6 @@ data$treated_ <- factor(as.numeric(data$treated), levels=c(0,1), labels=c("Did n
 data$evidenceHTN_ <- factor(as.numeric(data$evidenceHTN), levels=c(0,1), labels=c("No evidence of hypertension", "Hypertensive"))
 
 
-# saveRDS(data, file=paste0(config$exclusions$htn, "HTN_excl1.rds"))
-
-# data <- readRDS(file="K:\\TEU\\APOE on Dementia\\Data Management\\R_Dataframes_TLA\\38358\\Organised\\Hypertension\\HTN_excl.rds")
 #--------------------------------------------------------------------------------------------------------------
 # Further exclusions for Neo's covariates of interest
 #--------------------------------------------------------------------------------------------------------------
@@ -132,14 +129,14 @@ excl$pregnant <- nrow(data)
 # Exclude individuals who have serious health conditions
 # n = 489006 - 483794 = 5212
 # seriouscomorbid <- readRDS("K:/TEU/APOE on Dementia/Data_Management/Data/archive/Organised/Hypertension/Neo/VIhypExclude.rds")
-seriouscomorbid <- readRDS(paste0(config$exclusions$htn, "VIhypExclude.rds"))
+seriouscomorbid <- readRDS(paste0(config$data$derived, "VIhypExclude.rds"))
 data <- data[!data$ID %in% seriouscomorbid$ID[!is.na(seriouscomorbid$Yes)],]
 
 excl$seriouscomorb <- nrow(data)
 
 # And individuals with cancer (except for skin cancer?)
 # n = 483794 - 443782 = 40,012
-cancer <- readRDS(paste0(config$cleaning$organised, "Cancer_pts.rds"))
+cancer <- readRDS(paste0(config$data$derived, "Cancer_pts.rds"))
 exceptskincancer <- cancer$ID[cancer$TL!="skin cancer"]
 data <- data[!data$ID %in% exceptskincancer,]
 
@@ -179,7 +176,7 @@ for(variable in c("evidenceHTN", "aware", "treated", "controlled")){
 
 # Create exclusion flowchart
 export_svg(DiagrammeR::grViz(paste0(config$outputs$flowcharts, "ExclusionFlowchartTree.gv"))
-           ) %>% charToRaw %>% rsvg %>% png::writePNG(paste0(config$outputs$markdown, "ExclFlowchartTree.png"))
+           ) %>% charToRaw %>% rsvg %>% png::writePNG(paste0(config$outputs$figures, "ExclFlowchartTree.png"))
 
 
 #--------------------------------------------------------------------------------------------------------------
@@ -409,7 +406,7 @@ data$HTNdx_durcat <- factor(data$HTNdx_durcat, levels=c("[0,1)", "[1,2)", "[2,5)
 
 
 # Add mapping to comorbidities of interest
-comorbs <- readRDS(paste0(config$exclusions$htn, "VI_HTNcomorb.rds"))
+comorbs <- readRDS(paste0(config$data$derived, "VI_HTNcomorb.rds"))
 colnames(comorbs) <- c("ID", paste0("VI_", colnames(comorbs)[-1]))
 data <- merge(data, comorbs, by="ID", all.x=TRUE)
 for(comorb in names(comorbs)[-1]){
@@ -473,5 +470,5 @@ treated$townsend_quint <- factor(treated$townsend_quint,
                               levels=c("Q1: Least deprived", "Q2", "Q3", "Q4", "Q5: Most deprived", "Unanswered"))
 
 
-saveRDS(data, file=paste0(config$exclusions$htn, "HTN_excl.rds"))
-saveRDS(treated, file=paste0(config$exclusions$htn, "HTN_trt.rds"))
+saveRDS(data, file=paste0(config$data$analysed, "HTN_excl.rds"))
+saveRDS(treated, file=paste0(config$data$analysed, "HTN_trt.rds"))
