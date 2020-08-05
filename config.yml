@@ -8,10 +8,10 @@ cleaning:
  coding: "K:/TEU/UKB33952_Data/Data_Dictionary/Mappings/"
  mapping: "Data/Mappings/"
 outputs:
- figures: "Stats_Analysis/Figures/"
- flowcharts: "Stats_Analysis/Flowcharts/"
-functions: "Stats_Analysis/JCfunctions.R"
+ figures: "Scripts/Stats_Analysis/Figures/"
+ flowcharts: "Scripts/Stats_Analysis/Flowcharts/"
+functions: "Scripts/Stats_Analysis/JCfunctions.R"
 scripts:
- cleaning: "Data_Management/Scripts_Cleaning/"
- processing: "Data_Management/Scripts_Processing/"
+ cleaning: "Scripts/Data_Management/Scripts_Cleaning/"
+ processing: "Scripts/Data_Management/Scripts_Processing/"
 
