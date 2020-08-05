@@ -46,18 +46,15 @@ source(paste0(config$scripts$cleaning,  "PrincipalComponents.R"))
 
 ```
 
-# For the HTN analysis, many covariates from separate TLA are gathered in one script
-
-Basically just because when only taking one variable from each table it felt silly having a whole script per table.
-Need to revisit this whole structure - want to start using FUNPACK for the initial extraction and cleaning
+# Apply mappings from job and country codes to human-readable names
 
 ```{r}
 
 # First, use the UKB coding to label the job categories
 source(paste0(config$scripts$cleaning,  "Mappings/JobCodes.R"))
 
-# Then all dependencies are satistifed to run the general covariates script
-source(paste0(config$scripts$cleaning,  "Covariates.R"))
+# Prepare the country codes from the World Bank mapping sheet
+source(paste0(config$scripts$cleaning,  "Mappings/CountryCodes.R"))
 
 ```
 
@@ -71,10 +68,7 @@ source(paste0(config$scripts$cleaning,  "Covariates.R"))
 
 ```{r}
 
-# First, prepare the country codes from the World Bank mapping sheet
-source(paste0(config$scripts$cleaning,  "Mappings/CountryCodes.R"))
-
-# Then, separate out the verbal interview data
+# Separate out the verbal interview data
 source(paste0(config$scripts$cleaning,  "VerbalInterview/VerbalInterviewData.R"))
 
 # Now that the diagnosis codes have been separated, we can run this script
@@ -89,14 +83,15 @@ source(paste0(config$scripts$cleaning,  "Mappings/MappingIllnessCategories.R"))
 
 ```
 
-# HES data
+# For the HTN analysis, many covariates from separate TLA are gathered in one script
 
-For now, we have two separate scripts for our two conditions of interest - dementia and stroke
-Ultimately, we want something more generic and reusable.
-Come back to this when we next need to work with HES data.
+Basically just because when only taking one variable from each table it felt silly having a whole script per table.
+Need to revisit this whole structure - want to start using FUNPACK for the initial extraction and cleaning
 
 ```{r}
 
-source(paste0(config$scripts$cleaning,  "HESconditions/HES_stroke.R"))
+# Then all dependencies are satisifed to run the general covariates script
+source(paste0(config$scripts$cleaning,  "Covariates.R"))
 
 ```
+
