@@ -19,7 +19,7 @@ config = yaml.load_file("config.yml")
 source(config$functions)
 
 #--------------------------------------------------------------------------------------------------------------
-data <- readRDS(paste0(config$data$derived, "HTN_raw.rds"))
+data <- readRDS(paste0(config$data$derived, "HTN_CVD.rds"))
 
 #--------------------------------------------------------------------------------------------------------------
 # Create some more complex variables
@@ -470,5 +470,4 @@ treated$townsend_quint <- factor(treated$townsend_quint,
                               levels=c("Q1: Least deprived", "Q2", "Q3", "Q4", "Q5: Most deprived", "Unanswered"))
 
 
-saveRDS(data, file=paste0(config$data$analysed, "HTN_excl.rds"))
-saveRDS(treated, file=paste0(config$data$analysed, "HTN_trt.rds"))
+saveRDS(treated, file=paste0(config$data$analysed, "HTN_trtCVD.rds"))
