@@ -47,6 +47,8 @@ CVD_ICD10 <- c(stroke_ICD10, MI_ICD10)
 deaths$CVDdeath_primary <- apply(deaths[,grep("Dth_ICD10Underlying", colnames(deaths), fixed=TRUE)],
                                  1, function(x) any(substr(x, 1, 3) %in% CVD_ICD10))
 
+
+
 saveRDS(deaths[,c("ID", "deathdate", "demdeath", "strdeath", "alsdeath", "parkdeath", 
                   "CVDdeath_primary", "Dth_Cause.m0.i0")], 
         file=paste0(config$data$derived, "deathdate.rds"))

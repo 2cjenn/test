@@ -56,5 +56,6 @@ data <- do.call(rbind, by(data, data[,c("ID")], function(x) x[which.min(x$Date),
 
 names(data)[names(data)=="Date"] <- "CVD_date"
 names(data)[names(data)=="Code"] <- "CVD_code"
+data$CVD_code <- factor(data$CVD_code)
 
 saveRDS(data, file=paste0(config$data$derived, "CVD_HESevents.rds"))
