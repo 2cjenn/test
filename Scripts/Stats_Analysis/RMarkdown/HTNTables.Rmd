@@ -102,7 +102,7 @@ ACdate <- as.Date("01/03/2020", "%d/%m/%Y")
 
 To examine the effect of hypertension control on CVD events/outcomes, among treated hypertensives: is hypertension control associated with lower probability of CVD, following adjustment for multiple factors?
 
-# Figure `r figure`. Flowchart illustrating selection of analytic dataset (n = `r nrow(treated)`).
+# Figure `r figure`. Flowchart illustrating selection of analytic dataset (n = `r nrow(data)`).
 `r figure <- figure + 1`
 ![Missing BP data was fewer than 2 BP measurements, or missing answers to the prior diagnosis and treatment questions. Hypertension was defined as self-report of hypertensive medication use, or self-report of a prior diagnosis of hypertension, or mean BP >= 140 /90 mmHg at baseline assessment. Awareness was defined as self-report of a prior diagnosis of hypertension among those who were hypertensive. Treatment was defined as self-report of hypertensive medication among those who were aware. Control was defined as mean BP < 140/90 mmHg at baseline assessment, among those who were treated.](Figures/ExclFlowchartTree.png){height=700px}
 
@@ -152,12 +152,14 @@ for(var in varlist){
     df <- data[data[var]==level,]
     medianfu <- pretty_dp(median(df[["stime"]]),2)
     events <- sum(df[["status"]])
-    newrow <- c(prettyvar, level, medianfu, events)
+    n <- nrow(df)
+    newrow <- c(prettyvar, level, n, medianfu, events)
     prettyvar <- ""
     pct_ctrl <- rbind(pct_ctrl, newrow)
   }
 }
-colnames(pct_ctrl) <- c("Variable", "Levels", "Median follow-up time, years", "Number of CVD events")
+colnames(pct_ctrl) <- c("Variable", "Levels", "n", "Median follow-up time, years", "Number of CVD events")
+rownames(pct_ctrl) <- NULL
 
 kable(pct_ctrl)
 
