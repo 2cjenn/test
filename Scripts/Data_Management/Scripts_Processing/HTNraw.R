@@ -21,7 +21,7 @@ famhist <- readRDS(paste0(config$data$derived, "familyhistory.rds"))
 deathdate <- readRDS(paste0(config$data$derived, "deathdate.rds"))
 covars <- readRDS(paste0(config$data$derived, "covars.rds"))
 rubric <- readRDS(paste0(config$data$derived, "HTNMedsRubric.rds"))
-CVDevents <- readRDS(paste0(config$data$derived, "CVD_HESevents.rds"))
+CVDevents <- readRDS(paste0(config$data$derived, "CVD1_HESevents.rds"))
 
 
 # Combine the baseline characteristics with the ethnicities

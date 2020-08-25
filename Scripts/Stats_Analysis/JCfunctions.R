@@ -39,45 +39,6 @@ prettyfunc <- function(x, pnames=list(), upper=FALSE, flist=c()){
   return(out)
 }
 
-code_filter <- function(df, diagcolname, datecolname=NULL, ncols, codelist, codelength=NA, separator=".", first=FALSE) {
-  if (is.na(codelength)) {
-    codelength <- nchar(codelist[1])
-    print(codelength)
-  }
-  for (m in 0:ncols) {
-    print(m)
-    codecol <- paste0(diagcolname, separator, m)
-    if (!is.null(datecolname)) {
-      datecol <- paste0(datecolname, separator, m)
-      df[[datecol]][!substr(df[[codecol]], 1, codelength) %in% codelist] <- NA
-    }
-    df[[codecol]][!substr(df[[codecol]], 1, codelength) %in% codelist] <- NA
-  }
-  # To reduce the size of the data set, remove missing observations
-  df <- df[rowSums(!is.na(df))>1,]
-  df <- df[, unlist(lapply(df, function(x) !all(is.na(x))))]
-  # Rearrange into long format
-  df <- reshape(df, varying=sort(colnames(df[,-1])), direction="long", idvar="ID", sep=separator)
-  df <- df[,!(names(df) == "time")][!is.na(df[[diagcolname]]),]
-  # Call the diagnosis code column Code
-  names(df)[names(df)==diagcolname] <- "Code"
-  # If there's a date column then convert it into date format and call it Date
-  if (!is.null(datecolname)) {
-    df[[datecolname]] <- as.Date(df[[datecolname]], origin=as.Date("1970-01-01"))
-    names(df)[names(df)==datecolname] <- "Date"
-    # If the first diagnosis OF ANY CODE per individual is required, filter
-    if (first==TRUE) {
-      df <- do.call(rbind, by(df, df[,c("ID")], function(x) x[which.min(x$Date),]))
-    }
-  }
-  # If we're only interested in the first diagnosis per individual but there are no dates
-  # just take unique diagnoses
-  if (first==TRUE) {
-    df <- unique(df)
-  }
-  return(df)
-}
-
 diagcollist <- function(colstring, sep="", ncols) {
   x <- 0:ncols
   colstr <- paste0("`",paste0(colstring, sep, x, collapse="`, `"),"`")
