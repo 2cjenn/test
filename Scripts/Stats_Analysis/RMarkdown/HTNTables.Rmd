@@ -137,7 +137,7 @@ data$stime <- as.numeric(data$stime) / 365.25
 # data$stimecat <- cut(data$stime,breaks=seq(0,14,by=1))
 # tab <- table(data$stimecat, data$status)
 
-varlist <- c("agegrp", "gender", "eth_group",
+varlist <- c("agegrp","gender", "eth_group",
           "townsend_quint", "income", "employcat", "ISCED", "BirthCountryIncomeLevel", "countryResidence",
           "BMIcat", "Smo_Status", "weekly_alccat", "METs_over1200",
           "antiHTNmedsno",  "FamilyHist_CVD_",
@@ -152,17 +152,16 @@ followup_row <- function(df, prettyvar, level){
   return(c(n, medianfu, events))
 }
 
-pct_ctrl <- c("All participants", "", followup_row(data))
+pct_ctrl <- c("**All participants**", followup_row(data))
 for(var in varlist){
-  prettyvar <- prettyfunc(var, pnames=pretty_names, upper=TRUE)
+  prettyvar <- prettyfunc(var, pnames=pretty_names, upper=TRUE, bold=TRUE)
+  pct_ctrl <- rbind(pct_ctrl, c(prettyvar, rep("", 3)))
   for(level in levels(data[[var]])){
     df <- data[data[var]==level,]
-    newrow <- c(prettyvar, level, followup_row(df))
-    pct_ctrl <- rbind(pct_ctrl, newrow)
-    prettyvar <- ""
+    pct_ctrl <- rbind(pct_ctrl, c(level, followup_row(df)))
   }
 }
-colnames(pct_ctrl) <- c("Variable", "Levels", "n", "Median follow-up time, years", "Number of CVD events")
+colnames(pct_ctrl) <- c("Variable", "n", "Median follow-up time, years", "Number of CVD events")
 rownames(pct_ctrl) <- NULL
 
 kable(pct_ctrl)
