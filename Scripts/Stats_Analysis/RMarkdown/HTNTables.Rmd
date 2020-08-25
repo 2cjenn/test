@@ -145,17 +145,21 @@ varlist <- c("agegrp", "gender", "eth_group",
           "comorbNumber_")
 
 
-pct_ctrl <- c()
+followup_row <- function(df, prettyvar, level){
+  medianfu <- pretty_dp(median(df$stime),2)
+  events <- sum(df$status)
+  n <- nrow(df)
+  return(c(n, medianfu, events))
+}
+
+pct_ctrl <- c("All participants", "", followup_row(data))
 for(var in varlist){
   prettyvar <- prettyfunc(var, pnames=pretty_names, upper=TRUE)
   for(level in levels(data[[var]])){
     df <- data[data[var]==level,]
-    medianfu <- pretty_dp(median(df[["stime"]]),2)
-    events <- sum(df[["status"]])
-    n <- nrow(df)
-    newrow <- c(prettyvar, level, n, medianfu, events)
-    prettyvar <- ""
+    newrow <- c(prettyvar, level, followup_row(df))
     pct_ctrl <- rbind(pct_ctrl, newrow)
+    prettyvar <- ""
   }
 }
 colnames(pct_ctrl) <- c("Variable", "Levels", "n", "Median follow-up time, years", "Number of CVD events")
