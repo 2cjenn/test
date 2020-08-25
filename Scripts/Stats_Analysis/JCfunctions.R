@@ -1,5 +1,16 @@
 library(stringr)
 
+# Run chunks of R code in arbitrary working directory
+# From Hadley Wickham
+# https://github.com/yihui/knitr/issues/38
+in_dir <- function(dir, code) {
+  cur <- getwd()
+  setwd(dir)
+  on.exit(setwd(cur))
+  
+  force(code)
+}
+
 pretty_dp <- function(x, dp, pct=FALSE){
   if(pct==TRUE){x <- 100*x}
   format(round(x, dp), digits=dp, nsmall=dp)
