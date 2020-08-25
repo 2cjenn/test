@@ -64,7 +64,14 @@ descriptivetable <- function(df, varlist, contavg='mean', assocvar=NULL, pretty_
       if(!is.null(assocvar)){
         tab <- table(df[[assocvar]], df[[var]])
         chi <- chisq.test(tab)
-        pval <- c(ifelse(chi$p.value<0.001, "<0.001", round(chi$p.value,3)), rep(NA, dim(n)-1))
+        pval <- c(ifelse(chi$p.value<0.001, "<0.001", round(chi$p.value,3)))
+        outtable <- rbind(outtable, 
+                          c(var, paste0("**", variable, "**"), "", "", pval), 
+                          cbind(paste0(var, levels), levels, n, pct, ""))
+      } else{
+        outtable<- rbind(outtable, 
+                         c(var, paste0("**", variable, "**"), "", ""), 
+                         cbind(paste0(var, levels), levels, n, pct))
       }
     } else { # Continuous variables need the mean (and SD) or median (and IQR)
       if(contavg=="mean"){
@@ -81,21 +88,23 @@ descriptivetable <- function(df, varlist, contavg='mean', assocvar=NULL, pretty_
         pct <- NA
         variable <- prettyfunc(var, pnames=pretty_names, upper=TRUE, flist=footnote_list)
       }
-      levels <- NA
       if(!is.null(assocvar)){
         tt <- t.test(df[[var]][df[[assocvar]]==TRUE], df[[var]][df[[assocvar]]==FALSE])
         pval <- pretty_pval(tt$p.value)
+        outtable <- rbind(outtable, cbind(var, paste0("**", variable, "**"), n, pct, pval))
+      } else {
+        outtable<- rbind(outtable, cbind(var, paste0("**", variable, "**"), n, pct))
       }
-    }
-    if(!is.null(assocvar)){
-      outtable <- rbind(outtable, cbind(variable, levels, n, pct, pval))
-    } else {
-      outtable<- rbind(outtable, cbind(variable, levels, n, pct))
     }
   }
   rownames(outtable) <- c()
-  colnames(outtable) <- c("Variable", "Levels (for categorical)", "n", "%")
-  return(outtable)
+  if(!is.null(assocvar)){
+    colnames(outtable) <- c("IDcol", "Variable", "n", "%", "p")
+  } else {
+    colnames(outtable) <- c("IDcol", "Variable", "n", "%")
+    }
+  outdf <- as.data.frame(outtable, stringsAsFactors=FALSE)
+  return(outdf)
 }
 
 # Prettyprint the results from a Cox model
