@@ -102,6 +102,30 @@ ACdate <- as.Date("01/03/2020", "%d/%m/%Y")
 
 To examine the effect of hypertension control on CVD events/outcomes, among treated hypertensives: is hypertension control associated with lower probability of CVD, following adjustment for multiple factors?
 
+# Current CVD outcomes for first-pass analyses:
+
+|Condition	|ICD10	|ICD9|
+|---|---|---|
+|**Stroke**		|   |   |
+|Haemorrhagic stroke	|I60, I61	|430, 431|
+|Ischaemic stroke	|I63	|433|
+|Stroke, not otherwise specified	|I64	|434, 436|
+|**Ischemic heart disease**	|   |   |	
+|Acute myocardial infarction	|I21|  ? |	
+|Chronic ischemic heart disease	|I25	|  ? |
+
+## To be included in later analyses:
+
+|Condition	|ICD10	|ICD9|
+|---|---|---|
+|**Stroke**		|   |   |
+|Occlusion of pre-cerebral and cerebral arteries*	|I65, I66|  ? |
+|**Ischemic heart disease**	|   |   |
+|Angina (including unstable angina)* |I20	| ?  |
+|**Other atherosclerotic disease** |   |   |
+|Peripheral vascular disease* |I70, I73	| ?  |
+
+
 # Figure `r figure`. Flowchart illustrating selection of analytic dataset (n = `r nrow(data)`).
 `r figure <- figure + 1`
 ![Missing BP data was fewer than 2 BP measurements, or missing answers to the prior diagnosis and treatment questions. Hypertension was defined as self-report of hypertensive medication use, or self-report of a prior diagnosis of hypertension, or mean BP >= 140 /90 mmHg at baseline assessment. Awareness was defined as self-report of a prior diagnosis of hypertension among those who were hypertensive. Treatment was defined as self-report of hypertensive medication among those who were aware. Control was defined as mean BP < 140/90 mmHg at baseline assessment, among those who were treated.](Figures/ExclFlowchartTree.png){height=700px}
