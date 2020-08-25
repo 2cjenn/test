@@ -1,8 +1,13 @@
 library(stringr)
+options("scipen"=100)
 
-pretty_dp <- function(x, dp, pct=FALSE){
-  if(pct==TRUE){x <- 100*x}
-  format(round(x, dp), digits=dp, nsmall=dp)
+pretty_dp <- function(x, dp=0, pct=FALSE, comma=FALSE){
+  if(pct){x <- 100*x}
+  if(comma){
+    format(round(x, dp), digits=dp, nsmall=dp, big.mark=",") %>% trimws
+  } else {
+    format(round(x, dp), digits=dp, nsmall=dp) %>% trimws
+  }
 }
 
 pretty_confint <- function(lci, uci, dp, pct=FALSE){
@@ -45,23 +50,15 @@ diagcollist <- function(colstring, sep="", ncols) {
   return(colstr)
 }
 
-df_to_table <- function(tablist, overwrite) {
-  conn <- dbConnect(RSQLite::SQLite(), "K:/TEU/APOE on Dementia/Data Management/UKB.db")
-  for (table in tablist) {
-    dbWriteTable(conn, table, eval(as.name(table)), overwrite=overwrite)
-  }
-  dbDisconnect(conn)
-}
-
 # Print numbers and proportions for factors, median and IQR or mean and 95% CI for continuous variables
 # Optionally provide p-values from chi-squared (categorical) and t-test (continuous)
 descriptivetable <- function(df, varlist, contavg='mean', assocvar=NULL, pretty_names=list(), footnote_list=c()){
-  if(!exists("footnote_no")){footnote_no <<- 1}
+  if(!exists("footnote_no")){footnote_no <<- 1} # Note use of <<- instead of <- to assign this globally
   outtable <- c()
   for(var in varlist){
-    if(is.factor(df[[var]])){
+    if(is.factor(df[[var]])){ # Categorical variables (factors) need a row per level, n's and %'s
       n <- table(df[[var]], useNA='ifany')
-      pct <- pretty_dp(100*prop.table(n), dp=1)
+	  pct <- pretty_dp(prop.table(n), dp=1, pct=TRUE)
       variable <- c(prettyfunc(var, pnames=pretty_names, upper=TRUE, flist=footnote_list), rep(NA, dim(n)-1))
       levels <- names(n)
       if(!is.null(assocvar)){
@@ -69,14 +66,14 @@ descriptivetable <- function(df, varlist, contavg='mean', assocvar=NULL, pretty_
         chi <- chisq.test(tab)
         pval <- c(ifelse(chi$p.value<0.001, "<0.001", round(chi$p.value,3)), rep(NA, dim(n)-1))
       }
-    } else {
+    } else { # Continuous variables need the mean (and SD) or median (and IQR)
       if(contavg=="mean"){
-        n <- pretty_dp(mean(df[[var]], na.rm=TRUE), dp=1)
-        pct <- pretty_dp(sd(df[[var]], na.rm=TRUE), dp=1)
+        n <- pretty_dp(mean(df[[var]], na.rm=TRUE), dp=1, comma=TRUE)
+        pct <- pretty_dp(sd(df[[var]], na.rm=TRUE), dp=1, comma=TRUE)
         variable <- paste0("Mean ", prettyfunc(var, pretty_names, upper=FALSE, flist=footnote_list), " (SD)")
       } else if (contavg=="median"){
-        n <- pretty_dp(median(df[[var]], na.rm=TRUE), dp=1)
-        IQR <- pretty_dp(quantile(df[[var]], na.rm=TRUE), dp=1)
+        n <- pretty_dp(median(df[[var]], na.rm=TRUE), dp=1, comma=TRUE)
+        IQR <- pretty_dp(quantile(df[[var]], na.rm=TRUE), dp=1, comma=TRUE)
         pct <- paste0("(", IQR[2], "-", IQR[4], ")")
         variable <- paste0("Median ", prettyfunc(var, pnames=pretty_names, upper=FALSE, flist=footnote_list), " (IQR)")
       } else if(contavg=="n"){
