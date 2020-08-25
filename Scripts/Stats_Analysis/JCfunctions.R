@@ -26,12 +26,15 @@ upper <- function(x){
   paste0(toupper(substring(x, 1,1)), substring(x, 2))
 }
 
-prettyfunc <- function(x, pnames=list(), upper=FALSE, flist=c()){
+prettyfunc <- function(x, pnames=list(), upper=FALSE, bold=FALSE, flist=c()){
   out <- x
   if(x %in% names(pnames)){
     out <- pnames[[x]]
-    if(upper==TRUE){
+    if(upper){
       out <- upper(out)
+    }
+    if(bold){
+      out <- paste0("**", out, "**")
     }
   }
   if(x %in% flist){
