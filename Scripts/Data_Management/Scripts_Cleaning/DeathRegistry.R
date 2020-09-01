@@ -32,8 +32,10 @@ als_ICD10 <- c("G122")
 # ICD 10 codes for Parkinson disease
 park_ICD10 <- c("G20")
 
-# ICD 10 codes for myocardial infarction
+# ICD 10 codes for ischemic heart disease
 MI_ICD10 <- c("I21")
+chronic_ICD10 <- c("I25")
+heart_ICD10 <- c(MI_ICD10, chronic_ICD10)
 
 
 deaths$deathdate <- pmin(deaths$Dth_Date.m0.i0, deaths$Dth_Date.m0.i1, na.rm=TRUE)
@@ -43,7 +45,7 @@ deaths$alsdeath <- apply(deaths[,grep("Dth_ICD10", colnames(deaths), fixed=TRUE)
 deaths$parkdeath <- apply(deaths[,grep("Dth_ICD10", colnames(deaths), fixed=TRUE)], 1, function(x) any(substr(x, 1, 3) %in% park_ICD10))
 
 # For the HTN prospective analysis, we're interested in deaths with CVD as the underlying (primary) cause
-CVD_ICD10 <- c(stroke_ICD10, MI_ICD10)
+CVD_ICD10 <- c(stroke_ICD10, heart_ICD10)
 deaths$CVDdeath_primary <- apply(deaths[,grep("Dth_ICD10Underlying", colnames(deaths), fixed=TRUE)],
                                  1, function(x) any(substr(x, 1, 3) %in% CVD_ICD10))
 

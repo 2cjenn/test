@@ -133,8 +133,8 @@ MI_ICD10 <- c("I21")
 chronic_ICD10 <- c("I25")
 heart_ICD10 <- c(MI_ICD10, chronic_ICD10)
 # ICD 9 codes for ischemic heart disease
-MI_ICD9 <- c()
-chronic_ICD9 <- c()
+MI_ICD9 <- c("410", "411")
+chronic_ICD9 <- c("414")
 heart_ICD9 <- c(MI_ICD9, chronic_ICD9)
 
 CVD_ICD10 <- c(stroke_ICD10, heart_ICD10)
@@ -169,15 +169,15 @@ chronic_ICD10 <- c("I25")
 angina_ICD10 <- c("I20")
 heart_ICD10 <- c(MI_ICD10, chronic_ICD10, angina_ICD10)
 # ICD 9 codes for ischemic heart disease
-MI_ICD9 <- c()
-chronic_ICD9 <- c()
-angina_ICD9 <- c()
+MI_ICD9 <- c("410", "411")
+chronic_ICD9 <- c("414")
+angina_ICD9 <- c("413")
 heart_ICD9 <- c(MI_ICD9, chronic_ICD9, angina_ICD9)
 
 # ICD 10 codes for other atherosclerotic disease
 pervasc_ICD10 <- c("I70", "I73")
 # ICD 9 codes for other atherosclerotic disease
-pervasc_ICD9 <- c()
+pervasc_ICD9 <- c("440", "441")
 
 CVD_ICD10 <- c(stroke_ICD10, heart_ICD10, pervasc_ICD10)
 CVD_ICD9 <- c(stroke_ICD9, heart_ICD9, pervasc_ICD9)

@@ -104,26 +104,26 @@ To examine the effect of hypertension control on CVD events/outcomes, among trea
 
 # Current CVD outcomes for first-pass analyses:
 
-|Condition	|ICD10	|ICD9|
+|Condition	|ICD-10	|ICD-9|
 |---|---|---|
 |**Stroke**		|   |   |
 |Haemorrhagic stroke	|I60, I61	|430, 431|
 |Ischaemic stroke	|I63	|433|
 |Stroke, not otherwise specified	|I64	|434, 436|
 |**Ischemic heart disease**	|   |   |	
-|Acute myocardial infarction	|I21|  ? |	
-|Chronic ischemic heart disease	|I25	|  ? |
+|Acute myocardial infarction	|I21|  410, 411 |	
+|Chronic ischemic heart disease	|I25	|  414 |
 
 ## To be included in later analyses:
 
-|Condition	|ICD10	|ICD9|
+|Condition	|ICD-10	|ICD-9|
 |---|---|---|
 |**Stroke**		|   |   |
-|Occlusion of pre-cerebral and cerebral arteries*	|I65, I66|  ? |
+|Occlusion of pre-cerebral and cerebral arteries*	|I65, I66|  Not separated out in ICD-9 ? |
 |**Ischemic heart disease**	|   |   |
-|Angina (including unstable angina)* |I20	| ?  |
+|Angina (including unstable angina)* |I20	| 413  |
 |**Other atherosclerotic disease** |   |   |
-|Peripheral vascular disease* |I70, I73	| ?  |
+|Peripheral vascular disease* |I70, I73	| 440, 441  |
 
 
 # Figure `r figure`. Flowchart illustrating selection of analytic dataset (n = `r nrow(data)`).
