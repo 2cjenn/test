@@ -9,33 +9,40 @@ output:
 ---
 
 ```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = FALSE)
+
 library(kableExtra)
 library(knitr)
-library(png)
-library(DescTools)
-library(ggplot2)
-library(forcats)
-library(gridExtra)
-library(scales)
-library(plyr)
+library(yaml)
+library(here)
 library(dplyr)
-library(reshape2)
+library(tidyr)
 
-source("K:/TEU/APOE on Dementia/Statistical_Analysis/JCfunctions.R")
+options("scipen"=100)
+
+# Specify the markdown format for knitr tables, otherwise they're not compatible with kableExtra
 options(knitr.kable.NA='', knitr.table.format = "markdown")
 options(kableExtra.auto_format = FALSE)
+# Set the root directory to the project directory (otherwise knitr works in the directory of the Rmd file by default)
+knitr::opts_knit$set(root.dir = here::here())
+knitr::opts_chunk$set(include=TRUE, echo=FALSE)
+
+# Load the project config file for filepaths etc
+config = yaml.load_file(here::here("config.yml"))
+
+source(here::here(config$functions))
+
 
 #-------------------------------------------------------------------------------------------------------------------
 # Load the data 
 
-data <- readRDS(file="K:\\TEU\\APOE on Dementia\\Data_Management\\Data\\HTN\\HTN_excl.rds")
+treated <- readRDS(file=here::here(file.path(config$data$analysed, "HTN_trt.rds")))
 
-treated <- readRDS(file="K:\\TEU\\APOE on Dementia\\Data_Management\\Data\\HTN\\HTN_trt.rds")
+data <- readRDS(file=here::here(file.path(config$data$analysed, "HTN_excl.rds")))
 
 
 # Comorbidities of interest
-comorbs <- readRDS("K:\\TEU\\APOE on Dementia\\Data_Management\\Data\\HTN\\VI_HTNcomorb.rds")
+comorbs <- readRDS(here::here(file.path(config$data$derived, "VI_HTNcomorb.rds")))
+
 colnames(comorbs) <- c("ID", paste0("VI_", colnames(comorbs)[-1]))
 print(colnames(comorbs)[-1])
 comorbs_raw <- c("VI_CVD", "VI_diabetes", "VI_afib_or_aflutter", "VI_asthma_or_COPD", "VI_migraine", "VI_epilepsy",
