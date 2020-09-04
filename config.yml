@@ -8,7 +8,7 @@ cleaning:
  coding: "K:/TEU/UKB33952_Data/Data_Dictionary/Mappings/"
  mapping: "Data/Mappings/"
 outputs:
- figures: "Scripts/Stats_Analysis/Figures/"
+ figures: "Scripts/Stats_Analysis/RMarkdown/Figures/"
  flowcharts: "Scripts/Stats_Analysis/Flowcharts/"
 functions: "Scripts/Stats_Analysis/JCfunctions.R"
 scripts:
