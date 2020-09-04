@@ -270,4 +270,50 @@ kable(pct_ctrl)
 
 ```
 
+# Model 1 (age- and sex-standardised): Age, gender, hypertension control
 
+```{r}
+
+kable(printcoxresults(df=data, surv=surv, 
+                      varlist=c("age", "gender", "controlled_"), 
+                      pretty_names = pretty_names))
+
+```
+
+# Model 2 (basic model): age, gender, hypertension control; smoking, BMI, diabetes, prior CVD, ethnicity, education, income, Townsend
+
+Note: (NT, email 01/09/20) With regards to models to run, I'm ok with dropping Models 3 and 4 but would then adjust Model 2 in the following ways (to permit ready comparison with models in other papers):
+- add number of antihypertensives
+- add known diagnosis of hyperlipidemia (if readily coded)
+- remove Townsend
+
+```{r}
+
+kable(printcoxresults(df=data, surv=surv, 
+                      varlist=c("age", "gender", "controlled_",
+                                "Smo_Status", "BMIcat", "diabetes",# "",
+                                "eth_group", "ISCED", "income",
+                                "antiHTNmedsno"), 
+                      pretty_names = pretty_names))
+
+# What's going on with diabetes???
+
+```
+
+# Model 3: Model 2 + number of comorbidities (to explore the impact of comorbidities)
+
+See note above
+
+# Model 4: Model 2 + number of antihypertensives, hypercholesterolemia diagnosis, antihypertensive treatment (to enable comparison with many studies)
+
+See note above
+
+# Model 5 (expanded model): all covariates listed above (include unadjusted coefficients in the table presenting model 4)
+
+```{r}
+
+kable(printcoxresults(df=data, surv=surv, 
+                      varlist=c("age", "gender", "controlled_"), 
+                      pretty_names = pretty_names))
+
+```
