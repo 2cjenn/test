@@ -67,10 +67,11 @@ for(col in c("prevHBP", "prevstroke", "prevCVD")){
 # Rename the variables for illness/disabilities and diabetes
 #--------------------------------------------------------------------------------------------------------------
 names(medhist)[names(medhist)=="HMH_IllDisab"] <- "illdisab"
-names(medhist)[names(medhist)=="HMH_Diabetes"] <- "diabetes"
 names(medhist)[names(medhist)=="HMH_HBPAge.0"] <- "HBPAge"
 names(medhist)[names(medhist)=="HMH_BowelSc"] <- "BowelCancerScreening"
 medhist$HBPAge[medhist$HBPAge %in% c(-1,-3)] <- NA
+
+medhist$diabetes <- factor(medhist$HMH_Diabetes, levels=c("No", "Yes", "Prefer not to answer", "Do not know"))
 
 
 saveRDS(medhist[,c("ID", "medication", "HBPmeds", "diabmeds", "cholmeds", "contraceptive", "HRT", 
