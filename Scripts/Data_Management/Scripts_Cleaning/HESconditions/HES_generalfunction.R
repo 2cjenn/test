@@ -24,7 +24,7 @@ HESdiag <- function(datapath, ICDcodelist, codelength=nchar(ICDcodelist[1]), fir
   return(data)
 }
 
-incident <- function(data,
+get_incident <- function(data,
                      recdatepath=file.path(config$data$derived, "basechar.rds")){
   BaC <- readRDS(recdatepath)
   data <- merge(data, BaC[,c("ID", "recdate", "dob")], by="ID", order=FALSE)
@@ -32,9 +32,17 @@ incident <- function(data,
   data <- data[data$Date < Sys.Date(),]
 }
 
+get_prevalent <- function(data,
+                     recdatepath=file.path(config$data$derived, "basechar.rds")){
+  BaC <- readRDS(recdatepath)
+  data <- merge(data, BaC[,c("ID", "recdate", "dob")], by="ID", order=FALSE)
+  data <- data[data$Date <= data$recdate,]
+}
+
 HES_condition <- function(ICD10codes, ICD9codes, filename, 
                           mapping="L2", 
-                          incident=FALSE,
+                          incident=FALSE, 
+                          prevalent=FALSE,
                           colprefix=NULL,
                           ICD10file=file.path(config$data$derived, "ICD10codes.rds"),
                           ICD9file=file.path(config$data$derived, "ICD9codes.rds")
@@ -53,15 +61,20 @@ HES_condition <- function(ICD10codes, ICD9codes, filename,
     left_join(mapping9, by=c("Code"="ICD9"))
   
   ICD <- rbind(ICD10, ICD9) %>% 
-    group_by(ID) %>% 
-    filter(Date == min(Date), rank(Code, ties.method="first")==1) %>% # Note use of rank to take one row when multiple minima
     mutate(ICD = factor(ICD),
            Code = factor(Code),
            Type = factor(Type))
   
   if(incident){
-    ICD <- incident(ICD)
+    ICD <- get_incident(ICD)
   }
+  if(prevalent){
+    ICD <- get_prevalent(ICD)
+  }
+  
+  ICD <- ICD %>% group_by(ID) %>% 
+    filter(Date == min(Date), rank(Code, ties.method="first")==1) 
+    # Note use of rank to take one row when multiple minima
   
   if(!is.null(colprefix)){
     oldnames <- c("Date", "Code", "Type")
@@ -69,6 +82,7 @@ HES_condition <- function(ICD10codes, ICD9codes, filename,
     ICD <- ICD %>% rename_at(all_of(oldnames), ~ newnames)
   }
   saveRDS(ICD, file.path(filename))
+  invisible(ICD)
 }
 
 
@@ -140,8 +154,15 @@ heart_ICD9 <- c(MI_ICD9, chronic_ICD9)
 CVD_ICD10 <- c(stroke_ICD10, heart_ICD10)
 CVD_ICD9 <- c(stroke_ICD9, heart_ICD9)
 
-HES_condition(ICD10codes = CVD_ICD10,
+prior <- HES_condition(ICD10codes = CVD_ICD10,
               ICD9codes = CVD_ICD9,
+              prevalent=TRUE,
+              filename=file.path(config$data$derived, "CVD1prior_HESevents.rds"),
+              colprefix = "CVDprior")
+
+post <- HES_condition(ICD10codes = CVD_ICD10,
+              ICD9codes = CVD_ICD9,
+              incident=TRUE,
               filename=file.path(config$data$derived, "CVD1_HESevents.rds"),
               colprefix = "CVD")
 
