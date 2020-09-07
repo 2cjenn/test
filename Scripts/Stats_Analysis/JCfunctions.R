@@ -139,7 +139,7 @@ printcoxresults <- function(df, surv, varlist, pretty_names=list(), onecol=FALSE
     stringsAsFactors=FALSE
   )
   
-  results <- left_join(coeffnames, regression)
+  results <- left_join(coeffnames, regression, by="IDcol")
   results$HR[is.na(results$HR) & (results$IDcol != results$Coefficient & !is.na(results$Coefficient))] <- "1"
   
   coeffcols <- colnames(coeffnames)
