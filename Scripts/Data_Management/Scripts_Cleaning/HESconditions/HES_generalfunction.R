@@ -29,14 +29,16 @@ get_incident <- function(data,
   BaC <- readRDS(recdatepath)
   data <- merge(data, BaC[,c("ID", "recdate", "dob")], by="ID", order=FALSE)
   data <- data[data$Date > data$recdate,]
-  data <- data[data$Date < Sys.Date(),]
+  data <- data[data$Date < Sys.Date(),] %>%
+    select(-recdate, -dob)
 }
 
 get_prevalent <- function(data,
                      recdatepath=file.path(config$data$derived, "basechar.rds")){
   BaC <- readRDS(recdatepath)
   data <- merge(data, BaC[,c("ID", "recdate", "dob")], by="ID", order=FALSE)
-  data <- data[data$Date <= data$recdate,]
+  data <- data[data$Date <= data$recdate,] %>%
+    select(-recdate, -dob)
 }
 
 HES_condition <- function(ICD10codes, ICD9codes, filename, 
@@ -166,8 +168,6 @@ post <- HES_condition(ICD10codes = CVD_ICD10,
               filename=file.path(config$data$derived, "CVD1_HESevents.rds"),
               colprefix = "CVD")
 
-CVD <- readRDS(file.path(config$data$derived, "CVD1_HESevents.rds"))
-
 #---------------------------------------------------------------------------------------------------------
 # CVD later analyses
 
@@ -239,3 +239,19 @@ HES_condition(ICD10codes = park_ICD10,
               incident=TRUE)
 
 park <- readRDS(file.path(config$data$derived, "parkinson_incident.rds"))
+
+#---------------------------------------------------------------------------------------------------------
+# Hyperlipidaemia
+
+# ICD 10 codes for Parkinson disease
+chol_ICD10 <- c("E78")
+# ICD 9 codes for Parkinson disease
+chol_ICD9 <- c("272")
+
+chol <- HES_condition(ICD10codes = chol_ICD10,
+              ICD9codes = chol_ICD9,
+              filename=file.path(config$data$derived, "highchol_prevalent.rds"),
+              prevalent=TRUE,
+              colprefix = "chol")
+
+

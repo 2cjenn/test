@@ -427,6 +427,11 @@ data$comorbNumber_ <- dplyr::case_when(
 data$comorbNumber_<- factor(data$comorbNumber_, levels=c("0", "1", "2",">=3"))
 data$comorbNone <- data$comorbNumber==0
 
+data$priorCVD <- !is.na(data$CVDprior_code)
+data$priorCVD <- factor(data$priorCVD, levels=c(FALSE, TRUE), labels=c("No", "Yes"))
+
+data$VIchol <- factor(data$VIchol, levels=c(FALSE, TRUE), labels=c("No", "Yes"))
+
 # # Construct a single PRS for BP by averaging the PRS for SBP and DBP
 # data$PRS <- rowMeans(data[,c("PRS_DBP", "PRS_SBP")])
 # 
