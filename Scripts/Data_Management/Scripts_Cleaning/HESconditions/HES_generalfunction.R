@@ -13,19 +13,24 @@ config = yaml.load_file("config.yml")
 
 #--------------------------------------------------------------------------------------------------------------
 
-HESdiag <- function(datapath, ICDcodelist, codelength=nchar(ICDcodelist[1]), first=TRUE){
-  data <- readRDS(datapath) %>%
-    filter(substr(Code, 1, codelength) %in% ICDcodelist)
+HESdiag <- function(datafile, ICDcodelist, codelength=nchar(ICDcodelist[1]), 
+                    mapping_level, mapping_file, first=FALSE){
+  mapdf <- readRDS(mapping_file) %>%
+    select(ICD_Code, Type = as.name(mapping_level))
+  
+  data <- datafile %>%
+    filter(substr(Code, 1, codelength) %in% ICDcodelist) %>%
+    left_join(mapdf, by=c("Code"="ICD_Code"))
+  
   if(first){
-    data <- data %>% 
-      group_by(ID) %>% 
-      filter(Date == min(Date))
+    data <- data %>% group_by(ID) %>% 
+      filter(Date == min(Date), rank(Code, ties.method="first")==1)
   }
   return(data)
 }
 
 get_incident <- function(data,
-                     recdatepath=file.path(config$data$derived, "basechar.rds")){
+                         recdatepath=file.path(config$data$derived, "basechar.rds")){
   BaC <- readRDS(recdatepath)
   data <- merge(data, BaC[,c("ID", "recdate", "dob")], by="ID", order=FALSE)
   data <- data[data$Date > data$recdate,]
@@ -34,7 +39,7 @@ get_incident <- function(data,
 }
 
 get_prevalent <- function(data,
-                     recdatepath=file.path(config$data$derived, "basechar.rds")){
+                          recdatepath=file.path(config$data$derived, "basechar.rds")){
   BaC <- readRDS(recdatepath)
   data <- merge(data, BaC[,c("ID", "recdate", "dob")], by="ID", order=FALSE)
   data <- data[data$Date <= data$recdate,] %>%
@@ -46,21 +51,28 @@ HES_condition <- function(ICD10codes, ICD9codes, filename,
                           incident=FALSE, 
                           prevalent=FALSE,
                           colprefix=NULL,
-                          ICD10file=file.path(config$data$derived, "ICD10codes.rds"),
-                          ICD9file=file.path(config$data$derived, "ICD9codes.rds")
-                          ){
+                          ICD10_mapping=file.path(config$data$derived, "ICD10codes.rds"),
+                          ICD9_mapping=file.path(config$data$derived, "ICD9codes.rds"),
+                          recordlevel=FALSE){
+  if(recordlevel){
+    ICD9file <- readRDS(file.path(config$data$derived, "HES_recordlevelICD9.rds")) %>%
+      select(ID, ICD, Code, Date)
+    ICD10file <- readRDS(file.path(config$data$derived, "HES_recordlevelICD10.rds")) %>%
+      select(ID, ICD, Code, Date)
+  } else {
+    ICD9file <- readRDS(file.path(config$data$derived, "HES_ICD9.rds"))
+    ICD10file <- readRDS(file.path(config$data$derived, "HES_ICD10.rds"))
+  }
   
-  mapping10 <- readRDS(ICD10file) %>%
-    select(ICD10, Type = as.name(mapping))
+  ICD9 <- HESdiag(datafile=ICD9file, 
+                  ICDcodelist=ICD9codes, 
+                  mapping_level=mapping, mapping_file=ICD9_mapping, 
+                  first=FALSE)
   
-  mapping9 <- readRDS(ICD9file) %>%
-    select(ICD9, Type = as.name(mapping))
-  
-  ICD10 <- HESdiag(file.path(config$data$derived, "HES_ICD10.rds"), ICDcodelist=ICD10codes) %>%
-    left_join(mapping10, by=c("Code"="ICD10"))
-  
-  ICD9 <- HESdiag(file.path(config$data$derived, "HES_ICD9.rds"), ICDcodelist=ICD9codes) %>%
-    left_join(mapping9, by=c("Code"="ICD9"))
+  ICD10 <- HESdiag(datafile=ICD10file,
+                   ICDcodelist=ICD10codes,
+                   mapping_level=mapping, mapping_file=ICD10_mapping, 
+                   first=FALSE)
   
   ICD <- rbind(ICD10, ICD9) %>% 
     mutate(ICD = factor(ICD),
@@ -76,7 +88,7 @@ HES_condition <- function(ICD10codes, ICD9codes, filename,
   
   ICD <- ICD %>% group_by(ID) %>% 
     filter(Date == min(Date), rank(Code, ties.method="first")==1) 
-    # Note use of rank to take one row when multiple minima
+  # Note use of rank to take one row when multiple minima
   
   if(!is.null(colprefix)){
     oldnames <- c("Date", "Code", "Type")
@@ -157,16 +169,25 @@ CVD_ICD10 <- c(stroke_ICD10, heart_ICD10)
 CVD_ICD9 <- c(stroke_ICD9, heart_ICD9)
 
 prior <- HES_condition(ICD10codes = CVD_ICD10,
-              ICD9codes = CVD_ICD9,
-              prevalent=TRUE,
-              filename=file.path(config$data$derived, "CVD1prior_HESevents.rds"),
-              colprefix = "CVDprior")
+                       ICD9codes = CVD_ICD9,
+                       prevalent=TRUE,
+                       filename=file.path(config$data$derived, "CVD1prior_HESevents.rds"),
+                       colprefix = "CVDprior",
+                       recordlevel=FALSE)
 
 post <- HES_condition(ICD10codes = CVD_ICD10,
-              ICD9codes = CVD_ICD9,
-              incident=TRUE,
-              filename=file.path(config$data$derived, "CVD1_HESevents.rds"),
-              colprefix = "CVD")
+                      ICD9codes = CVD_ICD9,
+                      incident=TRUE,
+                      filename=file.path(config$data$derived, "CVD1_HESevents.rds"),
+                      colprefix = "CVD",
+                      recordlevel=FALSE)
+
+what <- HES_condition(ICD10codes = CVD_ICD10,
+                      ICD9codes = CVD_ICD9,
+                      incident=TRUE,
+                      filename=file.path(config$data$derived, "CVD1_HESevents.rds"),
+                      colprefix = "CVD",
+                      recordlevel=TRUE)
 
 #---------------------------------------------------------------------------------------------------------
 # CVD later analyses
@@ -249,9 +270,33 @@ chol_ICD10 <- c("E78")
 chol_ICD9 <- c("272")
 
 chol <- HES_condition(ICD10codes = chol_ICD10,
-              ICD9codes = chol_ICD9,
-              filename=file.path(config$data$derived, "highchol_prevalent.rds"),
-              prevalent=TRUE,
-              colprefix = "chol")
+                      ICD9codes = chol_ICD9,
+                      filename=file.path(config$data$derived, "highchol_prevalent.rds"),
+                      prevalent=TRUE,
+                      colprefix = "chol")
 
 
+#---------------------------------------------------------------------------------------------------------
+# Testing stuffs
+
+recordlevel <- readRDS(file.path(config$data$derived, "HES_recordlevelICD10.rds")) %>%
+  select(ID, ICD, Code, Date)
+
+summary <- readRDS(file.path(config$data$derived, "HES_ICD10.rds")) %>%
+  filter(!is.na(Code))
+
+base <-readRDS(file.path(config$data$derived, "basechar.rds"))
+withdrawn <- read.table(file.path(config$cleaning$withdrawals, "w33952_20200820.csv"))
+missing <- unique(summary$ID[!summary$ID %in% recordlevel$ID])
+
+missing <- missing[!missing %in% withdrawn$V1]
+missing %in% base$ID[!is.na(base$lfudate)]
+
+test <- anti_join(summary, recordlevel, by=c("ID", "ICD", "Code", "Date"))
+test <- test[!test$ID %in% withdrawn$V1,]
+missing <- (unique(test$ID))
+
+missing %in% recordlevel$ID
+View(recordlevel[recordlevel$ID %in% missing,])
+
+codes <- test[test$code %in% recordlevel$code]

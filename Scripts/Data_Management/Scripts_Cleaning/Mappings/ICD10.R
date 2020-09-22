@@ -13,7 +13,7 @@ config = yaml.load_file("config.yml")
 
 #--------------------------------------------------------------------------------------------------------------
 # Load the codings
-coding19 <- read.table(paste0(config$cleaning$coding, "coding19.tsv"), sep="\t", header=TRUE, quote="", comment.char="$", fill=FALSE)
+coding19 <- read.table(file.path(config$cleaning$coding, "coding19.tsv"), sep="\t", header=TRUE, quote="", comment.char="$", fill=FALSE)
 
 # Basically: start with the top levels
 # Iteratively merge on each subsequent level, joining the "parent_id" of the new level to the "node_id" of the previous
@@ -90,12 +90,12 @@ level4 <- rbind(level4, level3[level3$select=="Y" & !is.na(level3$select),]) %>%
 #--------------------------------------------------------------------------------------------------------------
 # Add a column for overall ICD10 code and order by it
 ICD10 <- level4 %>%
-  mutate(ICD10 = factor(coalesce(code4, code3, code2, code1, topcode))) %>%
+  mutate(ICD_Code = factor(coalesce(code4, code3, code2, code1, topcode))) %>%
   select(-join_on, -select) %>%
-  arrange(as.character(ICD10))
+  arrange(as.character(ICD_Code))
 
 # Save the full table of codings to a csv so mappings can be produced in an Excel
-write.csv(ICD10, paste0(config$data$derived, "ICD10codes.csv"), 
+write.csv(ICD10, file.path(config$data$derived, "ICD10codes.csv"), 
           na="", row.names=FALSE)
 
 # And save it as an R data file, why not

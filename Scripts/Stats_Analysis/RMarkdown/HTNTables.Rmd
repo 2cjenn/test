@@ -160,7 +160,7 @@ data$CVDdeath_time[data$CVDdeath_primary==TRUE] <- difftime(data$deathdate[data$
 |Acute myocardial infarction	|I21|  410, 411 |	
 |Chronic ischemic heart disease	|I25	|  414 |
 
-#### To be included in later analyses:
+### To be included in later analyses:
 
 |Condition	|ICD-10	|ICD-9|
 |---|---|---|
@@ -387,7 +387,7 @@ See note above
 
 See note above 
 
-(I'll remove these headings from future iterations but wanted all the initial request information in this first output)
+(I'll remove these headings from future iterations but wanted all the initial request information available in this first output)
 
 # Model 5 (expanded model): all covariates listed above (include unadjusted coefficients in the table presenting model 4)
 
