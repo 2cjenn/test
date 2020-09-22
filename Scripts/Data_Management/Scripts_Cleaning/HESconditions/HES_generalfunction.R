@@ -1,6 +1,11 @@
 #--------------------------------------------------------------------------------------------------------------
-# Jennifer Collister 02/03/2020
-# Clean the UKB BP data and derive new variables
+# Jennifer Collister 04/09/20
+# Create a general function to extract conditions from the HES data
+# Takes ICD9 and ICD10 codes, can return
+# - Incident/prevalent/all outcomes
+# Currently returns first outcome per individual - modify to have option of first per code? all outcomes?
+# Currently saves a dataframe to rds, also invisibly returns the dataframe
+# Returns condition labels according to selected level of hierarchical mapping
 #--------------------------------------------------------------------------------------------------------------
 library(tidyr)
 library(reshape2)
@@ -15,14 +20,19 @@ config = yaml.load_file("config.yml")
 
 HESdiag <- function(datafile, ICDcodelist, codelength=nchar(ICDcodelist[1]), 
                     mapping_level, mapping_file, first=FALSE){
+  # Reads the hierarchical ICD code mapping file
+  # Retains only the selected level of labelling
   mapdf <- readRDS(mapping_file) %>%
     select(ICD_Code, Type = as.name(mapping_level))
   
+  # Keeps only records containing the ICD codes of interest
+  # Joins to the 
   data <- datafile %>%
     filter(substr(Code, 1, codelength) %in% ICDcodelist) %>%
     left_join(mapdf, by=c("Code"="ICD_Code"))
   
   if(first){
+    # Filters to first diagnosis per individual
     data <- data %>% group_by(ID) %>% 
       filter(Date == min(Date), rank(Code, ties.method="first")==1)
   }
@@ -31,6 +41,7 @@ HESdiag <- function(datafile, ICDcodelist, codelength=nchar(ICDcodelist[1]),
 
 get_incident <- function(data,
                          recdatepath=file.path(config$data$derived, "basechar.rds")){
+  # Returns only diagnoses prior to baseline assessment
   BaC <- readRDS(recdatepath)
   data <- merge(data, BaC[,c("ID", "recdate", "dob")], by="ID", order=FALSE)
   data <- data[data$Date > data$recdate,]
@@ -40,6 +51,7 @@ get_incident <- function(data,
 
 get_prevalent <- function(data,
                           recdatepath=file.path(config$data$derived, "basechar.rds")){
+  # Returns only diagnoses which occurred after baseline assessment
   BaC <- readRDS(recdatepath)
   data <- merge(data, BaC[,c("ID", "recdate", "dob")], by="ID", order=FALSE)
   data <- data[data$Date <= data$recdate,] %>%
@@ -74,6 +86,7 @@ HES_condition <- function(ICD10codes, ICD9codes, filename,
                    mapping_level=mapping, mapping_file=ICD10_mapping, 
                    first=FALSE)
   
+  # Join ICD9 and ICD10 diagnoses together
   ICD <- rbind(ICD10, ICD9) %>% 
     mutate(ICD = factor(ICD),
            Code = factor(Code),
@@ -91,15 +104,22 @@ HES_condition <- function(ICD10codes, ICD9codes, filename,
   # Note use of rank to take one row when multiple minima
   
   if(!is.null(colprefix)){
+    # Rename columns as specified by supplied prefix
     oldnames <- c("Date", "Code", "Type")
     newnames <- paste0(colprefix, "_", tolower(oldnames))
     ICD <- ICD %>% rename_at(all_of(oldnames), ~ newnames)
   }
+  
   saveRDS(ICD, file.path(filename))
+  
+  # Invisibly return the dataframe
+  # "This function can be useful when it is desired to have functions return values which can be assigned, 
+  # but which do not print when they are not assigned."
   invisible(ICD)
 }
 
-
+#---------------------------------------------------------------------------------------------------------
+# Use this function for various conditions - should pull these out into separate scripts/part of other scripts?
 #---------------------------------------------------------------------------------------------------------
 # Dementia
 
