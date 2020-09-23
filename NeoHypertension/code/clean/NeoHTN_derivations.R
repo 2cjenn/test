@@ -97,27 +97,28 @@ HMHmeds.BP <- list(
 )
 
 
-Neoethnicity <- list(name="Eth_ethnicgrp",
-                     source="Eth_ethnicity",
+Neoethnicity <- list(name="TEU_ethnicgrp",
+                     source="Eth_Ethnicity",
                      mapper=function(x){
-                       ifelse(x %in% c("White", "British", "Irish", "Any other white background"), 
-                              "White",
-                              ifelse(x %in% c("Do not know", "Prefer not to answer") | is.na(x), 
-                                     "Unknown", 
-                                     "Non-white"
-                              )
-                       )
+                       y <- dplyr::case_when(
+                         x %in% c("White", "British", "Irish", "Any other white background") ~ "White",
+                         x %in% c("Mixed", "White and Black Caribbean", "White and Black African", 
+                                  "White and Asian", "Any other mixed background") ~ "Mixed",
+                         x %in% c("Indian", "Pakistani", "Bangladeshi") ~ "S. Asian",
+                         x %in% c("Black or Black British", "Caribbean", "African", 
+                                  "Any other Black background") ~ "Black",
+                         x %in% c("Other ethnic group","Asian or Asian British", 
+                                  "Any other Asian background", "Chinese") ~ "Other",
+                         x %in% c("Do not know", "Prefer not to answer") ~ "Unanswered",
+                         is.na(x) ~ "Unanswered",
+                         TRUE ~ "Error")
+                       y <- factor(y, ordered=FALSE, levels=c("White", "Black", "S. Asian", "Mixed",
+                                                              "Other", "Unanswered"))
+                       return(y)
                      },
                      display_name="ethnic_group",
                      description="The participant's self-reported ethnicity"
 )
-
-
-ethnicity$ethnicity <- as.character(ethnicity$eth_group)
-ethnicity$ethnicity <- ifelse(ethnicity$ethnicity=="White", "White", 
-                              ifelse(ethnicity$ethnicity=="Prefer not to answer" | is.na(ethnicity$ethnicity), "Unknown",
-                                     "Non-white"))
-ethnicity$ethnicity <- factor(ethnicity$ethnicity, levels=c("White", "Non-white", "Unknown"))
 
 
 alcohol <- list(
@@ -144,13 +145,22 @@ weeklyalcohol <- list(
     alcservings <- list()
     for(alc in c("Alc_RedWineWk", "Alc_WhiteWineWk", "Alc_BeerCiderWk", 
                  "Alc_SpiritsWk", "Alc_FortWineWk", "Alc_OtherAlcWk")){
-      alcservings[[alc]] <- ifelse(data[[alc]]<0|is.na(data[[alc]]), 0, data[[alc]])
+      alcservings[[alc]][data[[alc]]<0|is.na(data[[alc]])] <-  0
     }
     
-    # Note - need to add scaling here as not sure servings of each type of alcohol translate to units
-    weeklyunits <- alcservings[["Alc_RedWineWk"]] + alcservings[["Alc_WhiteWineWk"]] +
-                    alcservings[["Alc_BeerCiderWk"]] + alcservings[["Alc_SpiritsWk"]] +
-                    alcservings[["Alc_FortWineWk"]] + alcservings[["Alc_OtherAlcWk"]]
+    weekly_alcunits <- 
+      #	Red wine (1 glass, 125ml, ABV 12% = 1.5 units) 
+      (1.5 * alcohol$Alc_RedWineWk) + 
+      # White wine, champagne (1 glass, 125ml, ABV 12% = 1.5 units) 
+      (1.5 * alcohol$Alc_WhiteWineWk) + 
+      #	Fortified wines: e.g. sherry, port (1 measure, 50ml, ABV 20% = 1 unit)
+      (1.0 * alcohol$Alc_FortWineWk) + 
+      #	Beer, cider including bitter, lager, stout, ale, Guinness (1 pint, 568ml, ABV 3.6% = 2 units) 
+      (2.0 * alcohol$Alc_BeerCiderWk) +
+      #	Spirits, liquors (1 measure or shot, 25ml, ABV 40% = 1 unit) 
+      (1.0 * alcohol$Alc_SpiritsWk) +
+      #	For "other" types of alcohol, will use alcopops as proxy ( 1 drink, 275ml, ABV 5.5% = 1.5 units)
+      (1.5 * alcohol$Alc_OtherAlcWk)
     
     # Truncate alcohol consumption at upper 95th percentile
     upper95 <- quantile(weeklyunits, 0.95, na.rm=TRUE)
@@ -177,17 +187,19 @@ bingealcohol <- list(
 )
 
 METsover150 <- list(
-  name="TEU_Pha_METsover150", 
+  name="TEU_Pha_METsover1200", 
   source="PhA_METsWkAllAct", 
   mapper=function(x){
     y <- dplyr::case_when(
       is.na(x) ~ "Unknown",
-      x/7 > 150 ~ "Average daily METs > 150",
-      TRUE ~ "Average daily METs <= 150")
-    y <- factor(y, levels=c("Average daily METs <= 150", "Average daily METs > 150", "Unknown"))
+      x > 1200 ~ "High (METs > 1200)",
+      x <= 1200 ~ "Low (METs <= 1200)",
+      TRUE ~ "Other"
+    )
+    y <- factor(y, levels=c("High (METs > 1200)", "Low (METs <= 1200)", "Unanswered"))
     return(y)
   }, 
-  display_name="METsover150", 
+  display_name="Sufficient_METs", 
   description="Indicates whether the participant's average daily METs exceed 150"
 )
 
@@ -197,28 +209,29 @@ ISCED <- list(
   mapper=function(x){
     # Convert UKB qualification categories into ISCED education categories
     y <- dplyr::case_when(
-      x == "College or University degree" ~ "ISCED 5: First stage of tertiary education",
-      x == "NVQ or HND or HNC or equivalent" ~ "ISCED 5: First stage of tertiary education",
-      x == "Other professional qualifications eg: nursing, teaching" ~ "ISCED 4: Post-secondary non-tertiary education",
-      x == "A levels/AS levels or equivalent" ~ "ISCED 3: Upper secondary education",
-      x == "O levels/GCSEs or equivalent" ~ "ISCED 2: Lower secondary education",
-      x == "CSEs or equivalent" ~ "ISCED 2: Lower secondary education",
-      x == "None of the above" ~ "ISCED 1: Primary education",
+      x == "College or University degree" ~ "5: Tertiary",
+      x == "NVQ or HND or HNC or equivalent" ~ "5: Tertiary",
+      x == "Other professional qualifications eg: nursing, teaching" ~ "4: Post-secondary non-tertiary",
+      x == "A levels/AS levels or equivalent" ~ "2-3: Secondary",
+      x == "O levels/GCSEs or equivalent" ~ "2-3: Secondary",
+      x == "CSEs or equivalent" ~ "2-3: Secondary",
+      x == "None of the above" ~ "1: Primary",
       x == "Prefer not to answer" ~ "Unanswered",
       is.na(x) ~ "Unanswered"
     )
-    y <- factor(y, levels=c("ISCED 5: First stage of tertiary education", 
-                            "ISCED 4: Post-secondary non-tertiary education",
-                            "ISCED 3: Upper secondary education",
-                            "ISCED 2: Lower secondary education",
-                            "ISCED 1: Primary education", 
-                            "Unanswered")) 
+    y <- factor(y, levels=c("5: Tertiary", 
+                            "4: Post-secondary non-tertiary", 
+                            "2-3: Secondary" , 
+                            "1: Primary" , 
+                            "Unanswered")
+                )
+    
     return(y)
   }, 
   display_name="ISCED", 
   description="ISCED category of participant's highest attained qualification"
 )
-
+  
 hypertensionseverity <- list(
   name="TEU_Blp_HTNseverity", 
   source=c("TEU_Blp_SBP.avg", "TEU_Blp_DBP.avg"), 
