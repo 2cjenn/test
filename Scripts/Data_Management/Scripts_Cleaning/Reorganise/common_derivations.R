@@ -206,7 +206,8 @@ common <- list(
                     "CSEs or equivalent",
                     "None of the above")) {
         y[is.na(y)] <- ifelse(
-          apply(data[is.na(y),grep("Edu_Qualif", colnames(data), fixed=TRUE)], 1, function(x) any(x == qual & !is.na(x))), 
+          apply(data[is.na(y),grep("Edu_Qualif", colnames(data), fixed=TRUE)], 1, 
+                function(x) any(x == qual & !is.na(x))), 
           qual, 
           NA
         )
@@ -264,6 +265,15 @@ common <- list(
     post_exclusion=FALSE,
     display_name="CountryResidence", 
     description="Which country does the participant live in"
+  ),
+  
+  list(
+    name="TEU_TownsendDepInd_Quint", 
+    source=c("BaC_DeprivInd"), 
+    mapper=FN_quantiles(quant=5, labels=c("Q1: least deprived", "Q2", "Q3", "Q4", "Q5: most deprived")),
+    post_exclusion=TRUE,
+    display_name="Townsend Deprivation Index, quintiles",
+    description="Quintiles of the Townsend Deprivation Index: 1st is least deprived, 5th is most deprived."
   )
 
 )
