@@ -30,14 +30,23 @@ knitr::opts_chunk$set(include=TRUE, echo=FALSE)
 config = yaml.load_file(here::here("config.yml"))
 
 source(here::here(config$functions))
+source(here::here(file.path(config$scripts$processing, "Neo_exclusions.R")))
 
-
-#-------------------------------------------------------------------------------------------------------------------
 # Load the data 
 
-treated <- readRDS(file=here::here(file.path(config$data$analysed, "HTN_trt.rds")))
+rawdata <- readRDS(here::here(file.path(config$data$derived, "HTN_raw.rds")))
 
-data <- readRDS(file=here::here(file.path(config$data$analysed, "HTN_excl.rds")))
+```
+
+```{r}
+#-------------------------------------------------------------------------------------------------------------------
+# Derive our variables
+
+data <- Neo_HTN_all(rawdata)
+treated <- Neo_HTN_trt(data)
+
+# treated <- readRDS(file=here::here(file.path(config$data$analysed, "HTN_trt.rds")))
+# data <- readRDS(file=here::here(file.path(config$data$analysed, "HTN_excl.rds")))
 
 
 # Comorbidities of interest
