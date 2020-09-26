@@ -14,12 +14,22 @@ library(rsvg)
 library(png)
 library(yaml)
 
-# config = yaml.load_file("config.yml")
-
-# source(config$functions)
-
 #--------------------------------------------------------------------------------------------------------------
 
+config = yaml.load_file("config.yml")
+source(config$functions)
+source(file.path(config$scripts$cleaning, "Reorganise", "dataset_generator.R"))
+data <- readRDS(file.path(config$data$derived, "Test_all.rds"))
+# data <- readRDS(file.path(config$data$derived, "HTN_raw.rds"))
+
+attach(TEUmaps)
+Neo_HTN <- c(ID,
+             TEU_BaC_DateOfBirth, Rec_DateAssess, TEU_BaC_AgeAtRec, TEU_BaC_AgeCat, 
+             TEU_HMH_BowelCancerScreen, 
+             TEU_Edu_HighestQual, TEU_Edu_ISCED)
+detach(TEUmaps)
+
+data <- derive_variables(alldata, colnames=Neo_HTN)
 
 #--------------------------------------------------------------------------------------------------------------
 # Create some more complex variables
@@ -190,23 +200,7 @@ Neo_HTN_all <- function(data){
                                          "Non-white")))
   data$ethnicity <- factor(data$ethnicity, levels=c("White", "Non-white", "Do not know", "Unanswered"))
   
-  # Convert UKB qualification categories into ISCED education categories
-  data$ISCED <- dplyr::case_when(
-    data$edu_highest == "College or University degree" ~ "5: Tertiary",
-    data$edu_highest == "NVQ or HND or HNC or equivalent" ~ "5: Tertiary",
-    data$edu_highest == "Other professional qualifications eg: nursing, teaching" ~ "4: Post-secondary non-tertiary",
-    data$edu_highest == "A levels/AS levels or equivalent" ~ "2-3: Secondary",
-    data$edu_highest == "O levels/GCSEs or equivalent" ~ "2-3: Secondary",
-    data$edu_highest == "CSEs or equivalent" ~ "2-3: Secondary",
-    data$edu_highest == "None of the above" ~ "1: Primary",
-    data$edu_highest == "Prefer not to answer" ~ "Unanswered",
-    is.na(data$edu_highest) ~ "Unanswered"
-    )
-  
-  data$ISCED <- factor(data$ISCED, 
-                       levels=c("5: Tertiary", "4: Post-secondary non-tertiary", 
-                                "2-3: Secondary" , "1: Primary" , "Unanswered")) # Excluding "Unanswered" from factor levels codes it as NA
-  
+
   # Convert "missing" employment to "unemployed" so it doesn't interfere with Cox regression
   levels(data$employment) <- c(levels(data$employment), "Unemployed/retired/other")
   data$employment[is.na(data$employment)] <- "Unemployed/retired/other"
@@ -246,9 +240,6 @@ Neo_HTN_all <- function(data){
                                     "Unemployed/unanswered"),
                            ordered=FALSE)
   
-  # Categorise age into 10-yr groups
-  data$agegrp <- cut(data$age, breaks=c(40, 50, 60, 70), right=FALSE,
-                     labels=c("40-49", "50-59", "60-69"))
   
   # Categorise BMI into labelled categories
   data$BMIcat <- as.character(cut(data$BMI, breaks=c(0, 18.5, 25, 30, 200), right=FALSE))
@@ -290,13 +281,8 @@ Neo_HTN_all <- function(data){
     data$PhA_METsWkAllAct <= 1200 & !is.na(data$PhA_METsWkAllAct) ~ "Low (METs <= 1200)",
     TRUE ~ "Unanswered")
   data$METs_over1200 <- factor(data$METs_over1200, levels=c("High (METs > 1200)", "Low (METs <= 1200)", "Unanswered"))
-  
-  # Convert bowel cancer screening to a factor
-  data$BowelCancerScreening <- as.character(data$BowelCancerScreening)
-  data$BowelCancerScreening[data$BowelCancerScreening %in% c("Prefer not to answer") | is.na(data$BowelCancerScreening)] <- "Unanswered"
-  data$BowelCancerScreening[data$BowelCancerScreening %in% c("Do not know")] <- "Do not know"
-  data$BowelCancerScreening <- factor(data$BowelCancerScreening, levels=c("Yes", "No", "Do not know", "Unanswered"), ordered=FALSE)
-  
+
+
   # Convert family history to a factor
   data$FamilyHist_CVD_ <- factor(as.numeric(data$FaH_CVD), levels=c(0,1), labels=c("No", "Yes"))
   
