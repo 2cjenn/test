@@ -18,23 +18,47 @@ source(file.path(config$scripts$cleaning, "Reorganise", "common_derivations.R"),
 # Better practice
 
 
-derive_variables <- function(data, colnames, exclusions=NULL){
+derive_variables <- function(data, colnames, exclusions=function(x){x}){
   
+  # Extract the lists from the list of functions
   objects <- Map(function(f) f(), colnames)
+  
+  # Find the names of the requested columns
+  outcols <- sapply(objects, function(x) x$name)
 
+  # Separate into derivations to be calculated before and after exclusion criteria
   before <- objects[sapply(objects, function(x) x$post_exclusion==FALSE)]
   after <- objects[sapply(objects, function(x) x$post_exclusion==TRUE)]
   
   for(colinfo in before){
     colfunc <- colinfo$mapper
     if(length(colinfo$source)>1){
-      data[[colinfo$name]] <- colfunc(data)
+      data[[colinfo$name]] <- colfunc(data[colinfo$source])
     } else {
       data[[colinfo$name]] <- colfunc(data[[colinfo$source]])
     }
     print(colinfo$name)
     print(colinfo$description)
   }
-  # data <- data[,colnames]
+  
+  data <- exclusions(data)
+  # Note - future update
+  # Make exclusions a list of functions, each function is a separate exclusion criterion
+  # Then the derive_variables() function can handle the row counts
+  # And can write individual documentation for each exclusion criterion to be output nicely
+  
+  for(colinfo in after){
+    colfunc <- colinfo$mapper
+    if(length(colinfo$source)>1){
+      data[[colinfo$name]] <- colfunc(data[colinfo$source])
+    } else {
+      data[[colinfo$name]] <- colfunc(data[[colinfo$source]])
+    }
+    print(colinfo$name)
+    print(colinfo$description)
+  }
+  
+  # Return only requested columns
+  data <- data[,outcols]
   return(data)
 }

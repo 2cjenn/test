@@ -19,17 +19,81 @@ library(yaml)
 config = yaml.load_file("config.yml")
 source(config$functions)
 source(file.path(config$scripts$cleaning, "Reorganise", "dataset_generator.R"))
-data <- readRDS(file.path(config$data$derived, "Test_all.rds"))
+alldata <- readRDS(file.path(config$data$derived, "Test_all.rds"))
 # data <- readRDS(file.path(config$data$derived, "HTN_raw.rds"))
 
 attach(TEUmaps)
-Neo_HTN <- c(ID,
-             TEU_BaC_DateOfBirth, Rec_DateAssess, TEU_BaC_AgeAtRec, TEU_BaC_AgeCat, 
+TEUvars_age <- c(TEU_BaC_DateOfBirth, Rec_DateAssess, TEU_BaC_AgeAtRec, TEU_BaC_AgeCat)
+TEUvars_BP <- c(TEU_BlP_SBP.0, TEU_BlP_SBP.1, TEU_BlP_DBP.0, TEU_BlP_DBP.1,
+                TEU_BlP_nSBP, TEU_BlP_nDBP,
+                TEU_BlP_SBP.avg, TEU_BlP_DBP.avg)
+Neo_HTN <- c(ID, BaC_Sex,
+             TEUvars_age, 
+             TEUvars_BP, TEU_BlP_measuredHTN,
              TEU_HMH_BowelCancerScreen, 
-             TEU_Edu_HighestQual, TEU_Edu_ISCED)
+             TEU_Edu_HighestQual, TEU_Edu_ISCED,
+             TEU_TownsendDepInd_Quint)
 detach(TEUmaps)
 
-data <- derive_variables(alldata, colnames=Neo_HTN)
+# Exclusions
+
+exclusions <- function(data){
+  
+  # Exclude individuals who have withdrawn from the study
+  withdrawn <- read.csv(config$cleaning$withdrawals, header=FALSE)
+  data <- data[!data$ID %in% withdrawn$V1,]
+  
+  # Globally assign a list to track exclusion counts
+  excl <<- list(initial=nrow(data))
+  
+  # Exclude those outside the 40-70 age range
+  data <- data[data$TEU_BaC_AgeAtRec >= 40 & data$TEU_BaC_AgeAtRec < 70,]
+
+  excl$agerange <<- nrow(data)
+
+  # Exclude individuals with missing BP data
+  # or missing answers to BP questions on touchscreen questionnaire
+  data <- data[!is.na(data$TEU_BlP_SBP.avg),]
+  data <- data[!is.na(data$TEU_BlP_DBP.avg),]
+  # data <- data[!is.na(data$selfrephyp),]
+  # data <- data[!is.na(data$selfrepmeds),]
+  # Exclude participants who only had BP measured once
+  data <- data[data$TEU_BlP_nSBP == 2 & data$TEU_BlP_nDBP == 2,]
+
+  excl$BPmiss <<- nrow(data)
+
+  # Exclude individuals with implausible BP data
+  data <- data[data$TEU_BlP_SBP.avg >= 70 & data$TEU_BlP_SBP.avg <= 270,]
+  data <- data[data$TEU_BlP_DBP.avg >= 50 & data$TEU_BlP_DBP.avg <= 150,]
+
+  excl$BPimp <<- nrow(data)
+
+  # # Exclude pregnant women ("Yes" or "Unsure")
+  # data <- data[is.na(data$VeI_PregnantNow) | data$VeI_PregnantNow == "No",]
+
+  excl$pregnant <<- nrow(data)
+
+  # Exclude individuals who have serious health conditions
+  seriouscomorbid <- readRDS(file.path(config$data$derived, "VIhypExclude.rds"))
+  data <- data[!data$ID %in% seriouscomorbid$ID[!is.na(seriouscomorbid$Yes)],]
+
+  excl$seriouscomorb <<- nrow(data)
+
+  # And individuals with cancer (except for skin cancer?)
+  cancer <- readRDS(file.path(config$data$derived, "Cancer_pts.rds"))
+  exceptskincancer <- cancer$ID[cancer$TL!="skin cancer"]
+  data <- data[!data$ID %in% exceptskincancer,]
+
+  excl$cancer <<- nrow(data)
+  
+  # Hypertension care cascade
+  # excl$hypert <- nrow(data[data$evidenceHTN==TRUE,])
+  # excl$aware <- nrow(data[data$aware==TRUE & !is.na(data$aware),])
+  # excl$treat <- nrow(data[data$treated==TRUE & !is.na(data$treated),])
+  return(data)
+}
+
+data <- derive_variables(alldata, colnames=Neo_HTN, exclusions = exclusions)
 
 #--------------------------------------------------------------------------------------------------------------
 # Create some more complex variables
@@ -54,41 +118,7 @@ Neo_HTN_all <- function(data){
   data$HTN_probablemeds[is.na(data$HTN_probablemeds)] <- FALSE
   data$selfrepmeds <- (data$HBPmeds==TRUE & !is.na(data$HBPmeds)) | data$HTN_probablemeds
   data$selfrepmeds[is.na(data$HBPmeds) & is.na(data$NumberMedications)] <-NA
-  
-  
-  #--------------------------------------------------------------------------------------------------------------
-  # Hypertension exclusions
-  #--------------------------------------------------------------------------------------------------------------
-  
-  # Exclude individuals who have withdrawn from the study
-  withdrawn <- read.csv(config$cleaning$withdrawals, header=FALSE)
-  data <- data[!data$ID %in% withdrawn$V1,]
-  
-  excl <<- list(initial=nrow(data))
-  
-  # Exclude those outside the 40-70 age range
-  # n = 502506 - 500011 = 2495
-  data <- data[data$age >= 40 & data$age < 70,]
-  
-  excl$agerange=nrow(data)
-  
-  # Exclude individuals with missing BP data
-  # or missing answers to BP questions on touchscreen questionnaire
-  # n = 500011 - 498698 = 1313
-  data <- data[!is.na(data$SBP),]
-  data <- data[!is.na(data$DBP),]
-  data <- data[!is.na(data$selfrephyp),]
-  data <- data[!is.na(data$selfrepmeds),]
-  # Exclude participants who only had BP measured once?
-  data <- data[data$nSBP == 2 & data$nDBP == 2,]
-  
-  excl$BPmiss=nrow(data)
-  
-  # Exclude individuals with implausible BP data
-  data <- data[data$SBP >= 70 & data$SBP <= 270,]
-  data <- data[data$DBP >= 50 & data$DBP <= 150,]
-  
-  excl$BPimp=nrow(data)
+
   
   #--------------------------------------------------------------------------------------------------------------
   # Generate hypertension category variables
@@ -125,41 +155,6 @@ Neo_HTN_all <- function(data){
   data$treated_ <- factor(as.numeric(data$treated), levels=c(0,1), labels=c("Did not report BP medication", "Self-reported BP medication"))
   data$evidenceHTN_ <- factor(as.numeric(data$evidenceHTN), levels=c(0,1), labels=c("No evidence of hypertension", "Hypertensive"))
   
-  
-  #--------------------------------------------------------------------------------------------------------------
-  # Further exclusions for Neo's covariates of interest
-  #--------------------------------------------------------------------------------------------------------------
-  
-  # Exclude pregnant women ("Yes" or "Unsure")
-  # n = 498107 - 497739 = 
-  data <- data[is.na(data$VeI_PregnantNow) | data$VeI_PregnantNow == "No",]
-  
-  excl$pregnant <- nrow(data)
-  
-  # Exclude individuals who have serious health conditions
-  # n = 489006 - 483794 = 5212
-  seriouscomorbid <- readRDS(file.path(config$data$derived, "VIhypExclude.rds"))
-  data <- data[!data$ID %in% seriouscomorbid$ID[!is.na(seriouscomorbid$Yes)],]
-  
-  excl$seriouscomorb <- nrow(data)
-  
-  # And individuals with cancer (except for skin cancer?)
-  # n = 483794 - 443782 = 40,012
-  cancer <- readRDS(file.path(config$data$derived, "Cancer_pts.rds"))
-  exceptskincancer <- cancer$ID[cancer$TL!="skin cancer"]
-  data <- data[!data$ID %in% exceptskincancer,]
-  
-  excl$cancer <- nrow(data)
-  
-  # # Exclude individuals with severely limited function (hand grip, reaction time)
-  # # n = 443782 - 443627 = 155
-  # data <- data[data$mean_reacttime<1500 | is.na(data$mean_reacttime),]
-  # 
-  # excl$limitfunc <- nrow(data)
-  
-  excl$hypert <- nrow(data[data$evidenceHTN==TRUE,])
-  excl$aware <- nrow(data[data$aware==TRUE & !is.na(data$aware),])
-  excl$treat <- nrow(data[data$treated==TRUE & !is.na(data$treated),])
   
   #--------------------------------------------------------------------------------------------------------------
   # Create exclusion flowchart
