@@ -124,23 +124,91 @@ TEU_BaC_AgeAtRec <- function() {
   )
 }
 
+TEU_BlP_SBP.0 <- function() {
+  list(
+    name = "TEU_BlP_SBP.0",
+    source = c("BlP_SBPAuto.0", "BlP_SBPMan.0"),
+    mapper = function(data) {
+      coalesce(data[["BlP_SBPAuto.0"]], data[["BlP_SBPMan.0"]])
+    },
+    post_exclusion = FALSE,
+    display_name = "First SBP at baseline",
+    description = "First SBP measurement at baseline, automated or manual"
+  )
+}
+
+TEU_BlP_SBP.1 <- function() {
+  list(
+    name = "TEU_BlP_SBP.1",
+    source = c("BlP_SBPAuto.1", "BlP_SBPMan.1"),
+    mapper = function(data) {
+      coalesce(data[["BlP_SBPAuto.1"]], data[["BlP_SBPMan.1"]])
+    },
+    post_exclusion = FALSE,
+    display_name = "Second SBP at baseline",
+    description = "Second SBP measurement at baseline, automated or manual"
+  )
+}
+
+TEU_BlP_DBP.0 <- function() {
+  list(
+    name = "TEU_BlP_DBP.0",
+    source = c("BlP_DBPAuto.0", "BlP_DBPMan.0"),
+    mapper = function(data) {
+      coalesce(data[["BlP_DBPAuto.0"]], data[["BlP_DBPMan.0"]])
+    },
+    post_exclusion = FALSE,
+    display_name = "First DBP at baseline",
+    description = "First DBP measurement at baseline, automated or manual"
+  )
+}
+
+TEU_BlP_DBP.1 <- function() {
+  list(
+    name = "TEU_BlP_DBP.1",
+    source = c("BlP_DBPAuto.1", "BlP_DBPMan.1"),
+    mapper = function(data) {
+      coalesce(data[["BlP_DBPAuto.1"]], data[["BlP_DBPMan.1"]])
+    },
+    post_exclusion = FALSE,
+    display_name = "Second DBP at baseline",
+    description = "Second DBP measurement at baseline, automated or manual"
+  )
+}
+
+TEU_BlP_nSBP <- function() {
+  list(
+    name = "TEU_BlP_nSBP",
+    source = c("TEU_BlP_SBP.0", "TEU_BlP_SBP.1"),
+    mapper = function(data) {
+      rowSums(!is.na(data[, c("TEU_BlP_SBP.0", "TEU_BlP_SBP.1")]))
+    },
+    post_exclusion = FALSE,
+    display_name = "No. SBP",
+    description = "Number of SBP measurements taken at baseline"
+  )
+}
+
+TEU_BlP_nDBP <- function() {
+  list(
+    name = "TEU_BlP_nDBP",
+    source = c("TEU_BlP_DBP.0", "TEU_BlP_DBP.1"),
+    mapper = function(data) {
+      rowSums(!is.na(data[, c("TEU_BlP_DBP.0", "TEU_BlP_DBP.1")]))
+    },
+    post_exclusion = FALSE,
+    display_name = "No. DBP",
+    description = "Number of DBP measurements taken at baseline"
+  )
+}
+
 TEU_BlP_SBP.avg <- function() {
   list(
     name = "TEU_BlP_SBP.avg",
-    source = c(
-      "BlP_SBPAuto.0",
-      "BlP_SBPAuto.1",
-      "BlP_SBPMan.0",
-      "BlP_SBPMan.1"
-    ),
-    mapper = FN_average(
-      colnames = c(
-        "BlP_SBPAuto.0",
-        "BlP_SBPAuto.1",
-        "BlP_SBPMan.0",
-        "BlP_SBPMan.1"
-      )
-    ),
+    source = c("TEU_BlP_SBP.0",
+               "TEU_BlP_SBP.1"),
+    mapper = FN_average(colnames = c("TEU_BlP_SBP.0",
+                                     "TEU_BlP_SBP.1")),
     post_exclusion = FALSE,
     display_name = "SBP",
     description = "The average systolic blood pressure from two measurements at baseline"
@@ -150,36 +218,34 @@ TEU_BlP_SBP.avg <- function() {
 TEU_BlP_DBP.avg <- function() {
   list(
     name = "TEU_BlP_DBP.avg",
-    source = c(
-      "BlP_DBPAuto.0",
-      "BlP_DBPAuto.1",
-      "BlP_DBPMan.0",
-      "BlP_DBPMan.1"
-    ),
-    mapper = FN_average(
-      colnames = c(
-        "BlP_DBPAuto.0",
-        "BlP_DBPAuto.1",
-        "BlP_DBPMan.0",
-        "BlP_DBPMan.1"
-      )
-    ),
+    source = c("TEU_BlP_DBP.0",
+               "TEU_BlP_DBP.1"),
+    mapper = FN_average(colnames = c("TEU_BlP_DBP.0",
+                                     "TEU_BlP_DBP.1")),
     post_exclusion = FALSE,
     display_name = "DBP",
     description = "The average diastolic blood pressure from two measurements at baseline"
   )
 }
 
-TEU_BlP_measuredHTN <- function() {
+TEU_BlP_measuredHTN <- function(SBPthreshold = 140,
+                                DBPthreshold = 90) {
   list(
     name = "TEU_BlP_measuredHTN",
     source = c("TEU_BlP_SBP.avg", "TEU_BlP_DBP.avg"),
     mapper = function(data) {
-      data[["TEU_BlP_SBP.avg"]] >= 140 | data[["TEU_BlP_DBP.avg"]] >= 90
+      data[["TEU_BlP_SBP.avg"]] >= SBPthreshold |
+        data[["TEU_BlP_DBP.avg"]] >= DBPthreshold
     },
     post_exclusion = FALSE,
     display_name = "measuredHTN",
-    description = "Whether the participant had hypertensive BP measured at baseline"
+    description = paste0(
+      "Whether the participant had hypertensive BP (>=",
+      SBPthreshold,
+      "/",
+      DBPthreshold,
+      ") measured at baseline"
+    )
   )
 }
 
@@ -748,20 +814,20 @@ TEU_Edu_ISCED <- function() {
   )
 }
 
-TEU_Blp_HTNseverity <- function() {
+TEU_BlP_HTNseverity <- function() {
   list(
-    name = "TEU_Blp_HTNseverity",
-    source = c("TEU_Blp_SBP.avg", "TEU_Blp_DBP.avg"),
+    name = "TEU_BlP_HTNseverity",
+    source = c("TEU_BlP_SBP.avg", "TEU_BlP_DBP.avg"),
     mapper = function(data) {
       y <- dplyr::case_when(
-        is.na(data[["TEU_Blp_SBP.avg"]]) |
-          is.na(data[["TEU_Blp_DBP.avg"]]) ~ "Unmeasured",
-        data[["TEU_Blp_SBP.avg"]] >= 180 |
-          data[["TEU_Blp_DBP.avg"]] >= 110 ~ "Stage 3",
-        between(data[["TEU_Blp_SBP.avg"]], 160, 180) |
-          between(data[["TEU_Blp_DBP.avg"]], 100, 110) ~ "Stage 2",
-        between(data[["TEU_Blp_SBP.avg"]], 140, 160) |
-          between(data[["TEU_Blp_DBP.avg"]], 90, 100) ~ "Stage 1",
+        is.na(data[["TEU_BlP_SBP.avg"]]) |
+          is.na(data[["TEU_BlP_DBP.avg"]]) ~ "Unmeasured",
+        data[["TEU_BlP_SBP.avg"]] >= 180 |
+          data[["TEU_BlP_DBP.avg"]] >= 110 ~ "Stage 3",
+        between(data[["TEU_BlP_SBP.avg"]], 160, 180) |
+          between(data[["TEU_BlP_DBP.avg"]], 100, 110) ~ "Stage 2",
+        between(data[["TEU_BlP_SBP.avg"]], 140, 160) |
+          between(data[["TEU_BlP_DBP.avg"]], 90, 100) ~ "Stage 1",
         TRUE ~ "Normotensive"
       )
       y <-
