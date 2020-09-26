@@ -14,9 +14,10 @@
 **.rds
 **.RData
 **.RDataTmp
-
-# No longer using databases, so don't waste space tracking these #
 **.db
+**.wal
+**duck.db.tmp/
+
 
 # Note excel and csv could be important mapping tables, so worth tracking these! #
 # Except this one which is data#
