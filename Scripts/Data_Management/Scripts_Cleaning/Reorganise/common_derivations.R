@@ -24,6 +24,17 @@ ID <- function() {
   )
 }
 
+PsF_VisitFreq.0.0 <- function() {
+  list(
+    name = "PsF_VisitFreq.0.0",
+    source = "PsF_VisitFreq.0.0",
+    mapper = FN_id,
+    post_exclusion = FALSE,
+    display_name = "VisitFrequency",
+    description = "Psychosocial visit frequency"
+  )
+}
+
 BaC_Sex <- function() {
   list(
     name = "BaC_Sex",
