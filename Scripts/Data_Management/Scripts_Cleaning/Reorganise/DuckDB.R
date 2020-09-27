@@ -2,8 +2,19 @@ library(tidyverse)
 library(DBI)
 library(duckdb)
 library(data.table)
-library(vroom)
-library(readr)
+library(yaml)
+
+# Load the project config file for filepaths etc
+if (!exists("config")) {
+  library(yaml)
+  config = yaml.load_file("config.yml")
+}
+source(file.path(config$scripts$cleaning, "Reorganise", "dataset.R"))
+
+ukb_df("ukb40731", path="K:/TEU/UKB33952_Data/Data_Downloads/V2.1_B2007025_R40731/R/",
+       dbname="ukb_v2.db", tblname="ukb40731")
+
+
 
 col_type <- c(
   "Sequence" = "integer",
@@ -26,8 +37,9 @@ spec <- ukb_df_field(fileset = "ukb38358",
 
 
 df_func<- function(skip=0, nrows=25000, header=FALSE, col.names=NULL){
+  # Read the data
   if(is.null(col.names)){
-    data.table::fread(
+    df <- data.table::fread(
       input = "K:/TEU/UKB33952_Data/Data_Downloads/v2.0_B2006022_R38358/R/Alldata/ukb38358.tab",
       sep = "\t",
       header = header,
@@ -38,7 +50,7 @@ df_func<- function(skip=0, nrows=25000, header=FALSE, col.names=NULL){
       nrows=nrows
     ) 
   } else{
-    data.table::fread(
+    df <- data.table::fread(
       input = "K:/TEU/UKB33952_Data/Data_Downloads/v2.0_B2006022_R38358/R/Alldata/ukb38358.tab",
       sep = "\t",
       header = header,
@@ -50,9 +62,11 @@ df_func<- function(skip=0, nrows=25000, header=FALSE, col.names=NULL){
       nrows=nrows
     ) 
   }
+  # Apply the UKB R script to format the data
+  
 }
 
-con <- dbConnect(duckdb::duckdb(), "duck.db")
+con <- dbConnect(duckdb::duckdb(), "ukb_v2.db")
 
 for(row in seq(1, 502520, by=25000)){
   
@@ -90,9 +104,9 @@ for(row in seq(1, 502520, by=25000)){
 
 dbListTables(con)
 
-qry <- dbGetQuery(con, "SELECT COUNT(*) FROM ukb")
+qry <- dbGetQuery(con, "SELECT COUNT(*) FROM ukb40731")
 
-df <- tbl(con, from="ukb") %>% 
+df <- tbl(con, from="ukb40731") %>% collect
   select(f.eid, f.21.0.0, f.34.0.0, starts_with("f.84."), starts_with("f.87.")) %>% 
   collect
 

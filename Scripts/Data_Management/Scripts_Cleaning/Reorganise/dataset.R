@@ -1,4 +1,4 @@
-# File borrowed from https://github.com/kenhanscombe/ukbtools/blob/master/R/dataset.R
+
 globalVariables(
   c(".", "i", "j", "eid", "pair", "ibs0", "kinship", "category_related",
     "ped_related", "code", "heterozygosity_0_0", "field.tab", "field.showcase",
@@ -12,6 +12,8 @@ globalVariables(
 #'
 #' @param fileset The prefix for a UKB fileset, e.g., ukbxxxx (for ukbxxxx.tab, ukbxxxx.r, ukbxxxx.html)
 #' @param path The path to the directory containing your UKB fileset. The default value is the current directory.
+#' @param dbname The name of the database to connect to
+#' @param tblname The name of the database table to write to
 #' @param n_threads Either "max" (uses the number of cores, `parallel::detectCores()`), "dt" (default - uses the data.table default, `data.table::getDTthreads()`), or a numerical value (in which case n_threads is set to the supplied value, or `parallel::detectCores()` if it is smaller).
 #' @param data.pos Locates the data in your .html file. The .html file is read into a list; the default value data.pos = 2 indicates the second item in the list. (The first item in the list is the title of the table). You will probably not need to change this value, but if the need arises you can open the .html file in a browser and identify where in the file the data is.
 #'
@@ -22,6 +24,8 @@ globalVariables(
 #' @seealso \code{\link{ukb_df_field}} \code{\link{ukb_df_full_join}}
 #'
 #' @import stringr
+#' @import duckdb
+#' @import DBI
 #' @importFrom data.table fread
 #' @export
 #'
@@ -45,13 +49,21 @@ globalVariables(
 #' ukb_df_full_join(ukb1234_data, ukb2345_data, ukb3456_data)
 #' }
 #'
-ukb_df <- function(fileset, path = ".", n_threads = "dt", data.pos = 2) {
-
+ukb_df <- function(fileset, path = ".", dbname="duck.db", tblname="ukb", 
+                   n_threads = "dt", data.pos = 2) {
+  
   # Check files exist
   html_file <- stringr::str_interp("${fileset}.html")
   r_file <- stringr::str_interp("${fileset}.r")
   tab_file <- stringr::str_interp("${fileset}.tab")
-
+  
+  # Create paths to the r and tab files
+  tab_location <- file.path(path, tab_file)
+  r_location <- file.path(path, r_file)
+  
+  # Comment out .r read of .tab
+  edit_ukb_r(r_location)
+  
   # Column types as described by UKB
   # http://biobank.ctsu.ox.ac.uk/crystal/help.cgi?cd=value_type
   col_type <- c(
@@ -68,12 +80,12 @@ ukb_df <- function(fileset, path = ".", n_threads = "dt", data.pos = 2) {
     "Records" = "character",
     "Curve" = "character"
   )
-
+  
   ukb_key <- ukb_df_field(fileset, path = path) %>%
     mutate(fread_column_type = col_type[col.type])
-
+  
   bad_col_type <- is.na(ukb_key$fread_column_type)
-
+  
   if (any(bad_col_type)) {
     bad_types <- sort(unique(ukb_key$col.type[bad_col_type])) %>%
       stringr::str_c(bad_types, collapse = ", ")
@@ -86,15 +98,43 @@ ukb_df <- function(fileset, path = ".", n_threads = "dt", data.pos = 2) {
     )
     ukb_key$fread_column_type[bad_col_type] <- "character"
   }
-
-  # Comment out .r read of .tab
+  
   # Read .tab file from user named path with data.table::fread
   # Include UKB-generated categorical variable labels
-  bd <- read_ukb_tab(fileset, column_type = ukb_key$fread_column_type, path, n_threads = n_threads)
-  source(file.path(path, r_file), local = TRUE)
-
-  names(bd) <- ukb_key$col.name[match(names(bd), ukb_key$field.tab)]
-  return(bd)
+  # Write it to a duckDB database
+  con <- DBI::dbConnect(duckdb::duckdb(), dbname)
+  on.exit(DBI::dbDisconnect(con, shutdown=TRUE))
+  
+  for(row in seq(1, 502520, by=25000)){
+    print(paste0("row ", row))
+    overwrite <- row==1
+    if(overwrite){
+      # Coded "ok" (TRUE) as Don't overwrite and "cancel" (FALSE) as Do overwrite
+      # so that DEFAULT OPTION is NOT OVERWRITING!
+      dontOverwrite <- rstudioapi::showQuestion("Overwrite", 
+                                                message="Are you sure you want to overwrite this large, painstakingly created database???", 
+                                                ok="Uhoh, wait, no", 
+                                                cancel="Yup, I'm sure")
+      if(dontOverwrite){
+        stop("User decided not to overwrite")
+      }
+    }
+    append <- row!=1
+    
+    if(row==1){
+      bd <- read_ukb_tab(tab_location, column_type = ukb_key$fread_column_type,
+                          header=TRUE, n_threads = n_threads)
+      col.names <- colnames(bd)
+    } else if (row>1){
+      bd <- read_ukb_tab(tab_location, column_type = ukb_key$fread_column_type, 
+                         skip=row, col.names=col.names, n_threads = n_threads)
+    }
+    print("read")
+    source(r_location, local = TRUE)
+    print("formatted")
+    duckdb::dbWriteTable(con, name=tblname, value=bd, overwrite=overwrite, append=append, temporary=FALSE)
+    print("written")
+  }
 }
 
 
@@ -130,11 +170,11 @@ ukb_df_field <- function(fileset, path = ".", data.pos = 2, as.lookup = FALSE) {
   html_internal_doc <- xml2::read_html(file.path(path, html_file))
   html_table_nodes <- xml2::xml_find_all(html_internal_doc, "//table")
   html_table <- rvest::html_table(html_table_nodes[[data.pos]])
-
+  
   df <- fill_missing_description(html_table)
   lookup <- description_to_name(df)
   old_var_names <- paste("f.", gsub("-", ".", df[, "UDI"]), sep = "")
-
+  
   if (as.lookup) {
     names(lookup) <- old_var_names
     return(lookup)
@@ -153,7 +193,7 @@ ukb_df_field <- function(fileset, path = ".", data.pos = 2, as.lookup = FALSE) {
         )
       )
     )
-
+    
     return(lookup.reference)
   }
 }
@@ -183,7 +223,7 @@ fill_missing_description <-  function(data) {
 # @param data Field-to-description table from html file
 #
 description_to_name <-  function(data) {
-
+  
   name <- tolower(data[, "Description"]) %>%
     gsub(" - ", "_", x = .) %>%
     gsub(" ", "_", x = .) %>%
@@ -192,7 +232,7 @@ description_to_name <-  function(data) {
     gsub("uses.*data.*coding_[0-9]*", "", x = .) %>%
     gsub("[^[:alnum:][:space:]_]", "", x = .) %>%
     gsub("__*", "_", x = .)
-
+  
   return(name)
 }
 
@@ -205,41 +245,77 @@ description_to_name <-  function(data) {
 # @param fileset prefix for UKB fileset
 # @param path The path to the directory containing your UKB fileset. The default value is the current directory.
 #
-read_ukb_tab <- function(fileset, column_type, path = ".", n_threads = "max") {
-  r_file <- stringr::str_interp("${fileset}.r")
-  tab_file <- stringr::str_interp("${fileset}.tab")
-
-  # Update path to tab file in R source
-  tab_location <- file.path(path, tab_file)
-  r_location <- file.path(path, r_file)
-
+edit_ukb_r <- function(r_location) {
+  
   edit_date <- Sys.time()
-
+  
   f <- stringr::str_replace(
     readLines(r_location),
     pattern = "bd *<-" ,
     replacement = stringr::str_interp(
       "# Read function edited by ukbtools ${edit_date}\n# bd <-")
   )
-
+  
   cat(f, file = r_location, sep = "\n")
+}
 
-  bd <- data.table::fread(
-    input = tab_location,
-    sep = "\t",
-    header = TRUE,
-    colClasses = stringr::str_c(column_type),
-    data.table = FALSE,
-    showProgress = TRUE,
-    nThread = if(n_threads == "max") {
-      parallel::detectCores()
-    } else if (n_threads == "dt") {
-      data.table::getDTthreads()
-    } else if (is.numeric(n_threads)) {
-      min(n_threads, parallel::detectCores())
-    }
-  )
 
+
+# Corrects path to tab file in R source
+#
+# In particular, if you have moved the fileset from the directory containing the foo.enc file on which you called gconv. NB. gconv writes absolute path to directory containing foo.enc, into foo.r read.table() call
+#
+# @param fileset prefix for UKB fileset
+# @param path The path to the directory containing your UKB fileset. The default value is the current directory.
+# @param skip How many rows of the tab file to skip when reading it in. The default value is 0.
+# @param nrows How many rows of the tab file to read in one go. The default value is 25,000
+# @param header Does the first data line contain column names?
+# @param col.names A vector of optional names for the columns. The default is to use the header column.
+#
+read_ukb_tab <- function(tab_location, column_type,
+                         skip=0, nrows=25000, header=FALSE, col.names=NULL, 
+                         n_threads = "max") {
+  
+  # Read the data
+  if(is.null(col.names)){
+    bd <- data.table::fread(
+      input = tab_location,
+      sep = "\t",
+      header = header,
+      colClasses = stringr::str_c(column_type),
+      data.table = FALSE,
+      showProgress = TRUE,
+      skip=skip,
+      nrows=nrows,
+      nThread = if(n_threads == "max") {
+        parallel::detectCores()
+      } else if (n_threads == "dt") {
+        data.table::getDTthreads()
+      } else if (is.numeric(n_threads)) {
+        min(n_threads, parallel::detectCores())
+      }
+    ) 
+  } else{
+    bd <- data.table::fread(
+      input = tab_location,
+      sep = "\t",
+      header = header,
+      col.names=col.names,
+      colClasses = stringr::str_c(column_type),
+      data.table = FALSE,
+      showProgress = TRUE,
+      skip=skip,
+      nrows=nrows,
+      nThread = if(n_threads == "max") {
+        parallel::detectCores()
+      } else if (n_threads == "dt") {
+        data.table::getDTthreads()
+      } else if (is.numeric(n_threads)) {
+        min(n_threads, parallel::detectCores())
+      }
+    ) 
+  }
+  
   return(bd)
 }
 
@@ -273,13 +349,13 @@ read_ukb_tab <- function(fileset, column_type, path = ".", n_threads = "max") {
 #' my_ukb_data <- ukb_df_full_join(ukb1234_data, ukb2345_data, ukb3456_data)
 #' }
 #'
-ukb_df_full_join <- function(..., by = "eid") {
-  purrr::reduce(
-    list(...),
-    dplyr::full_join,
-    by = by
-  )
-}
+# ukb_df_full_join <- function(..., by = "eid") {
+#   purrr::reduce(
+#     list(...),
+#     dplyr::full_join,
+#     by = by
+#   )
+# }
 
 
 
@@ -294,13 +370,13 @@ ukb_df_full_join <- function(..., by = "eid") {
 #' @importFrom purrr map
 #' @export
 #'
-ukb_df_duplicated_name <- function(data) {
-  dup_names <- names(data)[base::duplicated(names(data))]
-  dup_pos <- purrr::map(dup_names, ~ grep(paste(., collapse = "|"), names(data), perl = TRUE))
-  names(dup_pos) <- dup_names
-  if (length(dup_pos) > 0) {
-    return(dup_pos)
-  } else {
-    message("No duplicated variable names")
-  }
-}
+# ukb_df_duplicated_name <- function(data) {
+#   dup_names <- names(data)[base::duplicated(names(data))]
+#   dup_pos <- purrr::map(dup_names, ~ grep(paste(., collapse = "|"), names(data), perl = TRUE))
+#   names(dup_pos) <- dup_names
+#   if (length(dup_pos) > 0) {
+#     return(dup_pos)
+#   } else {
+#     message("No duplicated variable names")
+#   }
+# }
