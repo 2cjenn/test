@@ -135,6 +135,12 @@ ukb_df <- function(fileset, path = ".", dbname="duck.db", tblname="ukb",
     duckdb::dbWriteTable(con, name=tblname, value=bd, overwrite=overwrite, append=append, temporary=FALSE)
     print("written")
   }
+  # Currently, duckDB doesn't handle closing properly
+  # When the database connection is reopened it cleans up, which takes a while
+  # So perform this closure and reopen within this script, 
+  # so the time-consuming bit doesn't confusingly happen when trying to read data
+  DBI::dbDisconnect(con, shutdown=TRUE)
+  con <- DBI::dbConnect(duckdb::duckdb(), dbname)
 }
 
 
