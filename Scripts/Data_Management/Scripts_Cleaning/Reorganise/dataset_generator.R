@@ -30,22 +30,13 @@ derive_variables <- function(database, field_definitions, exclusions=function(x)
   source_cols <- unlist(sapply(objects, function(x) x$source))
   
   # Extract data fields from database
-  data <- DB_extract(source_cols, db = database)
+  data <- DB_extract(source_cols)#, db = database)
 
   # Separate into derivations to be calculated before and after exclusion criteria
   before <- objects[sapply(objects, function(x) x$post_exclusion==FALSE)]
   after <- objects[sapply(objects, function(x) x$post_exclusion==TRUE)]
   
-  for(colinfo in before){
-    colfunc <- colinfo$mapper
-    if(length(colinfo$source)>1){
-      data[[colinfo$name]] <- colfunc(data[colinfo$source])
-    } else {
-      data[[colinfo$name]] <- colfunc(data[[colinfo$source]])
-    }
-    print(colinfo$name)
-    print(colinfo$description)
-  }
+  data <- source_rotation(data, field_definitions = before)
   
   data <- exclusions(data)
   # Note - future update
@@ -53,18 +44,47 @@ derive_variables <- function(database, field_definitions, exclusions=function(x)
   # Then the derive_variables() function can handle the row counts
   # And can write individual documentation for each exclusion criterion to be output nicely
   
-  for(colinfo in after){
-    colfunc <- colinfo$mapper
-    if(length(colinfo$source)>1){
-      data[[colinfo$name]] <- colfunc(data[colinfo$source])
-    } else {
-      data[[colinfo$name]] <- colfunc(data[[colinfo$source]])
-    }
-    print(colinfo$name)
-    print(colinfo$description)
-  }
+  data <- source_rotation(data, field_definitions = after)
   
   # Return only requested columns
   data <- data[,outcols]
   return(data)
 }
+
+
+# Derive variables whose sources are available in the data first
+source_rotation <- function(data, field_definitions) {
+  
+  data_cols <- colnames(data)
+  
+  while (length(field_definitions) > 0) {
+    remove <- c()
+    for (d in seq(1, length(field_definitions), by=1)) {
+      defn <- field_definitions[[d]]
+      if (all(defn$source %in% data_cols)) {
+        data <- derive_fn(data, field_definition = defn)
+        data_cols <- c(data_cols, defn$name)
+        remove <- c(remove, d)
+      }
+    }
+    field_definitions <- field_definitions[-remove]
+  }
+  return(data)
+}
+
+
+
+# Actually do the deriving
+derive_fn <- function(data, field_definition) {
+  colfunc <- field_definition$mapper
+  if(length(field_definition$source)>1){
+    data[[field_definition$name]] <- colfunc(data[field_definition$source])
+  } else {
+    data[[field_definition$name]] <- colfunc(data[[field_definition$source]])
+  }
+  print(field_definition$name)
+  print(field_definition$description)
+
+  return(data)
+}
+

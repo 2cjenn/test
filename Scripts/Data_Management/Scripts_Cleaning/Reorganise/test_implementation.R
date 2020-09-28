@@ -24,7 +24,7 @@ Neo_HTN <- list(ID,
              TEU_HMH_BowelCancerScreen, 
              TEU_Edu_HighestQual, TEU_Edu_ISCED)
 
-test <- list(ID, PsF_VisitFreq, BaC_Sex, TEU_BaC_DateOfBirth)
+test <- list(ID, PsF_VisitFreq, BaC_Sex, TEU_BaC_AgeAtRec, Rec_DateAssess, TEU_BaC_DateOfBirth)
 detach(TEUmaps)
 
 

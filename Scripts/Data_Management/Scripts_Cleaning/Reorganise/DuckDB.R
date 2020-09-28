@@ -88,8 +88,11 @@ fdot_to_name <- function(ukb_col, mapping) {
 name_to_fdot <- function(col_names, mapping) {
   col_names <- strsplit(col_names, split = ".", fixed = TRUE)
   col_names <- sapply(col_names, function(x){
-    x[1] <- mapping$Field_ID[mapping$NewVarName == x[1]]
-    x <- paste(c("f", x), collapse=".")
+    if(x[1] %in% mapping$NewVarName) {
+      x[1] <- mapping$Field_ID[mapping$NewVarName == x[1]]
+      x <- c("f", x)
+    }
+    x <- paste(x, collapse=".")
     return(x)
   })
   return(col_names)

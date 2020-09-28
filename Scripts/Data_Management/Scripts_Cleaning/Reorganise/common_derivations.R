@@ -141,9 +141,9 @@ TEU_BaC_DateOfBirth <- function() {
 TEU_BaC_AgeAtRec <- function() {
   list(
     name = "TEU_BaC_AgeAtRec",
-    source = c("TEU_BaC_DateOfBirth", "Rec_DateAssess"),
+    source = c("TEU_BaC_DateOfBirth", "Rec_DateAssess.0.0"),
     mapper = function(data) {
-      as.numeric(round(difftime(data[["Rec_DateAssess"]], data[["TEU_BaC_DateOfBirth"]], unit =
+      as.numeric(round(difftime(data[["Rec_DateAssess.0.0"]], data[["TEU_BaC_DateOfBirth"]], unit =
                                   "days") / 365.25,
                        digits = 2))
     },
