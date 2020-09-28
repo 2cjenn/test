@@ -3,9 +3,17 @@
 
 library(yaml)
 library(glue)
+library(tidyverse)
+library(DBI)
+library(duckdb)
+library(data.table)
+
 
 # Load the project config file for filepaths etc
-config = yaml.load_file("config.yml")
+if (!exists("config")) {
+  library(yaml)
+  config = yaml.load_file("config.yml")
+}
 
 source(file.path(config$scripts$cleaning, "Reorganise", "dataset_generator.R"))
 
@@ -26,15 +34,33 @@ source(file.path(config$scripts$cleaning, "Reorganise", "dataset_generator.R"))
 #           "Alc_Status", "TEU_TownsendDepInd_Quint")#, "TEU_Alc_WeeklyAlcUnits", "TEU_Alc_Status")
 
 attach(TEUmaps)
-Neo_HTN <- c(ID,
+Neo_HTN <- list(ID,
              TEU_BaC_DateOfBirth, Rec_DateAssess, TEU_BaC_AgeAtRec, TEU_BaC_AgeCat, 
              TEU_HMH_BowelCancerScreen, 
              TEU_Edu_HighestQual, TEU_Edu_ISCED)
 
-test <- c(ID, PsF_VisitFreq.0.0)
+test <- list(ID, PsF_VisitFreq, BaC_Sex, PsF_VisitFreq(instance=visit$repeat_visit))
 detach(TEUmaps)
 
 
 data <- derive_variables(alldata, colnames=Neo_HTN)
 
-# data$test <- unclass(data$BaC_RsnLostFU)==1
+
+
+source(file.path(config$scripts$cleaning, "Reorganise", "dataset.R"))
+
+
+# # Load the data into the db
+# ukb_df("ukb38358", path="K:/TEU/UKB33952_Data/Data_Downloads/V2.0_B2006022_R38358/R/Alldata/",
+#        dbname="ukb_v2.db", tblname="ukb38358")
+
+
+# Check if it worked
+con <- dbConnect(duckdb::duckdb(), "ukb_v2.db")
+
+dbListTables(con)
+
+dbDisconnect(con, shutdown=TRUE)
+
+source(file.path(config$scripts$cleaning, "Reorganise", "DuckDB.R"))
+data <- DB_extract(test)

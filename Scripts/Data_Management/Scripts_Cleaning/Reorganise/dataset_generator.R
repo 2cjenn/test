@@ -21,7 +21,7 @@ source(file.path(config$scripts$cleaning, "Reorganise", "common_derivations.R"),
 derive_variables <- function(data, colnames, exclusions=function(x){x}){
   
   # Extract the lists from the list of functions
-  objects <- Map(function(f) f(), colnames)
+  objects <- Map(function(f) {if(is.function(p)) {p()} else {p}}, colnames)
   
   # Find the names of the requested columns
   outcols <- sapply(objects, function(x) x$name)

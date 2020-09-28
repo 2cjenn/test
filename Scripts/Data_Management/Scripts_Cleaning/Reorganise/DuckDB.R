@@ -1,34 +1,70 @@
-library(tidyverse)
-library(DBI)
-library(duckdb)
-library(data.table)
-library(yaml)
 
-# Load the project config file for filepaths etc
-if (!exists("config")) {
-  library(yaml)
-  config = yaml.load_file("config.yml")
+
+
+
+#' Reads a database of UKB data and returns a dataset containing the requested columns
+#'
+#' The database contains the data with field codes instead of variable names. It has been pre-processed by the UKB-generated R file to apply categorical variable levels and labels. This loads selecteed variables from the database, applies the chosing naming convention and derives requested variables.
+#'
+#' @param col_list The objects defining derived variables you want in your dataset.
+#' @param db The path to the database you want to extract the variables from.
+#' @param name_map The path to the .csv mapping file containing human-readable names for the raw UKB data fields. 
+#'
+#' @return Returns a data.frame containing the variables requested.
+#'
+#' @import DBI
+#' @import duckdb
+#' @export
+#' @examples
+#' \dontrun{
+#' # Extract variables for HTN project from V2 data
+#'
+#' DB_extract(HTNcols, db="ukb_v2.db")
+#' }
+#'
+DB_extract <- function(col_list, db = "ukb_v2.db", 
+                       name_map = "K:/TEU/UKB33952_Data/Data_Dictionary/Renaming_List_UPDATE_Nov2019_TEU.csv"){
+  library(DBI)
+  library(duckdb)
+  
+  mapping <- read.csv(name_map, stringsAsFactors = FALSE)
+  
+  col_obj <- Map(function(p) {if(is.function(p)) {p()} else {p}}, col_list)
+  col_names <- sapply(col_obj, function(x) x$name)
+  
+  # Connect to the database
+  con <- dbConnect(duckdb::duckdb(), db)
+  on.exit(dbDisconnect(con, shutdown=TRUE))
+  
+  # List all tables available in the database
+  # Each should correspond to one data download
+  tables <- dbListTables(con)
+  
+  # Join all download tables to get all data and extract requested columns
+  view <- lapply(tables, function(x) tbl(con, from=x)) %>% 
+    reduce(inner_join, by = "f.eid") %>%
+    select(name_to_fdot(col_names, mapping)) %>%
+    collect %>%
+    rename_with(fdot_to_name, mapping=mapping)
+  
+  return(view)
 }
-source(file.path(config$scripts$cleaning, "Reorganise", "dataset.R"))
-
-# Load the data into the db
-ukb_df("ukb38358", path="K:/TEU/UKB33952_Data/Data_Downloads/V2.0_B2006022_R38358/R/Alldata/",
-       dbname="ukb_v2.db", tblname="ukb38358")
-
-
-# Check if it worked
-con <- dbConnect(duckdb::duckdb(), "ukb_v2.db")
-
-dbListTables(con)
 
 
 
-map_fn <- function(ukb_col) {
+# Maps UKB variable names to human readable names according to the given mapping
+#
+# UKB variable names of the form f.XXXXX.0.0 are converted to TLA_VarName.0.0
+#
+# @param ukb_col A vector of UKB variable names
+# @param mapping A dataframe with the mapping between UKB field IDs and human readable variable names
+#
+fdot_to_name <- function(ukb_col, mapping) {
   ukb_col <- strsplit(ukb_col, split = ".", fixed = TRUE)
   ukb_col <- sapply(ukb_col, function(x) {
-    if (as.character(x[2]) %in% matching$Field_ID) {
+    if (as.character(x[2]) %in% mapping$Field_ID) {
       # Swap the field ID for a human-readable variable name
-      x[2] <- matching$NewVarName[matching$Field_ID == as.character(x[2])]
+      x[2] <- mapping$NewVarName[mapping$Field_ID == as.character(x[2])]
     } else {
       print(x[2])
     }
@@ -41,46 +77,20 @@ map_fn <- function(ukb_col) {
   return(ukb_col)
 }
 
-invert_map <- function(collist) {
-  colnames <- sapply(Map(function(p) p(), collist), function(x) x$name)
-  colnames <- strsplit(colnames, split = ".", fixed = TRUE)
-  colnames <- sapply(colnames, function(x){
-    x[1] <- matching$Field_ID[matching$NewVarName == x[1]]
+
+# Maps human readable names to UKB variable names according to the given mapping
+#
+# Human readable names of the form TLA_VarName.0.0 are converted to UKB variable names f.XXXXX.0.0
+#
+# @param col_list A vector of human-readable names
+# @param mapping A dataframe with the mapping between UKB field IDs and human readable variable names
+#
+name_to_fdot <- function(col_names, mapping) {
+  col_names <- strsplit(col_names, split = ".", fixed = TRUE)
+  col_names <- sapply(col_names, function(x){
+    x[1] <- mapping$Field_ID[mapping$NewVarName == x[1]]
     x <- paste(c("f", x), collapse=".")
     return(x)
   })
-  return(colnames)
+  return(col_names)
 }
-
-
-
-DB_extract <- function(col_list){
-  con <- dbConnect(duckdb::duckdb(), "ukb_v2.db")
-  on.exit(dbDisconnect(con, shutdown=TRUE))
-  
-  matching <- read.csv("K:/TEU/UKB33952_Data/Data_Dictionary/Renaming_List_UPDATE_Nov2019_TEU.csv",
-                       stringsAsFactors = FALSE)
-  
-  pendingtable <- inner_join(tbl(con, from="ukb40731"), tbl(con, from="ukb42633"), by="f.eid") %>% 
-    select(invert_map(col_list)) %>%
-    collect %>%
-    rename_with(map_fn)
-}
-
-data <- DB_extract(test)
-
-
-df <- tbl(con, from="ukb42633") %>% collect
-  select(f.eid, f.21.0.0, f.34.0.0, starts_with("f.84."), starts_with("f.87.")) %>% 
-  collect
-
-dbDisconnect(con)
-
-
-
-
-
-
-objects <- Map(function(f) f(), colnames)
-
-

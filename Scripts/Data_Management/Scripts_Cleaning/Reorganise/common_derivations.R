@@ -1,6 +1,8 @@
 # Jennifer Collister
 # 22/09/20
 
+library(glue)
+
 # Load the project config file for filepaths etc
 if (!exists("config")) {
   library(yaml)
@@ -10,6 +12,27 @@ if (!exists("config")) {
 # Source the function definitions
 source(file.path(config$scripts$cleaning, "Reorganise", "basic_functions.R"),
        local = TRUE)
+
+makeEnum <- function(inputList) {
+  # Borrowed from https://stackoverflow.com/a/41509345
+  myEnum <- as.list(inputList)
+  enumNames <- names(myEnum)
+  if (is.null(enumNames)) {
+    names(myEnum) <- myEnum
+  } else if ("" %in% enumNames) {
+    stop("The inputList has some but not all names assigned. They must be all assigned or none assigned")
+  }
+  return(myEnum)
+}
+visit <- makeEnum(list(baseline = c("0", "baseline assessment"), 
+                    repeat_visit = c("1", "repeat visit"), 
+                    imaging = c("2", "imaging visit"), 
+                    repeat_imaging = c("3","repeat imaging visit")))
+# Define instances
+visit <- list(baseline = c("0", "baseline assessment"), 
+              repeat_visit = c("1", "repeat visit"), 
+              imaging = c("2", "imaging visit"), 
+              repeat_imaging = c("3","repeat imaging visit"))
 
 # Formatting of existing UKB variables
 
@@ -24,21 +47,21 @@ ID <- function() {
   )
 }
 
-PsF_VisitFreq.0.0 <- function() {
+PsF_VisitFreq <- function(instance = visit$baseline) {
   list(
-    name = "PsF_VisitFreq.0.0",
-    source = "PsF_VisitFreq.0.0",
+    name = glue("PsF_VisitFreq.{instance[1]}.0"),
+    source = glue("PsF_VisitFreq.{instance[1]}.0"),
     mapper = FN_id,
     post_exclusion = FALSE,
-    display_name = "VisitFrequency",
-    description = "Psychosocial visit frequency"
+    display_name = glue("Family/friend visit frequency at {instance[2]}"),
+    description = glue("Frequency of family/friend visits (recorded at {instance[2]})")
   )
 }
 
 BaC_Sex <- function() {
   list(
-    name = "BaC_Sex",
-    source = "BaC_Sex",
+    name = "BaC_Sex.0.0",
+    source = "BaC_Sex.0.0",
     mapper = FN_unorder,
     post_exclusion = FALSE,
     display_name = "gender",
