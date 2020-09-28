@@ -18,13 +18,19 @@ source(file.path(config$scripts$cleaning, "Reorganise", "common_derivations.R"),
 # Better practice
 
 
-derive_variables <- function(data, colnames, exclusions=function(x){x}){
+derive_variables <- function(database, field_definitions, exclusions=function(x){x}){
   
   # Extract the lists from the list of functions
-  objects <- Map(function(f) {if(is.function(p)) {p()} else {p}}, colnames)
+  objects <- Map(function(p) {if(is.function(p)) {p()} else {p}}, field_definitions)
   
   # Find the names of the requested columns
   outcols <- sapply(objects, function(x) x$name)
+  
+  # And the names of all the source columns required
+  source_cols <- unlist(sapply(objects, function(x) x$source))
+  
+  # Extract data fields from database
+  data <- DB_extract(source_cols, db = database)
 
   # Separate into derivations to be calculated before and after exclusion criteria
   before <- objects[sapply(objects, function(x) x$post_exclusion==FALSE)]

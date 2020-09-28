@@ -24,15 +24,10 @@ makeEnum <- function(inputList) {
   }
   return(myEnum)
 }
-visit <- makeEnum(list(baseline = c("0", "baseline assessment"), 
+visits <- makeEnum(list(baseline = c("0", "baseline assessment"), 
                     repeat_visit = c("1", "repeat visit"), 
                     imaging = c("2", "imaging visit"), 
                     repeat_imaging = c("3","repeat imaging visit")))
-# Define instances
-visit <- list(baseline = c("0", "baseline assessment"), 
-              repeat_visit = c("1", "repeat visit"), 
-              imaging = c("2", "imaging visit"), 
-              repeat_imaging = c("3","repeat imaging visit"))
 
 # Formatting of existing UKB variables
 
@@ -47,7 +42,7 @@ ID <- function() {
   )
 }
 
-PsF_VisitFreq <- function(instance = visit$baseline) {
+PsF_VisitFreq <- function(instance = visits$baseline) {
   list(
     name = glue("PsF_VisitFreq.{instance[1]}.0"),
     source = glue("PsF_VisitFreq.{instance[1]}.0"),
@@ -60,7 +55,7 @@ PsF_VisitFreq <- function(instance = visit$baseline) {
 
 BaC_Sex <- function() {
   list(
-    name = "BaC_Sex.0.0",
+    name = "BaC_Sex",
     source = "BaC_Sex.0.0",
     mapper = FN_unorder,
     post_exclusion = FALSE,
@@ -71,8 +66,8 @@ BaC_Sex <- function() {
 
 Rec_DateAssess <- function() {
   list(
-    name = "Rec_DateAssess",
-    source = c("Rec_DateAssess"),
+    name = "Rec_DateAssess.0.0",
+    source = c("Rec_DateAssess.0.0"),
     mapper = FN_toDate,
     post_exclusion = FALSE,
     display_name = "DateBaselineAssess",
@@ -82,8 +77,8 @@ Rec_DateAssess <- function() {
 
 Eth_ethnicity <- function() {
   list(
-    name = "Eth_ethnicity",
-    source = "Eth_ethnicity",
+    name = "Eth_ethnicity.0.0",
+    source = "Eth_ethnicity.0.0",
     mapper = FN_reorderfactor(
       levelorder = c(
         "White",
@@ -119,8 +114,8 @@ Eth_ethnicity <- function() {
 
 BaC_RsnLostFU <- function() {
   list(
-    name = "BaC_RsnLostFU",
-    source = "BaC_RsnLostFU",
+    name = "BaC_RsnLostFU.0.0",
+    source = "BaC_RsnLostFU.0.0",
     mapper = FN_unorder,
     post_exclusion = FALSE,
     display_name = "lfu_reason",
@@ -131,11 +126,11 @@ BaC_RsnLostFU <- function() {
 TEU_BaC_DateOfBirth <- function() {
   list(
     name = "TEU_BaC_DateOfBirth",
-    source = c("BaC_BirthMonth", "BaC_BirthYear"),
+    source = c("BaC_BirthMonth.0.0", "BaC_BirthYear.0.0"),
     mapper = FN_MYtoDate(
       day = 15,
-      monthField = "BaC_BirthMonth",
-      yearField = "BaC_BirthYear"
+      monthField = "BaC_BirthMonth.0.0",
+      yearField = "BaC_BirthYear.0.0"
     ),
     post_exclusion = FALSE,
     display_name = "DateOfBirth",
