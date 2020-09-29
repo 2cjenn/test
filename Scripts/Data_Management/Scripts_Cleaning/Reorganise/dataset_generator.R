@@ -47,7 +47,7 @@ derive_variables <- function(database, field_definitions, exclusions=function(x)
   data <- source_rotation(data, field_definitions = after)
   
   # Return only requested columns
-  data <- data[,outcols]
+  data <- data[,outcols[outcols %in% colnames(data)]]
   return(data)
 }
 
@@ -58,16 +58,35 @@ source_rotation <- function(data, field_definitions) {
   data_cols <- colnames(data)
   
   while (length(field_definitions) > 0) {
-    remove <- c()
+    remove <- vector()
     for (d in seq(1, length(field_definitions), by=1)) {
+      
+      # Iterate over the derivation objects
       defn <- field_definitions[[d]]
+      
       if (all(defn$source %in% data_cols)) {
+        
+        # If all required source columns are available, derive them
         data <- derive_fn(data, field_definition = defn)
-        data_cols <- c(data_cols, defn$name)
-        remove <- c(remove, d)
+        
+        # Add the variable to the list of available data columns
+        data_cols <- append(data_cols, defn$name)
+        
+        # Keep a list of the indices of the derivations we've completed
+        remove <- append(remove, d)
       }
     }
-    field_definitions <- field_definitions[-remove]
+    if(length(remove)>0) {
+      # Once variables have been derived, remove them from the list
+      field_definitions <- field_definitions[-remove]
+    } else {
+      # If there are still derivation objects waiting but no new variables have been derived
+      # Then we know that these objects can't be derived on the next loop either
+      # We print out the objects so the user can see which they are
+      warning(paste0("Unable to derive variables: ", paste(sapply(field_definitions, function(x) x$name), collapse=", ")))
+      # And exit the while loop
+      break
+    }
   }
   return(data)
 }
