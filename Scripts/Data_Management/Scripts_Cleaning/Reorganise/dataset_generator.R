@@ -11,12 +11,12 @@ if (!exists("config")) {
   config = yaml.load_file("config.yml")
 }
 
-# Create an environment for the TEU variable maps
-TEUmaps <- new.env()
+# Create an environment for the dependency functions
+DBfunc <- new.env()
 
 # Source the variable maps into the TEUmaps environment
-source(file.path(config$scripts$cleaning, "Reorganise", "common_derivations.R"), local=TEUmaps)
-source(file.path(config$scripts$cleaning, "Reorganise", "DuckDB.R"), local=TEUmaps)
+source(file.path(config$scripts$cleaning, "Reorganise", "TEU_specifications.R"))
+source(file.path(config$scripts$cleaning, "Reorganise", "DuckDB.R"), local=DBfunc)
 
 # Note - may in future want to use https://cran.r-project.org/web/packages/modules/
 # This means stuff in the modules *can't* see and interact with stuff in global env
@@ -35,13 +35,13 @@ derive_variables <- function(database, field_definitions, exclusions=function(x)
   source_cols <- unlist(sapply(objects, function(x) x$source))
   
   # Extract data fields from database
-  data <- TEUmaps$DB_extract(source_cols, db = database)
+  data <- DBfunc$DB_extract(source_cols, db = database)
 
   # Separate into derivations to be calculated before and after exclusion criteria
   before <- objects[sapply(objects, function(x) x$post_exclusion==FALSE)]
   after <- objects[sapply(objects, function(x) x$post_exclusion==TRUE)]
   
-  data <- source_rotation(data, field_definitions = before)
+  data <- DBfunc$source_rotation(data, field_definitions = before)
   
   data <- exclusions(data)
   # Note - future update
@@ -49,7 +49,7 @@ derive_variables <- function(database, field_definitions, exclusions=function(x)
   # Then the derive_variables() function can handle the row counts
   # And can write individual documentation for each exclusion criterion to be output nicely
   
-  data <- source_rotation(data, field_definitions = after)
+  data <- DBfunc$source_rotation(data, field_definitions = after)
   
   # Return only requested columns
   data <- data[,outcols[outcols %in% colnames(data)]]
@@ -58,7 +58,7 @@ derive_variables <- function(database, field_definitions, exclusions=function(x)
 
 
 # Derive variables whose sources are available in the data first
-source_rotation <- function(data, field_definitions) {
+DBfunc$source_rotation <- function(data, field_definitions) {
   
   data_cols <- colnames(data)
   
@@ -72,7 +72,7 @@ source_rotation <- function(data, field_definitions) {
       if (all(defn$source %in% data_cols)) {
         
         # If all required source columns are available, derive them
-        data <- derive_fn(data, field_definition = defn)
+        data <- DBfunc$derive_fn(data, field_definition = defn)
         
         # Add the variable to the list of available data columns
         data_cols <- append(data_cols, defn$name)
@@ -99,7 +99,7 @@ source_rotation <- function(data, field_definitions) {
 
 
 # Actually do the deriving
-derive_fn <- function(data, field_definition) {
+DBfunc$derive_fn <- function(data, field_definition) {
   colfunc <- field_definition$mapper
   if(length(field_definition$source)>1){
     data[[field_definition$name]] <- colfunc(data[field_definition$source])
