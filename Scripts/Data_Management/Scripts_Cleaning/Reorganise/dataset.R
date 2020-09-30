@@ -1,3 +1,7 @@
+library(stringr)
+library(DBI)
+library(duckdb)
+library(data.table)
 
 globalVariables(
   c(".", "i", "j", "eid", "pair", "ibs0", "kinship", "category_related",
@@ -34,7 +38,7 @@ globalVariables(
 #' # Simply provide the stem of the UKB fileset.
 #' # To read ukb1234.tab, ukb1234.r, ukb1234.html
 #'
-#' my_ukb_data <- ukb_df("ukb1234")
+#' my_ukb_data <- ukb_db("ukb1234")
 #'
 #'
 #' If you have multiple UKB filesets, read each then join with your preferred
@@ -42,14 +46,14 @@ globalVariables(
 #' a thin wrapper around dplyr::full_join applied recursively with
 #' purrr::reduce).
 #'
-#' ukb1234_data <- ukb_df("ukb1234")
-#' ukb2345_data <- ukb_df("ukb2345")
-#' ukb3456_data <- ukb_df("ukb3456")
+#' ukb1234_data <- ukb_db("ukb1234")
+#' ukb2345_data <- ukb_db("ukb2345")
+#' ukb3456_data <- ukb_db("ukb3456")
 #'
 #' ukb_df_full_join(ukb1234_data, ukb2345_data, ukb3456_data)
 #' }
 #'
-ukb_df <- function(fileset, path = ".", dbname="duck.db", tblname="ukb", 
+ukb_db <- function(fileset, path = ".", dbname="duck.db", tblname="ukb", 
                    n_threads = "dt", data.pos = 2) {
   
   # Check files exist
@@ -102,17 +106,31 @@ ukb_df <- function(fileset, path = ".", dbname="duck.db", tblname="ukb",
   # Read .tab file from user named path with data.table::fread
   # Include UKB-generated categorical variable labels
   # Write it to a duckDB database
+  if(!file.exists(dbname)) {
+    # Coded "ok" (TRUE) as Don't create and "cancel" (FALSE) as Do create
+    # so that DEFAULT OPTION is NOT creating
+    dontCreate <- rstudioapi::showQuestion("Overwrite", 
+                                              message="Are you sure you want to create a new database?", 
+                                              ok="No", 
+                                              cancel="Yes")
+    if(dontCreate){
+      stop("User decided not to create a new database")
+    }
+  }
   con <- DBI::dbConnect(duckdb::duckdb(), dbname)
   on.exit(DBI::dbDisconnect(con, shutdown=TRUE))
   
+  existing_tables <- dbListTables(con)
+  
   for(row in seq(1, 502520, by=25000)){
     print(paste0("row ", row))
+    # Handle the case where a table with this name already exists
     overwrite <- row==1
-    if(overwrite){
+    if(overwrite & (tblname %in% existing_tables)){
       # Coded "ok" (TRUE) as Don't overwrite and "cancel" (FALSE) as Do overwrite
       # so that DEFAULT OPTION is NOT OVERWRITING!
       dontOverwrite <- rstudioapi::showQuestion("Overwrite", 
-                                                message="Are you sure you want to overwrite this large, painstakingly created database???", 
+                                                message="Are you sure you want to overwrite this large, painstakingly created table???", 
                                                 ok="Uhoh, wait, no", 
                                                 cancel="Yup, I'm sure")
       if(dontOverwrite){
@@ -153,11 +171,11 @@ ukb_df <- function(fileset, path = ".", dbname="duck.db", tblname="ukb",
 #' @param fileset The prefix for a UKB fileset, e.g., ukbxxxx (for ukbxxxx.tab, ukbxxxx.r, ukbxxxx.html)
 #' @param path The path to the directory containing your UKB fileset. The default value is the current directory.
 #' @param data.pos Locates the data in your .html file. The .html file is read into a list; the default value data.pos = 2 indicates the second item in the list. (The first item in the list is the title of the table). You will probably not need to change this value, but if the need arises you can open the .html file in a browser and identify where in the file the data is.
-#' @param as.lookup If set to TRUE, returns a named \code{vector}. The default \code{as.look = FALSE} returns a dataframe with columns: field.showcase (as used in the UKB online showcase), field.data (as used in the tab file), name (descriptive name created by \code{\link{ukb_df}})
+#' @param as.lookup If set to TRUE, returns a named \code{vector}. The default \code{as.look = FALSE} returns a dataframe with columns: field.showcase (as used in the UKB online showcase), field.data (as used in the tab file), name (descriptive name created by \code{\link{ukb_db}})
 #'
-#' @return Returns a data.frame with columns \code{field.showcase}, \code{field.html}, \code{field.tab}, \code{names}. \code{field.showcase} is how the field appears in the online \href{http://biobank.ctsu.ox.ac.uk/crystal/}{UKB showcase}; \code{field.html} is how the field appears in the html file in your UKB fileset; \code{field.tab} is how the field appears in the tab file in your fileset; and \code{names} is the descriptive name that \code{\link{ukb_df}} assigns to the variable. If \code{as.lookup = TRUE}, the function returns a named character vector of the descriptive names.
+#' @return Returns a data.frame with columns \code{field.showcase}, \code{field.html}, \code{field.tab}, \code{names}. \code{field.showcase} is how the field appears in the online \href{http://biobank.ctsu.ox.ac.uk/crystal/}{UKB showcase}; \code{field.html} is how the field appears in the html file in your UKB fileset; \code{field.tab} is how the field appears in the tab file in your fileset; and \code{names} is the descriptive name that \code{\link{ukb_db}} assigns to the variable. If \code{as.lookup = TRUE}, the function returns a named character vector of the descriptive names.
 #'
-#' @seealso \code{\link{ukb_df}}
+#' @seealso \code{\link{ukb_db}}
 #'
 #' @importFrom stringr str_interp str_c str_replace_all
 #' @importFrom xml2 read_html xml_find_all
@@ -331,12 +349,12 @@ read_ukb_tab <- function(tab_location, column_type,
 #'
 #' A thin wrapper around \code{purrr::reduce} and \code{dplyr::full_join} to merge multiple UKB datasets.
 #'
-#' @param ... Supply comma separated unquoted names of to-be-merged UKB datasets (created with \code{\link{ukb_df}}). Arguments are passed to \code{list}.
+#' @param ... Supply comma separated unquoted names of to-be-merged UKB datasets (created with \code{\link{ukb_db}}). Arguments are passed to \code{list}.
 #' @param by Variable used to merge multiple dataframes (default = "eid").
 #'
 #' @details The function takes a comma separated list of unquoted datasets. By explicitly setting the join key to "eid" only (Default value of the \code{by} parameter), any additional variables common to any two tables will have ".x" and ".y" appended to their names. If you are satisfied the additional variables are identical to the original, the copies can be safely deleted. For example, if \code{setequal(my_ukb_data$var, my_ukb_data$var.x)} is \code{TRUE}, then my_ukb_data$var.x can be dropped. A \code{dlyr::full_join} is like the set operation union in that all observations from all tables are included, i.e., all samples are included even if they are not included in all datasets.
 #'
-#' NB. \code{ukb_df_full_join} will fail if any variable names are repeated **within** a single UKB dataset. This is unlikely to occur, however, \code{ukb_df} creates variable names by combining a snake_case descriptor with the variable's **index** and **array**. If an index_array combination is incorrectly repeated, this will result in a duplicated variable. If the join fails, you can use \code{\link{ukb_df_duplicated_name}} to find duplicated names. See \code{vignette(topic = "explore-ukb-data", package = "ukbtools")} for further details.
+#' NB. \code{ukb_df_full_join} will fail if any variable names are repeated **within** a single UKB dataset. This is unlikely to occur, however, \code{ukb_db} creates variable names by combining a snake_case descriptor with the variable's **index** and **array**. If an index_array combination is incorrectly repeated, this will result in a duplicated variable. If the join fails, you can use \code{\link{ukb_df_duplicated_name}} to find duplicated names. See \code{vignette(topic = "explore-ukb-data", package = "ukbtools")} for further details.
 #'
 #' @seealso \code{\link{ukb_df_duplicated_name}}
 #'
@@ -348,9 +366,9 @@ read_ukb_tab <- function(tab_location, column_type,
 #' \dontrun{
 #' # If you have multiple UKB filesets, tidy then merge them.
 #'
-#' ukb1234_data <- ukb_df("ukb1234")
-#' ukb2345_data <- ukb_df("ukb2345")
-#' ukb3456_data <- ukb_df("ukb3456")
+#' ukb1234_data <- ukb_db("ukb1234")
+#' ukb2345_data <- ukb_db("ukb2345")
+#' ukb3456_data <- ukb_db("ukb3456")
 #'
 #' my_ukb_data <- ukb_df_full_join(ukb1234_data, ukb2345_data, ukb3456_data)
 #' }
@@ -367,11 +385,11 @@ read_ukb_tab <- function(tab_location, column_type,
 
 #' Checks for duplicated names within a UKB dataset
 #'
-#' @param data A UKB dataset created with \code{\link{ukb_df}}.
+#' @param data A UKB dataset created with \code{\link{ukb_db}}.
 #'
 #' @return Returns a named list of numeric vectors, one for each duplicated variable name. The numeric vectors contain the column indices of duplicates.
 #'
-#' @details Duplicates *within* a UKB dataset are unlikely to occur, however, \code{ukb_df} creates variable names by combining a snake_case descriptor with the variable's **index** and **array**. If an index_array combination is incorrectly repeated in the original UKB data, this will result in a duplicated variable name. . See \code{vignette(topic = "explore-ukb-data", package = "ukbtools")} for further details.
+#' @details Duplicates *within* a UKB dataset are unlikely to occur, however, \code{ukb_db} creates variable names by combining a snake_case descriptor with the variable's **index** and **array**. If an index_array combination is incorrectly repeated in the original UKB data, this will result in a duplicated variable name. . See \code{vignette(topic = "explore-ukb-data", package = "ukbtools")} for further details.
 #'
 #' @importFrom purrr map
 #' @export
