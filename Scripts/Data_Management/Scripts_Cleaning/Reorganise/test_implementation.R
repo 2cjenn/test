@@ -19,30 +19,19 @@ source(file.path(config$scripts$cleaning, "Reorganise", "dataset_generator.R"))
 
 
 attach(TEUmaps)
-Neo_HTN <- list(ID,
-             TEU_BaC_DateOfBirth, Rec_DateAssess, TEU_BaC_AgeAtRec, TEU_BaC_AgeCat, 
+TEUvars_age <- c(TEU_BaC_DateOfBirth, Rec_DateAssess, TEU_BaC_AgeAtRec, TEU_BaC_AgeCat)
+TEUvars_BP <- c(TEU_BlP_SBP.0.0, TEU_BlP_SBP.0.1, TEU_BlP_DBP.0.0, TEU_BlP_DBP.0.1,
+                TEU_BlP_nSBP, TEU_BlP_nDBP,
+                TEU_BlP_SBP.avg, TEU_BlP_DBP.avg)
+Neo_HTN <- c(ID, BaC_Sex,
+             TEUvars_age, 
+             TEUvars_BP, TEU_BlP_measuredHTN,
              TEU_HMH_BowelCancerScreen, 
-             TEU_Edu_HighestQual, TEU_Edu_ISCED)
-
-test <- list(ID, PsF_VisitFreq, BaC_Sex, TEU_BaC_AgeAtRec, Rec_DateAssess)
+             TEU_Edu_HighestQual, TEU_Edu_ISCED,
+             TEU_TownsendDepInd_Quint)
 detach(TEUmaps)
 
 
-
-source(file.path(config$scripts$cleaning, "Reorganise", "dataset.R"))
-# # Load the data into the db
-# ukb_df("ukb38358", path="K:/TEU/UKB33952_Data/Data_Downloads/V2.0_B2006022_R38358/R/Alldata/",
-#        dbname="ukb_v2.db", tblname="ukb38358")
-# 
-# 
-# # Check if it worked
-# con <- dbConnect(duckdb::duckdb(), "ukb_v2.db")
-# 
-# dbListTables(con)
-# 
-# dbDisconnect(con, shutdown=TRUE)
-
-source(file.path(config$scripts$cleaning, "Reorganise", "DuckDB.R"))
-data <- derive_variables(database = "ukb_v2.db", field_definitions = test)
+data <- derive_variables(database = "ukb_v2.db", field_definitions = Neo_HTN)
 
 

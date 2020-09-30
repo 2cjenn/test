@@ -24,7 +24,7 @@ alldata <- readRDS(file.path(config$data$derived, "Test_all.rds"))
 
 attach(TEUmaps)
 TEUvars_age <- c(TEU_BaC_DateOfBirth, Rec_DateAssess, TEU_BaC_AgeAtRec, TEU_BaC_AgeCat)
-TEUvars_BP <- c(TEU_BlP_SBP.0, TEU_BlP_SBP.1, TEU_BlP_DBP.0, TEU_BlP_DBP.1,
+TEUvars_BP <- c(TEU_BlP_SBP.0.0, TEU_BlP_SBP.0.1, TEU_BlP_DBP.0.0, TEU_BlP_DBP.0.1,
                 TEU_BlP_nSBP, TEU_BlP_nDBP,
                 TEU_BlP_SBP.avg, TEU_BlP_DBP.avg)
 Neo_HTN <- c(ID, BaC_Sex,
@@ -93,7 +93,7 @@ exclusions <- function(data){
   return(data)
 }
 
-data <- derive_variables(alldata, colnames=Neo_HTN, exclusions = exclusions)
+data <- derive_variables("ukb_v2.db", field_definitions=Neo_HTN, exclusions = exclusions)
 
 #--------------------------------------------------------------------------------------------------------------
 # Create some more complex variables

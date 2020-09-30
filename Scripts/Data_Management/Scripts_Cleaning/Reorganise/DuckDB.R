@@ -1,7 +1,6 @@
 
 
 
-
 #' Reads a database of UKB data and returns a dataset containing the requested columns
 #'
 #' The database contains the data with field codes instead of variable names. It has been pre-processed by the UKB-generated R file to apply categorical variable levels and labels. This loads selecteed variables from the database, applies the chosing naming convention and derives requested variables.
@@ -24,8 +23,6 @@
 #'
 DB_extract <- function(extract_cols, db = "ukb_v2.db", 
                        name_map = "K:/TEU/UKB33952_Data/Data_Dictionary/Renaming_List_UPDATE_Nov2019_TEU.csv"){
-  library(DBI)
-  library(duckdb)
   
   mapping <- read.csv(name_map, stringsAsFactors = FALSE)
   

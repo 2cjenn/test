@@ -153,12 +153,12 @@ TEU_BaC_AgeAtRec <- function() {
   )
 }
 
-TEU_BlP_SBP.0 <- function() {
+TEU_BlP_SBP.0.0 <- function() {
   list(
-    name = "TEU_BlP_SBP.0",
-    source = c("BlP_SBPAuto.0", "BlP_SBPMan.0"),
+    name = "TEU_BlP_SBP.0.0",
+    source = c("BlP_SBPAuto.0.0", "BlP_SBPMan.0.0"),
     mapper = function(data) {
-      coalesce(data[["BlP_SBPAuto.0"]], data[["BlP_SBPMan.0"]])
+      coalesce(data[["BlP_SBPAuto.0.0"]], data[["BlP_SBPMan.0.0"]])
     },
     post_exclusion = FALSE,
     display_name = "First SBP at baseline",
@@ -166,12 +166,12 @@ TEU_BlP_SBP.0 <- function() {
   )
 }
 
-TEU_BlP_SBP.1 <- function() {
+TEU_BlP_SBP.0.1 <- function() {
   list(
-    name = "TEU_BlP_SBP.1",
-    source = c("BlP_SBPAuto.1", "BlP_SBPMan.1"),
+    name = "TEU_BlP_SBP.0.1",
+    source = c("BlP_SBPAuto.0.1", "BlP_SBPMan.0.1"),
     mapper = function(data) {
-      coalesce(data[["BlP_SBPAuto.1"]], data[["BlP_SBPMan.1"]])
+      coalesce(data[["BlP_SBPAuto.0.1"]], data[["BlP_SBPMan.0.1"]])
     },
     post_exclusion = FALSE,
     display_name = "Second SBP at baseline",
@@ -179,12 +179,12 @@ TEU_BlP_SBP.1 <- function() {
   )
 }
 
-TEU_BlP_DBP.0 <- function() {
+TEU_BlP_DBP.0.0 <- function() {
   list(
-    name = "TEU_BlP_DBP.0",
-    source = c("BlP_DBPAuto.0", "BlP_DBPMan.0"),
+    name = "TEU_BlP_DBP.0.0",
+    source = c("BlP_DBPAuto.0.0", "BlP_DBPMan.0.0"),
     mapper = function(data) {
-      coalesce(data[["BlP_DBPAuto.0"]], data[["BlP_DBPMan.0"]])
+      coalesce(data[["BlP_DBPAuto.0.0"]], data[["BlP_DBPMan.0.0"]])
     },
     post_exclusion = FALSE,
     display_name = "First DBP at baseline",
@@ -192,12 +192,12 @@ TEU_BlP_DBP.0 <- function() {
   )
 }
 
-TEU_BlP_DBP.1 <- function() {
+TEU_BlP_DBP.0.1 <- function() {
   list(
-    name = "TEU_BlP_DBP.1",
-    source = c("BlP_DBPAuto.1", "BlP_DBPMan.1"),
+    name = "TEU_BlP_DBP.0.1",
+    source = c("BlP_DBPAuto.0.1", "BlP_DBPMan.0.1"),
     mapper = function(data) {
-      coalesce(data[["BlP_DBPAuto.1"]], data[["BlP_DBPMan.1"]])
+      coalesce(data[["BlP_DBPAuto.0.1"]], data[["BlP_DBPMan.0.1"]])
     },
     post_exclusion = FALSE,
     display_name = "Second DBP at baseline",
@@ -208,9 +208,9 @@ TEU_BlP_DBP.1 <- function() {
 TEU_BlP_nSBP <- function() {
   list(
     name = "TEU_BlP_nSBP",
-    source = c("TEU_BlP_SBP.0", "TEU_BlP_SBP.1"),
+    source = c("TEU_BlP_SBP.0.0", "TEU_BlP_SBP.0.1"),
     mapper = function(data) {
-      rowSums(!is.na(data[, c("TEU_BlP_SBP.0", "TEU_BlP_SBP.1")]))
+      rowSums(!is.na(data[, c("TEU_BlP_SBP.0.0", "TEU_BlP_SBP.0.1")]))
     },
     post_exclusion = FALSE,
     display_name = "No. SBP",
@@ -221,9 +221,9 @@ TEU_BlP_nSBP <- function() {
 TEU_BlP_nDBP <- function() {
   list(
     name = "TEU_BlP_nDBP",
-    source = c("TEU_BlP_DBP.0", "TEU_BlP_DBP.1"),
+    source = c("TEU_BlP_DBP.0.0", "TEU_BlP_DBP.0.1"),
     mapper = function(data) {
-      rowSums(!is.na(data[, c("TEU_BlP_DBP.0", "TEU_BlP_DBP.1")]))
+      rowSums(!is.na(data[, c("TEU_BlP_DBP.0.0", "TEU_BlP_DBP.0.1")]))
     },
     post_exclusion = FALSE,
     display_name = "No. DBP",
@@ -234,10 +234,10 @@ TEU_BlP_nDBP <- function() {
 TEU_BlP_SBP.avg <- function() {
   list(
     name = "TEU_BlP_SBP.avg",
-    source = c("TEU_BlP_SBP.0",
-               "TEU_BlP_SBP.1"),
-    mapper = FN_average(colnames = c("TEU_BlP_SBP.0",
-                                     "TEU_BlP_SBP.1")),
+    source = c("TEU_BlP_SBP.0.0",
+               "TEU_BlP_SBP.0.1"),
+    mapper = FN_average(colnames = c("TEU_BlP_SBP.0.0",
+                                     "TEU_BlP_SBP.0.1")),
     post_exclusion = FALSE,
     display_name = "SBP",
     description = "The average systolic blood pressure from two measurements at baseline"
@@ -247,10 +247,10 @@ TEU_BlP_SBP.avg <- function() {
 TEU_BlP_DBP.avg <- function() {
   list(
     name = "TEU_BlP_DBP.avg",
-    source = c("TEU_BlP_DBP.0",
-               "TEU_BlP_DBP.1"),
-    mapper = FN_average(colnames = c("TEU_BlP_DBP.0",
-                                     "TEU_BlP_DBP.1")),
+    source = c("TEU_BlP_DBP.0.0",
+               "TEU_BlP_DBP.0.1"),
+    mapper = FN_average(colnames = c("TEU_BlP_DBP.0.0",
+                                     "TEU_BlP_DBP.0.1")),
     post_exclusion = FALSE,
     display_name = "DBP",
     description = "The average diastolic blood pressure from two measurements at baseline"
@@ -429,12 +429,12 @@ TEU_Edu_HighestQual <- function() {
   list(
     name = "TEU_Edu_HighestQual",
     source = c(
-      "Edu_Qualif.0",
-      "Edu_Qualif.1",
-      "Edu_Qualif.2",
-      "Edu_Qualif.3",
-      "Edu_Qualif.4",
-      "Edu_Qualif.5"
+      "Edu_Qualif.0.0",
+      "Edu_Qualif.0.1",
+      "Edu_Qualif.0.2",
+      "Edu_Qualif.0.3",
+      "Edu_Qualif.0.4",
+      "Edu_Qualif.0.5"
     ),
     mapper = function(data) {
       y <- rep(NA, nrow(data))
@@ -490,11 +490,11 @@ GAC_AideMem <- function() {
 TEU_Rec_AssessCentre <- function() {
   list(
     name = "TEU_Rec_AssessCentre",
-    source = "Rec_AssessCentre",
+    source = "Rec_AssessCentre.0.0",
     mapper = function(x) {
       map <-
         read.table(
-          "K:\\TEU\\CancerPRS\\Data_Dictionary\\Mappings\\coding10.tsv",
+          "K:\\TEU\\CancerPRS\\Data_Dictionary\\Mappings\\coding10.tsv", # https://biobank.ndph.ox.ac.uk/showcase/coding.cgi?id=10
           sep = "\t",
           header = TRUE,
           quote = "",
@@ -518,7 +518,7 @@ TEU_Rec_AssessCentre <- function() {
 TEU_Rec_Country <- function() {
   list(
     name = "TEU_Rec_Country",
-    source = "Rec_AssessCentre",
+    source = "Rec_AssessCentre.0.0",
     mapper = function(x) {
       y <- dplyr::case_when(
         x %in% c(
@@ -563,7 +563,7 @@ TEU_Rec_Country <- function() {
 TEU_TownsendDepInd_Quint <- function() {
   list(
     name = "TEU_TownsendDepInd_Quint",
-    source = c("BaC_DeprivInd"),
+    source = c("BaC_DeprivInd.0.0"),
     mapper = FN_quantiles(
       quant = 5,
       labels = c("Q1: least deprived", "Q2", "Q3", "Q4", "Q5: most deprived")
@@ -593,13 +593,13 @@ TEU_HMH_Med.any <- function() {
   list(
     name = "TEU_HMH_Med.any",
     source = c(
-      paste0("HMH_MedCholBPDiabHorm.", c(0:3)),
-      paste0("HMH_MedCholBPDiab.", c(0:2))
+      paste0("HMH_MedCholBPDiabHorm.0.", c(0:3)),
+      paste0("HMH_MedCholBPDiab.0.", c(0:2))
     ),
     mapper = function(data) {
       # Combine the first medication field across males and females
       medcombine <-
-        coalesce(data[["HMH_MedCholBPDiabHorm.0"]], data[["HMH_MedCholBPDiab.0"]])
+        coalesce(data[["HMH_MedCholBPDiabHorm.0.0"]], data[["HMH_MedCholBPDiab.0.0"]])
       # Create a new medication variable: yes/no/do not know/prefer not to answer/NA
       medlist <-
         c(
@@ -632,8 +632,8 @@ TEU_HMH_Med.BP <- function() {
   list(
     name = "TEU_HMH_Med.BP",
     source = c(
-      paste0("HMH_MedCholBPDiabHorm.", c(0:3)),
-      paste0("HMH_MedCholBPDiab.", c(0:2))
+      paste0("HMH_MedCholBPDiabHorm.0.", c(0:3)),
+      paste0("HMH_MedCholBPDiab.0.", c(0:2))
     ),
     mapping = FN_HMHmeds(medtype = "Blood pressure medication", string =
                            "BP meds"),
@@ -646,7 +646,7 @@ TEU_HMH_Med.BP <- function() {
 TEU_ethnicgrp <- function() {
   list(
     name = "TEU_ethnicgrp",
-    source = "Eth_Ethnicity",
+    source = "Eth_Ethnicity.0.0",
     mapper = function(x) {
       y <- dplyr::case_when(
         x %in% c("White", "British", "Irish", "Any other white background") ~ "White",
@@ -692,7 +692,7 @@ TEU_ethnicgrp <- function() {
 TEU_Alc_Status <- function() {
   list(
     name = "TEU_Alc_Status",
-    source = "Alc_Status",
+    source = "Alc_Status.0.0",
     mapper = FN_MissingCategory(
       missingvals = c("Prefer not to answer"),
       categ_name = "Unanswered"
@@ -706,7 +706,7 @@ TEU_Alc_Status <- function() {
 TEU_Smo_Status <- function() {
   list(
     name = "TEU_Smo_Status",
-    source = "Smo_Status",
+    source = "Smo_Status.0.0",
     mapper = FN_MissingCategory(
       missingvals = c("Prefer not to answer"),
       categ_name = "Unanswered"
@@ -721,50 +721,50 @@ TEU_Alc_WeeklyAlcUnits <- function() {
   list(
     name = "TEU_Alc_WeeklyAlcUnits",
     source = c(
-      "Alc_RedWineWk",
-      "Alc_WhiteWineWk",
-      "Alc_BeerCiderWk",
-      "Alc_SpiritsWk",
-      "Alc_FortWineWk",
-      "Alc_OtherAlcWk"
+      "Alc_RedWineWk.0.0",
+      "Alc_WhiteWineWk.0.0",
+      "Alc_BeerCiderWk.0.0",
+      "Alc_SpiritsWk.0.0",
+      "Alc_FortWineWk.0.0",
+      "Alc_OtherAlcWk.0.0"
     ),
     mapper = function(data) {
       alcservings <- list()
       for (alc in c(
-        "Alc_RedWineWk",
-        "Alc_WhiteWineWk",
-        "Alc_BeerCiderWk",
-        "Alc_SpiritsWk",
-        "Alc_FortWineWk",
-        "Alc_OtherAlcWk"
+        "Alc_RedWineWk.0.0",
+        "Alc_WhiteWineWk.0.0",
+        "Alc_BeerCiderWk.0.0",
+        "Alc_SpiritsWk.0.0",
+        "Alc_FortWineWk.0.0",
+        "Alc_OtherAlcWk.0.0"
       )) {
         alcservings[[alc]][data[[alc]] < 0 | is.na(data[[alc]])] <-  0
       }
       
       weekly_alcunits <-
         #	Red wine (1 glass, 125ml, ABV 12% = 1.5 units)
-        (1.5 * alcohol$Alc_RedWineWk) +
+        (1.5 * data$Alc_RedWineWk.0.0) +
         # White wine, champagne (1 glass, 125ml, ABV 12% = 1.5 units)
-        (1.5 * alcohol$Alc_WhiteWineWk) +
+        (1.5 * data$Alc_WhiteWineWk.0.0) +
         #	Fortified wines: e.g. sherry, port (1 measure, 50ml, ABV 20% = 1 unit)
-        (1.0 * alcohol$Alc_FortWineWk) +
+        (1.0 * data$Alc_FortWineWk.0.0) +
         #	Beer, cider including bitter, lager, stout, ale, Guinness (1 pint, 568ml, ABV 3.6% = 2 units)
-        (2.0 * alcohol$Alc_BeerCiderWk) +
+        (2.0 * data$Alc_BeerCiderWk.0.0) +
         #	Spirits, liquors (1 measure or shot, 25ml, ABV 40% = 1 unit)
-        (1.0 * alcohol$Alc_SpiritsWk) +
+        (1.0 * data$Alc_SpiritsWk.0.0) +
         #	For "other" types of alcohol, will use alcopops as proxy ( 1 drink, 275ml, ABV 5.5% = 1.5 units)
-        (1.5 * alcohol$Alc_OtherAlcWk)
+        (1.5 * data$Alc_OtherAlcWk.0.0)
       
       # Truncate alcohol consumption at upper 95th percentile
-      upper95 <- quantile(weeklyunits, 0.95, na.rm = TRUE)
-      weeklyunits[weeklyunits > upper95] <- upper95
-      weeklyunits[is.na(weeklyunits)] <- 0
+      upper95 <- quantile(weekly_alcunits, 0.95, na.rm = TRUE)
+      weekly_alcunits[weekly_alcunits > upper95 & !is.na(weekly_alcunits)] <- upper95
+      weekly_alcunits[is.na(weekly_alcunits)] <- 0
       
-      return(weeklyunits)
+      return(weekly_alcunits)
     },
     post_exclusion = FALSE,
     display_name = "WeeklyAlcUnits",
-    description = "Total weekly units of alcohol, derived from self-reported average weekly consumption of each different type alcohol"
+    description = "Total weekly units of alcohol, derived from self-reported average weekly consumption of each different type alcoholand truncated at the upper 95th percentile"
   )
 }
 
@@ -788,7 +788,7 @@ TEU_Alc_Binge <- function() {
 TEU_Pha_METsover1200 <- function() {
   list(
     name = "TEU_Pha_METsover1200",
-    source = "PhA_METsWkAllAct",
+    source = "PhA_METsWkAllAct.0.0",
     mapper = function(x) {
       y <- dplyr::case_when(
         is.na(x) ~ "Unknown",
@@ -873,7 +873,7 @@ TEU_BlP_HTNseverity <- function() {
 TEU_HMH_BowelCancerScreen <- function() {
   list(
     name = "TEU_HMH_BowelCancerScreen",
-    source = "HMH_BowelSc",
+    source = "HMH_BowelSc.0.0",
     mapper = function(x) {
       y <- as.character(x)
       y[y %in% c("Prefer not to answer", "Do not know") |
@@ -900,9 +900,9 @@ TEU_FaH_CVD <- function() {
   list(
     name = "TEU_FaH_CVD",
     source = c(
-      paste0("FaH_FatherIll.", c(0:9)),
-      paste0("FaH_MotherIll.", c(0:10)),
-      paste0("FaH_SibIll.", c(0:11))
+      paste0("FaH_FatherIll.0.", c(0:9)),
+      paste0("FaH_MotherIll.0.", c(0:10)),
+      paste0("FaH_SibIll.0.", c(0:11))
     ),
     mapper = FN_FamHist(
       conditions = c("Heart disease", "High blood pressure", "Stroke"),

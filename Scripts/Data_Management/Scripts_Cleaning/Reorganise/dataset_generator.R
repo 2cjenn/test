@@ -1,6 +1,10 @@
 # Jennifer Collister
 # 22/09/20
 
+library(DBI)
+library(duckdb)
+library(tidyverse)
+
 # Load the project config file for filepaths etc
 if (!exists("config")) {
   library(yaml)
@@ -12,6 +16,7 @@ TEUmaps <- new.env()
 
 # Source the variable maps into the TEUmaps environment
 source(file.path(config$scripts$cleaning, "Reorganise", "common_derivations.R"), local=TEUmaps)
+source(file.path(config$scripts$cleaning, "Reorganise", "DuckDB.R"), local=TEUmaps)
 
 # Note - may in future want to use https://cran.r-project.org/web/packages/modules/
 # This means stuff in the modules *can't* see and interact with stuff in global env
@@ -30,7 +35,7 @@ derive_variables <- function(database, field_definitions, exclusions=function(x)
   source_cols <- unlist(sapply(objects, function(x) x$source))
   
   # Extract data fields from database
-  data <- DB_extract(source_cols)#, db = database)
+  data <- TEUmaps$DB_extract(source_cols, db = database)
 
   # Separate into derivations to be calculated before and after exclusion criteria
   before <- objects[sapply(objects, function(x) x$post_exclusion==FALSE)]

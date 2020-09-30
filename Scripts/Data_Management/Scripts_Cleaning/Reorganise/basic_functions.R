@@ -50,10 +50,10 @@ FN_buckets <- function(breaks, labels=NULL, right=TRUE){
   }
 }
 
-FN_quantiles <- function(quant=4, labels=NULL){
+FN_quantiles <- function(quant=4, labels=NULL, na.rm=TRUE){
   function(x){
-    if(anyNA(x)){warning("This vector contains NA values")}
-    quantiles <- quantile(x, probs=seq(0, 1, 1/quant), na.rm=TRUE)
+    # if(anyNA(x)){warning("This vector contains NA values")}
+    quantiles <- quantile(x, probs=seq(0, 1, 1/quant), na.rm=na.rm)
     if(is.null(labels)){
       labels <- c("Q1: lowest", paste0("Q", seq(2, quant-1)), paste0("Q", quant, ": highest"))
       }
@@ -63,9 +63,9 @@ FN_quantiles <- function(quant=4, labels=NULL){
 
 FN_FamHist <- function(conditions, label){
   function(data){
-    y <- apply(data[,c(grep("FaH_FatherIll.", colnames(data), fixed=TRUE),
-                       grep("FaH_MotherIll.", colnames(data), fixed=TRUE),
-                       grep("FaH_SibIll.", colnames(data), fixed=TRUE)
+    y <- apply(data[,c(grep("FaH_FatherIll.0.", colnames(data), fixed=TRUE),
+                       grep("FaH_MotherIll.0.", colnames(data), fixed=TRUE),
+                       grep("FaH_SibIll.0.", colnames(data), fixed=TRUE)
     )
     ], 1, function(x) any(x %in% conditions)
     )
@@ -78,7 +78,7 @@ FN_FamHist <- function(conditions, label){
 FN_HMHmeds <- function(medtype, string){
   function(data){
     # Combine the first medication field across males and females
-    medcombine <- coalesce(data[["HMH_MedCholBPDiabHorm.0"]], data[["HMH_MedCholBPDiab.0"]])
+    medcombine <- coalesce(data[["HMH_MedCholBPDiabHorm.0.0"]], data[["HMH_MedCholBPDiab.0.0"]])
     # Create a new medication variable: yes/no/do not know/prefer not to answer/NA
     medlist <- c("Cholesterol lowering medication", "Blood pressure medication", "Oral contraceptive pill or minipill", "Hormone replacement therapy", "Insulin")
     x <- dplyr::case_when(
@@ -95,8 +95,8 @@ FN_HMHmeds <- function(medtype, string){
     }
     
     # Now check for the requested medication across the columns
-    y <- apply(data[,c(grep("HMH_MedCholBPDiab.", colnames(data), fixed=TRUE),
-                       grep("HMH_MedCholBPDiabHorm.", colnames(data), fixed=TRUE))], 1, function(x) any(x==medtype))
+    y <- apply(data[,c(grep("HMH_MedCholBPDiab.0.", colnames(data), fixed=TRUE),
+                       grep("HMH_MedCholBPDiabHorm.0.", colnames(data), fixed=TRUE))], 1, function(x) any(x==medtype))
     # And incorporate the info on whether this participant is taking any other medication
     y[x %in% c("Prefer not to answer", "Do not know", "NA")] <- "Unanswered"
     y[is.na(y)] <- "FALSE"
