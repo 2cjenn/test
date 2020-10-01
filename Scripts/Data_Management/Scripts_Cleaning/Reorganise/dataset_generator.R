@@ -72,7 +72,20 @@ DBfunc$source_rotation <- function(data, field_definitions) {
       if (all(defn$source %in% data_cols)) {
         
         # If all required source columns are available, derive them
-        data <- DBfunc$derive_fn(data, field_definition = defn)
+        tryCatch(
+          data <- DBfunc$derive_fn(data, field_definition = defn),
+          error=function(cond) {
+            message(paste(defn$name, "threw the following error: "))
+            message(cond)
+            return(data)
+          },
+          warning=function(cond) {
+            message(paste(defn$name, "threw the following warning: "))
+            message(cond)
+            return(data)
+          }
+        )
+        
         
         # Add the variable to the list of available data columns
         data_cols <- append(data_cols, defn$name)
