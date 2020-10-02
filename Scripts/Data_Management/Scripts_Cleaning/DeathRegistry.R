@@ -12,7 +12,7 @@ config = yaml.load_file("config.yml")
 #--------------------------------------------------------------------------------------------------------------
 
 # Read in the raw data
-deaths <- readRDS(paste0(config$data$received, "Dth.rds"))
+deaths <- readRDS(file.path(config$data$received, "Dth.rds"))
 
 # ICD 10 codes for dementia
 alz_ICD10 <- c("F00")
@@ -40,4 +40,4 @@ deaths$alsdeath <- apply(deaths[,grep("Dth_ICD10", colnames(deaths), fixed=TRUE)
 deaths$parkdeath <- apply(deaths[,grep("Dth_ICD10", colnames(deaths), fixed=TRUE)], 1, function(x) any(substr(x, 1, 3) %in% park_ICD10))
 
 saveRDS(deaths[,c("ID", "deathdate", "demdeath", "strdeath", "alsdeath", "parkdeath", "Dth_Cause.m0.i0")], 
-        file=paste0(config$data$derived, "deathdate.rds"))
+        file=file.path(config$data$derived, "deathdate.rds"))

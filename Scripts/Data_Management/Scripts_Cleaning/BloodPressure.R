@@ -11,7 +11,7 @@ config = yaml.load_file("config.yml")
 
 #--------------------------------------------------------------------------------------------------------------
 # Read in the raw data
-bp <- readRDS(paste0(config$data$received, "BlP_base.rds"))
+bp <- readRDS(file.path(config$data$received, "BlP_base.rds"))
 
 #--------------------------------------------------------------------------------------------------------------
 # Mean BP and number of measurements
@@ -63,4 +63,4 @@ bp$controlled <- !bp$measuredhyp
 
 #--------------------------------------------------------------------------------------------------------------
 # Save the organised data
-saveRDS(bp, file=paste0(config$data$derived, "bp.rds"))
+saveRDS(bp, file=file.path(config$data$derived, "bp.rds"))

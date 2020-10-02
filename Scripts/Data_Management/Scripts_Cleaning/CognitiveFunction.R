@@ -12,9 +12,9 @@ config = yaml.load_file("config.yml")
 #--------------------------------------------------------------------------------------------------------------
 
 # Read in the raw data
-cogfunc <- readRDS(paste0(config$data$received, "CoF_base.rds"))
+cogfunc <- readRDS(file.path(config$data$received, "CoF_base.rds"))
 
 names(cogfunc)[names(cogfunc)=="CoF_RTTTimeID"] <- "mean_reacttime"
 
 saveRDS(cogfunc[,c("ID", "mean_reacttime")],
-        file=paste0(config$data$derived, "cognitivefunction.rds"))
+        file=file.path(config$data$derived, "cognitivefunction.rds"))

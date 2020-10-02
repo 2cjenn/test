@@ -8,12 +8,12 @@ library(yaml)
 config = yaml.load_file("config.yml")
 
 # Read in the raw data
-gep <- readRDS(paste0(config$data$received, "GeP.rds"))
+gep <- readRDS(file.path(config$data$received, "GeP.rds"))
 
 # Let's keep the first 10 PCs
 pclist <- paste0("GeP_PC.m",seq(1,10))
 
 # save
 saveRDS(gep[,c("ID", pclist)], 
-        file=paste0(config$data$derived, "principalcomponents.rds"))
+        file=file.path(config$data$derived, "principalcomponents.rds"))
 
