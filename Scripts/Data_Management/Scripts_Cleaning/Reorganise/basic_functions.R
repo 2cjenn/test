@@ -75,21 +75,31 @@ FN_FamHist <- function(conditions, label){
   }
 }
 
-FN_HMHmeds <- function(medtype, string){
+FN_HMHmeds_any <- function(data){
+  # Combine the first medication field across males and females
+  medcombine <- coalesce(data[["HMH_MedCholBPDiabHorm.0.0"]], data[["HMH_MedCholBPDiab.0.0"]])
+  # Create a new medication variable: yes/no/do not know/prefer not to answer/NA
+  medlist <- c("Cholesterol lowering medication",
+               "Blood pressure medication",
+               "Oral contraceptive pill or minipill",
+               "Hormone replacement therapy",
+               "Insulin"
+               )
+  y <- dplyr::case_when(
+    is.na(medcombine) ~ "Unanswered",
+    medcombine == "None of the above" ~ "No",
+    medcombine == "Do not know" ~ "Do not know",
+    medcombine == "Prefer not to answer" ~ "Prefer not to answer",
+    medcombine %in% medlist ~ "Yes",
+    TRUE ~ "Unexpected answer"
+  )
+  y <- factor(y, levels = c("Yes", "No", "Do not know", "Prefer not to answer", "Unanswered"))
+  return(y)
+}
+
+FN_HMHmeds_type <- function(medtype, string){
   function(data){
-    # Combine the first medication field across males and females
-    medcombine <- coalesce(data[["HMH_MedCholBPDiabHorm.0.0"]], data[["HMH_MedCholBPDiab.0.0"]])
-    # Create a new medication variable: yes/no/do not know/prefer not to answer/NA
-    medlist <- c("Cholesterol lowering medication", "Blood pressure medication", "Oral contraceptive pill or minipill", "Hormone replacement therapy", "Insulin")
-    x <- dplyr::case_when(
-      medcombine=="None of the above" ~ "No",
-      medcombine=="Do not know" ~ "Do not know",
-      medcombine=="Prefer not to answer" ~ "Prefer not to answer",
-      is.na(medcombine) ~ "NA",
-      medcombine %in% medlist ~ "Yes",
-      TRUE ~ "Unexpected answer"
-    )
-    x <- factor(x, levels=c("Yes", "No", "Do not know", "Prefer not to answer", "NA"))
+    x <- FN_HMHmeds_any(data)
     if(anyNA(x)){
       stop("Unexpected value in source data for self-reported medication.")
     }
@@ -98,7 +108,44 @@ FN_HMHmeds <- function(medtype, string){
     y <- apply(data[,c(grep("HMH_MedCholBPDiab.0.", colnames(data), fixed=TRUE),
                        grep("HMH_MedCholBPDiabHorm.0.", colnames(data), fixed=TRUE))], 1, function(x) any(x==medtype))
     # And incorporate the info on whether this participant is taking any other medication
-    y[x %in% c("Prefer not to answer", "Do not know", "NA")] <- "Unanswered"
+    y[x %in% c("Prefer not to answer", "Do not know", "Unanswered")] <- "Unanswered"
+    y[is.na(y)] <- "FALSE"
+    y <- factor(y, levels=c("TRUE", "FALSE", "Unanswered"), 
+                labels=c(paste0("Self-reported ", string), paste0("Did not report", string), "Unanswered"))
+    return(y)
+  }
+}
+
+FN_Vascular_any <- function(data) {
+  # Combine the vascular condition columns
+  vcon <- coalesce(data[["HMH_HeartProbs.0.0"]], data[["HMH_HeartProbs.0.1"]], 
+                   data[["HMH_HeartProbs.0.2"]], data[["HMH_HeartProbs.0.3"]])
+  # Create a new medication variable: yes/no/do not know/prefer not to answer/NA
+  condlist <- c("High blood pressure", "Stroke", "Angina", "Heart attack")
+  y <- dplyr::case_when(
+    is.na(vcon) ~ "Unanswered",
+    vcon == "None of the above" ~ "No",
+    vcon == "Do not know" ~ "Do not know",
+    vcon == "Prefer not to answer" ~ "Prefer not to answer",
+    vcon %in% condlist ~ "Yes",
+    TRUE ~ "Unexpected answer"
+  )
+  y <- factor(y, levels = c("Yes", "No", "Do not know", "Prefer not to answer", "Unanswered"))
+  return(y)
+}
+
+FN_Vascular_condition <- function(conditions, string) {
+  function(data){
+    x <- FN_Vascular_any(data)
+    if(anyNA(x)){
+      stop("Unexpected value in source data for self-reported medication.")
+    }
+    
+    # Now check for the requested condition across the columns
+    y <- apply(data[,c("HMH_HeartProbs.0.0", "HMH_HeartProbs.0.1", "HMH_HeartProbs.0.2", "HMH_HeartProbs.0.3")],
+               1, function(x) any(x %in% conditions))
+    # And incorporate the info on whether this participant reported any condition
+    y[x %in% c("Prefer not to answer", "Do not know", "Unanswered")] <- "Unanswered"
     y[is.na(y)] <- "FALSE"
     y <- factor(y, levels=c("TRUE", "FALSE", "Unanswered"), 
                 labels=c(paste0("Self-reported ", string), paste0("Did not report", string), "Unanswered"))
@@ -114,6 +161,14 @@ FN_MissingCategory <- function(missingvals, categ_name){
     y[y %in% missingvals] <- categ_name
     y[is.na(y)] <- categ_name
     y <- factor(y, levels=labels, ordered=FALSE)
+    return(y)
+  }
+}
+
+FN_JoinPRS <- function(filepath, colname) {
+  function(x) {
+    prs <- readRDS(filepath)
+    y <- prs[[colname]][match(x, prs$ID)]
     return(y)
   }
 }

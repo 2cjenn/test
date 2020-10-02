@@ -12,18 +12,13 @@ if (!exists("config")) {
 
 specs <- function() {
   # Source the variable maps
-  source(
-    file.path(
-      config$scripts$cleaning,
-      "Reorganise",
-      "common_derivations.R"
-    ),
-    local = if (sys.nframe() == 0L) {
-      FALSE
-    } else {
-      TEUmaps <- new.env()
-    }
-  )
+  source(file.path(config$scripts$cleaning, "Reorganise", "common_derivations.R"),
+         local = if (sys.nframe() == 0L) {
+           FALSE
+           } else {
+             TEUmaps <- new.env()
+             }
+         )
   if (exists("TEUmaps")) {
     attach(TEUmaps)
     on.exit(detach(TEUmaps))
@@ -35,7 +30,9 @@ specs <- function() {
                          BaC_Sex,
                          TEU_BaC_DateOfBirth,
                          Rec_DateAssess,
-                         TEU_BaC_AgeAtRec
+                         TEU_BaC_AgeAtRec,
+                         TEU_ethnicgrp,
+                         TEU_Rec_Country
                          )
   
   TEUvars_BP <- list(TEU_BlP_SBP.0.0,
@@ -48,17 +45,41 @@ specs <- function() {
                      TEU_BlP_DBP.avg
                      )
   
-  SPEC_Neo_HTN <- c(TEUvars_common,
+  HTN_control <- c(TEUvars_common,
                     TEUvars_BP,
-                    list(TEU_BaC_AgeCat,
+                    list(VeI_PregnantNow,
+                         TEU_BaC_AgeCat,
                          TEU_BlP_measuredHTN,
                          TEU_HMH_BowelCancerScreen,
                          TEU_Edu_HighestQual,
                          TEU_Edu_ISCED,
-                         TEU_TownsendDepInd_Quint
+                         TEU_HoH_PreTaxInc,
+                         TEU_TownsendDepInd_Quint,
+                         TEU_HMH_Meds_BP,
+                         TEU_Smo_Status,
+                         TEU_Alc_Status,
+                         TEU_Alc_WeeklyAlcUnits,
+                         TEU_Alc_Binge,
+                         TEU_Pha_METsover1200,
+                         TEU_FaH_CVD,
+                         TEU_BSM_BMIcat,
+                         TEU_BSM_WaistCircCat,
+                         TEU_SBP_PRS,
+                         TEU_DBP_PRS,
+                         TEU_BP_PRS,
+                         TEU_BP_PRS_quintiles,
+                         TEU_HMH_VascCond,
+                         TEU_HMH_prevHTN,
+                         TEU_HMH_prevstroke,
+                         TEU_HMH_prevCVD,
+                         HMH_IllDisab,
+                         HMH_Diabetes,
+                         HMH_HTNAge,
+                         TEU_BlP_HTNseverity
+                         
                          )
                     )
   return(environment())
 }
 
-testSpecs <- specs()
+TEU_SPECS <- specs()

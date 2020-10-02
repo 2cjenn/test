@@ -10,24 +10,23 @@ if (!exists("config")) {
 }
 
 # Source the function definitions
-source(file.path(config$scripts$cleaning, "Reorganise", "basic_functions.R"),
-       local = TRUE)
+source(file.path(config$scripts$cleaning, "Reorganise", "basic_functions.R"), local = TRUE)
 
-makeEnum <- function(inputList) {
-  # Borrowed from https://stackoverflow.com/a/41509345
-  myEnum <- as.list(inputList)
-  enumNames <- names(myEnum)
-  if (is.null(enumNames)) {
-    names(myEnum) <- myEnum
-  } else if ("" %in% enumNames) {
-    stop("The inputList has some but not all names assigned. They must be all assigned or none assigned")
-  }
-  return(myEnum)
-}
-visits <- makeEnum(list(baseline = c("0", "baseline assessment"), 
-                    repeat_visit = c("1", "repeat visit"), 
-                    imaging = c("2", "imaging visit"), 
-                    repeat_imaging = c("3","repeat imaging visit")))
+# makeEnum <- function(inputList) {
+#   # Borrowed from https://stackoverflow.com/a/41509345
+#   myEnum <- as.list(inputList)
+#   enumNames <- names(myEnum)
+#   if (is.null(enumNames)) {
+#     names(myEnum) <- myEnum
+#   } else if ("" %in% enumNames) {
+#     stop("The inputList has some but not all names assigned. They must be all assigned or none assigned")
+#   }
+#   return(myEnum)
+# }
+# visits <- makeEnum(list(baseline = c("0", "baseline assessment"), 
+#                     repeat_visit = c("1", "repeat visit"), 
+#                     imaging = c("2", "imaging visit"), 
+#                     repeat_imaging = c("3","repeat imaging visit")))
 
 # Formatting of existing UKB variables
 
@@ -110,7 +109,6 @@ Eth_ethnicity <- function() {
     description = "The participant's self-reported ethnicity"
   )
 }
-
 
 BaC_RsnLostFU <- function() {
   list(
@@ -257,8 +255,7 @@ TEU_BlP_DBP.avg <- function() {
   )
 }
 
-TEU_BlP_measuredHTN <- function(SBPthreshold = 140,
-                                DBPthreshold = 90) {
+TEU_BlP_measuredHTN <- function(SBPthreshold = 140, DBPthreshold = 90) {
   list(
     name = "TEU_BlP_measuredHTN",
     source = c("TEU_BlP_SBP.avg", "TEU_BlP_DBP.avg"),
@@ -281,7 +278,7 @@ TEU_BlP_measuredHTN <- function(SBPthreshold = 140,
 Alc_Status <- function() {
   list(
     name = "Alc_Status",
-    source = "Alc_Status",
+    source = "Alc_Status.0.0",
     mapper = FN_reorderfactor(
       levelorder = c("Never", "Previous", "Current", "Prefer not to answer")
     ),
@@ -294,7 +291,7 @@ Alc_Status <- function() {
 Smo_Status <- function() {
   list(
     name = "Smo_Status",
-    source = "Smo_Status",
+    source = "Smo_Status.0.0",
     mapper = FN_reorderfactor(
       levelorder = c("Never", "Previous", "Current", "Prefer not to answer")
     ),
@@ -304,15 +301,14 @@ Smo_Status <- function() {
   )
 }
 
-
 TEU_HoH_PreTaxInc <- function() {
   list(
     name = "TEU_HoH_PreTaxInc",
-    source = c("HoH_PreTaxInc.0", "HoH_PreTaxInc_P.0"),
+    source = c("HoH_PreTaxInc.0.0", "HoH_PreTaxInc_P.0.0"),
     mapper = function(data) {
-      y <- ifelse(is.na(data[["HoH_PreTaxInc.0"]]),
-                  as.character(data[["HoH_PreTaxInc_P.0"]]),
-                  as.character(data[["HoH_PreTaxInc.0"]]))
+      y <- ifelse(is.na(data[["HoH_PreTaxInc.0.0"]]),
+                  as.character(data[["HoH_PreTaxInc_P.0.0"]]),
+                  as.character(data[["HoH_PreTaxInc.0.0"]]))
       y <- fct_collapse(
         y,
         "Less than 18,000" = "Less than 18,000",
@@ -321,7 +317,7 @@ TEU_HoH_PreTaxInc <- function() {
         "52,000 to 100,000" = "52,000 to 100,000",
         "Greater than 100,000" = "Greater than 100,000",
         "Do not know" = "Do not know",
-        "Prefer not to know" = "Prefer not to know"
+        "Prefer not to answer" = "Prefer not to answer"
       )
       y <-
         factor(
@@ -347,7 +343,7 @@ TEU_HoH_PreTaxInc <- function() {
 Sle_Duration <- function() {
   list(
     name = "Sle_Duration",
-    source = "Sle_Duration",
+    source = "Sle_Duration.0.0",
     mapper = FN_id,
     post_exclusion = FALSE,
     display_name = "SleepDuration_h",
@@ -358,7 +354,7 @@ Sle_Duration <- function() {
 TEU_BSM_BMIcat <- function() {
   list(
     name = "TEU_BSM_BMIcat",
-    source = "BSM_BMI",
+    source = "BSM_BMI.0.0",
     mapper = function(x) {
       y <-
         as.character(cut(x, breaks = c(0, 18.5, 25, 30, 200), right = FALSE))
@@ -380,17 +376,17 @@ TEU_BSM_BMIcat <- function() {
 TEU_BSM_WaistCircCat <- function() {
   list(
     name = "TEU_BSM_WaistCircCat",
-    source = c("BSM_Waist", "BaC_Sex"),
+    source = c("BSM_Waist.0.0", "BaC_Sex.0.0"),
     mapper = function(data) {
       # Categorise waist circ into labelled categories
       y <- dplyr::case_when(
-        data[["BaC_Sex"]] == "Female" & data[["BSM_Waist"]] >= 88 ~ "Obese",
-        data[["BaC_Sex"]] == "Female" &
-          data[["BSM_Waist"]] ~ "Overweight",
-        data[["BaC_Sex"]] == "Male" & data[["BSM_Waist"]] ~ "Obese",
-        data[["BaC_Sex"]] == "Male" &
-          data[["BSM_Waist"]] ~ "Overweight",
-        is.na(data[["BSM_Waist"]]) ~ "Unknown",
+        data[["BaC_Sex.0.0"]] == "Female" & data[["BSM_Waist.0.0"]] >= 88 ~ "Obese",
+        data[["BaC_Sex.0.0"]] == "Female" &
+          data[["BSM_Waist.0.0"]] ~ "Overweight",
+        data[["BaC_Sex.0.0"]] == "Male" & data[["BSM_Waist.0.0"]] ~ "Obese",
+        data[["BaC_Sex.0.0"]] == "Male" &
+          data[["BSM_Waist.0.0"]] ~ "Overweight",
+        is.na(data[["BSM_Waist.0.0"]]) ~ "Unknown",
         TRUE ~ "Normal"
       )
       y <-
@@ -406,7 +402,7 @@ TEU_BSM_WaistCircCat <- function() {
 PhA_METsWkAllAct <- function() {
   list(
     name = "PhA_METsWkAllAct",
-    source = "PhA_METsWkAllAct",
+    source = "PhA_METsWkAllAct.0.0",
     mapper = FN_id,
     post_exclusion = FALSE,
     display_name = "WeeklyMETs",
@@ -417,7 +413,7 @@ PhA_METsWkAllAct <- function() {
 CoF_RTTTimeID <- function() {
   list(
     name = "CoF_RTTTimeID",
-    source = "CoF_RTTTimeID",
+    source = "CoF_RTTTimeID.0.0",
     mapper = FN_id,
     post_exclusion = FALSE,
     display_name = "ReactionTime",
@@ -479,7 +475,7 @@ TEU_Edu_HighestQual <- function() {
 GAC_AideMem <- function() {
   list(
     name = "GAC_AideMem",
-    source = "GAC_AideMem",
+    source = "GAC_AideMem.0.0",
     mapper = FN_unorder,
     post_exclusion = FALSE,
     display_name = "AideMemoir",
@@ -513,7 +509,6 @@ TEU_Rec_AssessCentre <- function() {
     description = "Which assessment centre did the participant attend"
   )
 }
-
 
 TEU_Rec_Country <- function() {
   list(
@@ -589,54 +584,26 @@ TEU_BaC_AgeCat <- function() {
   )
 }
 
-TEU_HMH_Med.any <- function() {
+TEU_HMH_Meds_any <- function() {
   list(
-    name = "TEU_HMH_Med.any",
-    source = c(
-      paste0("HMH_MedCholBPDiabHorm.0.", c(0:3)),
-      paste0("HMH_MedCholBPDiab.0.", c(0:2))
-    ),
-    mapper = function(data) {
-      # Combine the first medication field across males and females
-      medcombine <-
-        coalesce(data[["HMH_MedCholBPDiabHorm.0.0"]], data[["HMH_MedCholBPDiab.0.0"]])
-      # Create a new medication variable: yes/no/do not know/prefer not to answer/NA
-      medlist <-
-        c(
-          "Cholesterol lowering medication",
-          "Blood pressure medication",
-          "Oral contraceptive pill or minipill",
-          "Hormone replacement therapy",
-          "Insulin"
-        )
-      y <- dplyr::case_when(
-        medcombine == "None of the above" ~ "No",
-        medcombine == "Do not know" ~ "Do not know",
-        medcombine == "Prefer not to answer" ~ "Prefer not to answer",
-        is.na(med.combine) ~ "NA",
-        medcombine %in% medlist ~ "Yes",
-        TRUE ~ "Unexpected answer"
-      )
-      y <-
-        factor(y,
-               levels = c("Yes", "No", "Do not know", "Prefer not to answer", "NA"))
-      return(y)
-    },
+    name = "TEU_HMH_Meds_any",
+    source = c(paste0("HMH_MedCholBPDiabHorm.0.", c(0:3)),
+               paste0("HMH_MedCholBPDiab.0.", c(0:2))
+               ),
+    mapper = FN_HMHmeds_any,
     post_exclusion = FALSE,
-    display_name = "HMH_Med",
+    display_name = "HMH_Meds",
     description = "Did the participant self-report taking medication for cholesterol, blood pressure, diabetes or HRT?"
   )
 }
 
-TEU_HMH_Med.BP <- function() {
+TEU_HMH_Meds_BP <- function() {
   list(
-    name = "TEU_HMH_Med.BP",
-    source = c(
-      paste0("HMH_MedCholBPDiabHorm.0.", c(0:3)),
-      paste0("HMH_MedCholBPDiab.0.", c(0:2))
-    ),
-    mapping = FN_HMHmeds(medtype = "Blood pressure medication", string =
-                           "BP meds"),
+    name = "TEU_HMH_Meds_BP",
+    source = c(paste0("HMH_MedCholBPDiabHorm.0.", c(0:3)),
+               paste0("HMH_MedCholBPDiab.0.", c(0:2))
+               ),
+    mapper = FN_HMHmeds_type(medtype = "Blood pressure medication", string = "BP meds"),
     post_exclusion = FALSE,
     display_name = "HBPmeds",
     description = "Participant self-reported taking BP medication in the touchscreen questionnaire"
@@ -765,6 +732,20 @@ TEU_Alc_WeeklyAlcUnits <- function() {
     post_exclusion = FALSE,
     display_name = "WeeklyAlcUnits",
     description = "Total weekly units of alcohol, derived from self-reported average weekly consumption of each different type alcoholand truncated at the upper 95th percentile"
+  )
+}
+
+TEU_Alc_WeeklyCat <- function() {
+  list(
+    name = "TEU_Alc_WeeklyCat", 
+    source = c("TEU_Alc_WeeklyAlcUnits"), 
+    mapper = FN_buckets(breaks=c(-1, 0, 5, 10, 20, 30, 100),
+                        labels=c("None reported", "Less than 5 units", "5 to 10 units", 
+                                 "10 to 20 units", "20 to 30 units", "30 units or more"),
+                        right=FALSE),
+    post_exclusion = FALSE,
+    display_name = "Weekly alcohol, categorical",
+    description = "Categorised weekly alcohol intake, derived from self-reported average weekly consumption of different types of alcohol"
   )
 }
 
@@ -911,5 +892,139 @@ TEU_FaH_CVD <- function() {
     post_exclusion = FALSE,
     display_name = "FamilyHistoryCVD",
     description = "Family history of CVD (Heart disease, high blood pressure, stroke)"
+  )
+}
+
+VeI_PregnantNow <- function() {
+  list(
+    name = "VeI_PregnantNow", 
+    source = c("VeI_PregnantNow.0.0"), 
+    mapper = FN_id,
+    post_exclusion = FALSE,
+    display_name = "Pregnant",
+    description = "Was the participant pregnant at baseline"
+  )
+}
+
+TEU_SBP_PRS <- function() {
+  list(
+    name = "TEU_SBP_PRS", 
+    source = c("ID"), 
+    mapper = FN_JoinPRS(filepath="K:/TEU/UKB_Genetic_Data/bmrc-ukb-repo/prs/projects/htn-evangelou2018/outputs/htn-evangelou2018_PRS_QC1.rds",
+                        colname="PRS_SBP"),
+    post_exclusion = FALSE,
+    display_name = "SBP polygenic risk score",
+    description = "SBP polygenic risk score"
+  )
+}
+
+TEU_DBP_PRS <- function() {
+  list(
+    name = "TEU_DBP_PRS", 
+    source = c("ID"), 
+    mapper = FN_JoinPRS(filepath="K:/TEU/UKB_Genetic_Data/bmrc-ukb-repo/prs/projects/htn-evangelou2018/outputs/htn-evangelou2018_PRS_QC1.rds",
+                        colname="PRS_DBP"),
+    post_exclusion = FALSE,
+    display_name = "DBP polygenic risk score",
+    description = "DBP polygenic risk score"
+  )
+}
+
+TEU_BP_PRS <- function() {
+  list(
+    name = "TEU_BP_PRS", 
+    source = c("TEU_DBP_PRS", "TEU_SBP_PRS"), 
+    mapper = FN_average(colnames=c("TEU_DBP_PRS", "TEU_SBP_PRS")),
+    post_exclusion = FALSE,
+    display_name = "Mean BP PRS score",
+    description = "Average of SBP and DBP PRS scores"
+  )
+}
+
+TEU_BP_PRS_quintiles <- function() {
+  list(
+    name = "TEU_BP_PRS_quintiles", 
+    source = c("TEU_BP_PRS"), 
+    mapper = FN_quantiles(quant=5),
+    post_exclusion = FALSE,
+    display_name = "BP PRS Quintiles",
+    description = "Quintiles of the BP PRS score"
+  )
+}
+
+TEU_HMH_VascCond <- function() {
+  list(
+    name = "TEU_HMH_VascCond", 
+    source = c(paste0("HMH_HeartProbs.0.", c(0:3))), 
+    mapper = FN_Vascular_any,
+    post_exclusion = FALSE,
+    display_name = "Vascular condition",
+    description = "Did the participant self-report any vascular conditions in the touchscreen questionnaire"
+  )
+}
+
+TEU_HMH_prevHTN <- function() {
+  list(
+    name = "TEU_HMH_prevHTN", 
+    source = c(paste0("HMH_HeartProbs.0.", c(0:3))), 
+    mapper = FN_Vascular_condition(condition="High blood pressure", string="hypertension"),
+    post_exclusion = FALSE,
+    display_name = "Self-reported HTN on TQ",
+    description = "Self-reported high blood pressure on touchscreen questionnaire"
+  )
+}
+
+TEU_HMH_prevstroke <- function() {
+  list(
+    name = "TEU_HMH_prevstroke", 
+    source = c(paste0("HMH_HeartProbs.0.", c(0:3))), 
+    mapper = FN_Vascular_condition(condition="Stroke", string="stroke"),
+    post_exclusion = FALSE,
+    display_name = "Self-reported stroke on TQ",
+    description = "Self-reported prior stroke on touchscreen questionnaire"
+  )
+}
+
+TEU_HMH_prevCVD <- function() {
+  list(
+    name = "TEU_HMH_prevCVD", 
+    source = c(paste0("HMH_HeartProbs.0.", c(0:3))), 
+    mapper = FN_Vascular_condition(condition=c("Angina", "Heart attack"), string="cardiovascular disease"),
+    post_exclusion = FALSE,
+    display_name = "Self-reported CVD on TQ",
+    description = "Self-reported prior angina or MI on touchscreen questionnaire"
+  )
+}
+
+HMH_IllDisab <- function() {
+  list(
+    name = "HMH_IllDisab", 
+    source = c("HMH_IllDisab.0.0"), 
+    mapper = FN_id,
+    post_exclusion = FALSE,
+    display_name = "Self-reported illness or disability",
+    description = "Participant self-reported longstanding illness, disability or infirmity on the touchscreen questionnaire"
+  )
+}
+
+HMH_Diabetes <- function() {
+  list(
+    name = "HMH_Diabetes", 
+    source = c("HMH_Diabetes.0.0"), 
+    mapper = FN_id,
+    post_exclusion = FALSE,
+    display_name = "Self-reported diabetes",
+    description = "Participant self-reported diabetes on the touchscreen questionnaire"
+  )
+}
+
+HMH_HTNAge <- function() {
+  list(
+    name = "HTN_HTNAge", 
+    source = c("HMH_HBPAge.0.0"), 
+    mapper = FN_id,
+    post_exclusion = FALSE,
+    display_name = "Age HTN diagnosed",
+    description = "Participant self-reported age of hypertension diagnosis on the touchscreen questionnaire"
   )
 }

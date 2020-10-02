@@ -19,21 +19,7 @@ library(yaml)
 config = yaml.load_file("config.yml")
 source(config$functions)
 source(file.path(config$scripts$cleaning, "Reorganise", "dataset_generator.R"))
-alldata <- readRDS(file.path(config$data$derived, "Test_all.rds"))
-# data <- readRDS(file.path(config$data$derived, "HTN_raw.rds"))
-
-attach(TEUmaps)
-TEUvars_age <- c(TEU_BaC_DateOfBirth, Rec_DateAssess, TEU_BaC_AgeAtRec, TEU_BaC_AgeCat)
-TEUvars_BP <- c(TEU_BlP_SBP.0.0, TEU_BlP_SBP.0.1, TEU_BlP_DBP.0.0, TEU_BlP_DBP.0.1,
-                TEU_BlP_nSBP, TEU_BlP_nDBP,
-                TEU_BlP_SBP.avg, TEU_BlP_DBP.avg)
-Neo_HTN <- c(ID, BaC_Sex,
-             TEUvars_age, 
-             TEUvars_BP, TEU_BlP_measuredHTN,
-             TEU_HMH_BowelCancerScreen, 
-             TEU_Edu_HighestQual, TEU_Edu_ISCED,
-             TEU_TownsendDepInd_Quint)
-detach(TEUmaps)
+old_data <- readRDS(file.path(config$data$derived, "HTN_raw.rds"))
 
 # Exclusions
 
@@ -68,8 +54,8 @@ exclusions <- function(data){
 
   excl$BPimp <<- nrow(data)
 
-  # # Exclude pregnant women ("Yes" or "Unsure")
-  # data <- data[is.na(data$VeI_PregnantNow) | data$VeI_PregnantNow == "No",]
+  # Exclude pregnant women ("Yes" or "Unsure")
+  data <- data[is.na(data$VeI_PregnantNow) | data$VeI_PregnantNow == "No",]
 
   excl$pregnant <<- nrow(data)
 
@@ -93,7 +79,9 @@ exclusions <- function(data){
   return(data)
 }
 
-data <- derive_variables("ukb_v2.db", field_definitions=Neo_HTN, exclusions = exclusions)
+data <- derive_variables(database = config$data$database, 
+                         field_definitions = TEU_SPECS$HTN_control, 
+                         exclusions = exclusions)
 
 #--------------------------------------------------------------------------------------------------------------
 # Create some more complex variables
@@ -235,52 +223,6 @@ Neo_HTN_all <- function(data){
                                     "Unemployed/unanswered"),
                            ordered=FALSE)
   
-  
-  # Categorise BMI into labelled categories
-  data$BMIcat <- as.character(cut(data$BMI, breaks=c(0, 18.5, 25, 30, 200), right=FALSE))
-  data$BMIcat[is.na(data$BMIcat)] <- "Unanswered"
-  data$BMIcat <- factor(data$BMIcat, levels=c("[18.5,25)", "[0,18.5)", "[25,30)", "[30,200)", "Unanswered"), 
-                        labels=c("Normal (ref)", "Underweight", "Overweight", "Obese", "Unanswered"))
-  
-  # Categorise waist circ into labelled categories
-  data$WaistCircCat <- dplyr::case_when(
-    data$gender=="Female" & data$WaistCirc>=88 ~ "Obese",
-    data$gender=="Female" & data$WaistCirc>=80 ~ "Overweight",
-    data$gender=="Male" & data$WaistCirc>=102 ~ "Obese",
-    data$gender=="Male" & data$WaistCirc>=94 ~ "Overweight",
-    is.na(data$WaistCirc) ~ "Unanswered",
-    TRUE ~ "Normal"
-  )
-  data$WaistCircCat <- factor(data$WaistCircCat, levels=c("Normal", "Overweight", "Obese", "Unanswered"))
-  
-  # Truncate alcohol consumption at upper 95th percentile
-  upper95 <- quantile(data$weekly_alcunits, 0.95, na.rm=TRUE)
-  data$weekly_alcunits[data$weekly_alcunits>upper95] <- upper95
-  data$weekly_alcunits[is.na(data$weekly_alcunits)] <- 0
-  
-  
-  # Categorise alcohol consumption
-  data$weekly_alccat <- cut(data$weekly_alcunits, breaks=c(-1, 0, 5, 10, 20, 30, 100),
-                               labels=c("None reported", "Less than 5 units", "5 to 10 units", 
-                                        "10 to 20 units", "20 to 30 units", "More than 30 units"))
-  
-  
-  # Define "binge" levels of alcohol consumption
-  data$alc_heavyuse[data$gender=="Female"] <- data[data$gender=="Female",]$weekly_alcunits>7 & !is.na(data[data$gender=="Female",]$weekly_alcunits)
-  data$alc_heavyuse[data$gender=="Male"] <- data[data$gender=="Male",]$weekly_alcunits>14 & !is.na(data[data$gender=="Male",]$weekly_alcunits)
-  data$alc_heavyuse_ <- factor(as.numeric(data$alc_heavyuse), levels=c(0,1), labels=c("No", "Yes"))
-  
-  # Indicator variable for whether physical activity > or <= 150 METs per day
-  data$METs_over1200 <- dplyr::case_when(
-    data$PhA_METsWkAllAct > 1200 & !is.na(data$PhA_METsWkAllAct) ~ "High (METs > 1200)",
-    data$PhA_METsWkAllAct <= 1200 & !is.na(data$PhA_METsWkAllAct) ~ "Low (METs <= 1200)",
-    TRUE ~ "Unanswered")
-  data$METs_over1200 <- factor(data$METs_over1200, levels=c("High (METs > 1200)", "Low (METs <= 1200)", "Unanswered"))
-
-
-  # Convert family history to a factor
-  data$FamilyHist_CVD_ <- factor(as.numeric(data$FaH_CVD), levels=c(0,1), labels=c("No", "Yes"))
-  
   data$FamilyHist_HeartDisease_ <- factor(as.numeric(data$FaH_HeartDisease), levels=c(0,1), labels=c("No", "Yes"))
   data$FamilyHist_Stroke_ <- factor(as.numeric(data$FaH_Stroke), levels=c(0,1), labels=c("No", "Yes"))
   data$FamilyHist_Hypertension_ <- factor(as.numeric(data$FaH_Hypertension), levels=c(0,1), labels=c("No", "Yes"))
@@ -296,72 +238,7 @@ Neo_HTN_all <- function(data){
   data$BirthCountryIncomeLevel <- factor(data$BirthCountryIncomeLevel, levels=c("HUK", "H", "M", "L"), 
                                          labels=c("UK", "Other high income", "Middle income", "Low income"))
   
-  # Convert Townsend deprivation index to quintiles (and a factor)
-  quintiles <- quantile(data$townsend_depind, probs=seq(0, 1, 0.2), na.rm=TRUE)
-  data$townsend_quint <- dplyr::case_when(
-    data$townsend_depind <= quintiles[2] ~ "Q1: Least deprived",
-    data$townsend_depind > quintiles[2] & data$townsend_depind <= quintiles[3] ~ "Q2",
-    data$townsend_depind > quintiles[3] & data$townsend_depind <= quintiles[4] ~ "Q3",
-    data$townsend_depind > quintiles[4] & data$townsend_depind <= quintiles[5] ~ "Q4",
-    data$townsend_depind > quintiles[5] & data$townsend_depind <= quintiles[6] ~ "Q5: Most deprived",
-    TRUE ~ "Unanswered"
-  )
-  data$townsend_quint <- factor(data$townsend_quint, 
-                                levels=c("Q1: Least deprived", "Q2", "Q3", "Q4", "Q5: Most deprived", "Unanswered"))
-  
-  # Convert assessment centre code to a country
-  # Codes to names
-  data$assess_centrename <- dplyr::case_when(
-    data$assess_centre == 11012 ~ "Barts",
-    data$assess_centre == 11021 ~ "Birmingham",
-    data$assess_centre == 11011 ~ "Bristol",
-    data$assess_centre == 11008 ~ "Bury",
-    data$assess_centre == 11003 ~ "Cardiff",
-    data$assess_centre == 11024 ~ "Cheadle (revisit)",
-    data$assess_centre == 11020 ~ "Croydon",
-    data$assess_centre == 11005 ~ "Edinburgh",
-    data$assess_centre == 11004 ~ "Glasgow",
-    data$assess_centre == 11018 ~ "Hounslow",
-    data$assess_centre == 11010 ~ "Leeds",
-    data$assess_centre == 11016 ~ "Liverpool",
-    data$assess_centre == 11001 ~ "Manchester",
-    data$assess_centre == 11017 ~ "Middlesborough",
-    data$assess_centre == 11009 ~ "Newcastle",
-    data$assess_centre == 11013 ~ "Nottingham",
-    data$assess_centre == 11002 ~ "Oxford",
-    data$assess_centre == 11007 ~ "Reading",
-    data$assess_centre == 11014 ~ "Sheffield",
-    data$assess_centre == 10003 ~ "Stockport (pilot)",
-    data$assess_centre == 11006 ~ "Stoke",
-    data$assess_centre == 11022 ~ "Swansea",
-    data$assess_centre == 11023 ~ "Wrexham",
-    data$assess_centre == 11025 ~ "Cheadle (imaging)",
-    data$assess_centre == 11026 ~ "Reading (imaging)",
-    data$assess_centre == 11027 ~ "Newcastle (imaging)",
-    data$assess_centre == 11028 ~ "Bristol (imaging)",
-    TRUE ~ "Other"
-  )
-  
-  # Codes to countries
-  data$countryResidence <- dplyr::case_when(
-    data$assess_centre %in% c(10003, 11001, 11002, 11006, 11007, 11008, 11009, 
-             11010, 11011, 11012, 11013, 11014, 11016, 11017, 
-             11018, 11020, 11021, 11024, 11025, 11026, 11027, 11028) ~ "England",
-    data$assess_centre %in% c(11004, 11005) ~ "Scotland",
-    data$assess_centre %in% c(11003, 11022, 11023) ~ "Wales",
-    TRUE ~ "Other"
-  )
-  data$countryResidence <- factor(data$countryResidence)
-  
-  # Add hypertension severity indicator
-  data$HTNdx_severity <- dplyr::case_when(
-    data$SBP>=180 | data$DBP>=110 ~ "Stage 3",
-    between(data$SBP, 160, 180) | between(data$DBP, 100, 110) ~ "Stage 2",
-    between(data$SBP, 140, 160) | between(data$DBP, 90, 100) ~ "Stage 1",
-    TRUE ~ "Normotensive"
-  )
-  data$HTNdx_severity <- factor(data$HTNdx_severity, levels=c("Normotensive", "Stage 1", "Stage 2", "Stage 3"))
-  
+
   # Convert number of hypertensive medications to a categorical variables
   data$antiHTNmedsno <- dplyr::case_when(
     data$hypmedsno==0 | is.na(data$hypmedsno) ~ "0",
@@ -406,22 +283,7 @@ Neo_HTN_all <- function(data){
   )
   data$comorbNumber_<- factor(data$comorbNumber_, levels=c("0", "1", "2",">=3"))
   data$comorbNone <- data$comorbNumber==0
-  
-  # # Construct a single PRS for BP by averaging the PRS for SBP and DBP
-  # data$PRS <- rowMeans(data[,c("PRS_DBP", "PRS_SBP")])
-  # 
-  # quintiles <- quantile(data$PRS, probs=seq(0, 1, 0.2), na.rm=TRUE)
-  # data$PRS_quint <- dplyr::case_when(
-  #   data$PRS <= quintiles[2] ~ "Q1: Lowest score",
-  #   data$PRS > quintiles[2] & data$PRS <= quintiles[3] ~ "Q2",
-  #   data$PRS > quintiles[3] & data$PRS <= quintiles[4] ~ "Q3",
-  #   data$PRS > quintiles[4] & data$PRS <= quintiles[5] ~ "Q4",
-  #   data$PRS > quintiles[5] & data$PRS <= quintiles[6] ~ "Q5: Highest score",
-  #   TRUE ~ "Unanswered"
-  # )
-  # data$PRS_quint <- factor(data$PRS_quint, 
-  #                               levels=c("Q3", "Q1: Lowest score", "Q2", "Q4", "Q5: Highest score", "Unanswered"))
-  # 
+
   return(data)
 }
 
@@ -439,22 +301,5 @@ Neo_HTN_trt <- function(data){
   treated$antiHTNmedsno <- factor(treated$antiHTNmedsno, levels=c("1", "2", ">=3", "0"),
                                   labels=c("1", "2", ">=3",  "Medication list unavailable"))
   
-  # Need Townsend quintiles to be calculated within treated population only
-  # Convert Townsend deprivation index to quintiles (and a factor)
-  quintiles <- quantile(treated$townsend_depind, probs=seq(0, 1, 0.2), na.rm=TRUE)
-  treated$townsend_quint <- dplyr::case_when(
-    treated$townsend_depind <= quintiles[2] ~ "Q1: Least deprived",
-    treated$townsend_depind > quintiles[2] & treated$townsend_depind <= quintiles[3] ~ "Q2",
-    treated$townsend_depind > quintiles[3] & treated$townsend_depind <= quintiles[4] ~ "Q3",
-    treated$townsend_depind > quintiles[4] & treated$townsend_depind <= quintiles[5] ~ "Q4",
-    treated$townsend_depind > quintiles[5] & treated$townsend_depind <= quintiles[6] ~ "Q5: Most deprived",
-    TRUE ~ "Unanswered"
-  )
-  treated$townsend_quint <- factor(treated$townsend_quint, 
-                                levels=c("Q1: Least deprived", "Q2", "Q3", "Q4", "Q5: Most deprived", "Unanswered"))
   return(treated)
 }
-# alldata <- Neo_HTN_all(data)
-# saveRDS(alldata, file=file.path(config$data$analysed, "HTN_excl.rds"))
-# treated <- Neo_HTN_trt(alldata)
-# saveRDS(treated, file=file.path(config$data$analysed, "HTN_trt.rds"))
