@@ -8,7 +8,7 @@ config = yaml.load_file("config.yml")
 #-----------------------------------------------------------------------------------------------------------------------
 # Combine the different tiers of country code
 #-----------------------------------------------------------------------------------------------------------------------
-coding89 <- read.table(paste0(config$cleaning$coding, "coding89.tsv"), sep="\t", header=TRUE, quote="", comment.char="$", fill=FALSE)
+coding89 <- read.table(file.path(config$cleaning$coding, "coding89.tsv"), sep="\t", header=TRUE, quote="", comment.char="$", fill=FALSE)
 
 # And rearrange them into a more sensible format
 joinables <- coding89[,c("coding", "meaning", "node_id", "parent_id")]
@@ -36,17 +36,17 @@ level1 <- unique(level1)
 level1$Country <- factor(level1$Country)
 
 # Save the full table of codings to a csv so mappings can be produced in an Excel
-write.csv(level1, paste0(config$data$derived, "CountryCodes.csv"), 
+write.csv(level1, file.path(config$data$derived, "CountryCodes.csv"), 
           na="", row.names=FALSE)
 
 # And save it as an R data file, why not
-saveRDS(level1, paste0(config$data$derived, "CountryCodes.rds"))
+saveRDS(level1, file.path(config$data$derived, "CountryCodes.rds"))
 
 
 #--------------------------------------------------------------------------------------------------------------
 # Use the World Bank spreadsheet to determine which countries are classified as high, middle or low income
 # Load in the income levels of the countries
-incomelevel <- read_xlsx(paste0(config$cleaning$mapping, "CountryIncomeCategory.xlsx"), 
+incomelevel <- read_xlsx(file.path(config$cleaning$mapping, "CountryIncomeCategory.xlsx"), 
                          sheet="UKB_CountryNames", col_names=TRUE)
 
 names(incomelevel)[names(incomelevel)=="meaning"] <- "Country"
@@ -58,6 +58,6 @@ countries <- merge(level1, incomelevel[,c("IncomeLevel", "WBCountry", "Country")
 
 # View(countries[is.na(countries$FY20),])
 # And save it as an R data file
-saveRDS(countries, paste0(config$data$derived, "CountryIncome.rds"))
+saveRDS(countries, file.path(config$data$derived, "CountryIncome.rds"))
 
 

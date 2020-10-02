@@ -12,7 +12,7 @@ config = yaml.load_file("config.yml")
 #--------------------------------------------------------------------------------------------------------------
 
 # Read in the raw data
-HES <- readRDS(paste0(config$data$received, "HES.rds"))
+HES <- readRDS(file.path(config$data$received, "HES.rds"))
 source(config$functions)
 
 # ICD 10 codes for dementia
@@ -53,4 +53,4 @@ names(dementia)[names(dementia)=="Date"] <- "dement_date"
 names(dementia)[names(dementia)=="Code"] <- "dement_code"
 names(dementia)[names(dementia)=="type"] <- "dement_type"
 
-saveRDS(dementia, file=paste0(config$data$derived, "dementia.rds"))
+saveRDS(dementia, file=file.path(config$data$derived, "dementia.rds"))

@@ -13,7 +13,7 @@ config = yaml.load_file("config.yml")
 
 #--------------------------------------------------------------------------------------------------------------
 # Load the codings
-coding2 <- read.table(paste0(config$cleaning$coding, "coding2.tsv"), 
+coding2 <- read.table(file.path(config$cleaning$coding, "coding2.tsv"), 
                       sep="\t", header=TRUE, quote="", comment.char="$", fill=FALSE)
 
 # And rearrange them into a more sensible format
@@ -81,17 +81,17 @@ level4$L4 <- factor(level4$L4)
 
 #--------------------------------------------------------------------------------------------------------------
 # Save the full table of codings to a csv so mappings can be produced in an Excel
-write.csv(level4, paste0(config$data$derived, "JobCodes.csv"), 
+write.csv(level4, file.path(config$data$derived, "JobCodes.csv"), 
           na="", row.names=FALSE)
 
 # And save it as an R data file, why not
-saveRDS(level4, paste0(config$data$derived, "JobCodes.rds"))
+saveRDS(level4, file.path(config$data$derived, "JobCodes.rds"))
 
 
 #--------------------------------------------------------------------------------------------------------------
 # Finally, join the coded participant data to the code labels
 # Load the long-format verbal interview data
-employment <- readRDS(paste0(config$data$received, "Emp_base.rds"))
+employment <- readRDS(file.path(config$data$received, "Emp_base.rds"))
 jobs <- employment[,c("ID", "Emp_JobCode.0")]
 jobs$TEU_Emp_CurrStat <- factor(coalesce(as.character(employment$Emp_CurrStat.0), 
                                   as.character(employment$Emp_CurrStatUnc.0)),
@@ -125,4 +125,4 @@ final$TEU_EmpCat <- factor(coalesce(as.character(final$TL),
                                     "Prefer not to answer"))
 
 # This is a version that lists the full tree-structure for each condition for each patient
-saveRDS(final, paste0(config$data$derived, "JobCodes_pts.rds"))
+saveRDS(final, file.path(config$data$derived, "JobCodes_pts.rds"))

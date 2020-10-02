@@ -15,14 +15,14 @@ config = yaml.load_file("config.yml")
 # Read in the raw data
 #--------------------------------------------------------------------------------------------------------------
 # Smoking
-smoking <- readRDS(paste0(config$data$received, "Smo_base.rds"))
+smoking <- readRDS(file.path(config$data$received, "Smo_base.rds"))
 smoking$Smo_Status <- factor(smoking$Smo_Status, levels=c("Never", "Previous", "Current", "Prefer not to answer"), 
                              labels=c("Never", "Previous", "Current", "Unanswered"), ordered=FALSE)
 smoking$Smo_Status[is.na(smoking$Smo_Status)] <- "Unanswered"
 
 #--------------------------------------------------------------------------------------------------------------
 # Alcohol
-alcohol <- readRDS(paste0(config$data$received, "Alc_base.rds"))
+alcohol <- readRDS(file.path(config$data$received, "Alc_base.rds"))
 alcohol$Alc_Status <- factor(alcohol$Alc_Status, levels=c("Never", "Previous", "Current", "Prefer not to answer"), 
                              ordered=FALSE)
 alcohol$Alc_Freq <- factor(alcohol$Alc_Freq, levels=c("Never", "Special occasions only", "One to three times a month",
@@ -55,7 +55,7 @@ covars <- merge(smoking[,c("ID", "Smo_Status", "Smo_TobaccoCurr", "Smo_TobaccoPa
                 alcohol[,c("ID", "Alc_Status", "Alc_Freq", "weekly_alcunits")], by="ID", all=TRUE)
 #--------------------------------------------------------------------------------------------------------------
 # Household
-household <- readRDS(paste0(config$data$received, "HoH_base.rds"))
+household <- readRDS(file.path(config$data$received, "HoH_base.rds"))
 household$income <- as.character(household$HoH_PreTaxInc.0)
 household$income[is.na(household$income)] <- as.character(household$HoH_PreTaxInc_P.0[is.na(household$income)])
 household$income[household$income=="Prefer not to answer" | is.na(household$income)] <- "Unanswered"
@@ -77,13 +77,13 @@ covars <- merge(covars, household[,c("ID", "income", "HoH_HouseholdSize.0")], by
 
 #--------------------------------------------------------------------------------------------------------------
 # Sleep
-sleep <- readRDS(paste0(config$data$received, "Sle_base.rds"))
+sleep <- readRDS(file.path(config$data$received, "Sle_base.rds"))
 
 covars <- merge(covars, sleep, by="ID", all=TRUE)
 
 #--------------------------------------------------------------------------------------------------------------
 # Body measurements
-body <- readRDS(paste0(config$data$received, "BSM_base.rds"))
+body <- readRDS(file.path(config$data$received, "BSM_base.rds"))
 body$BMI <- body$BSM_BMI
 body$WaistCirc <- body$BSM_Waist
 
@@ -91,7 +91,7 @@ covars <- merge(covars, body[,c("ID", "BSM_HeightStand", "BSM_Weight", "BMI", "W
 
 #--------------------------------------------------------------------------------------------------------------
 # Education
-education <- readRDS(paste0(config$data$received, "Edu_base.rds"))
+education <- readRDS(file.path(config$data$received, "Edu_base.rds"))
 education$uni <- apply(education[,grep("Edu_Qualif", colnames(education), fixed=TRUE)], 1, function(x) any(x == "College or University degree" & !is.na(x)))
 education$eduNA <- apply(education[,grep("Edu_Qualif", colnames(education), fixed=TRUE)], 1, function(x) any(x == "Prefer not to answer" & !is.na(x)))
 
@@ -118,10 +118,10 @@ covars <- merge(covars, education[,c("ID", "uni", "eduNA", "edu_highest", "Edu_A
 
 #--------------------------------------------------------------------------------------------------------------
 # Employment
-jobcodes <- readRDS(paste0(config$data$derived, "Jobcodes_pts.rds"))
+jobcodes <- readRDS(file.path(config$data$derived, "Jobcodes_pts.rds"))
 jobcodes$employment <- jobcodes$TL
 
-employment <- readRDS(paste0(config$data$received, "Emp_base.rds"))
+employment <- readRDS(file.path(config$data$received, "Emp_base.rds"))
 employment$shiftwork <- employment$Emp_ShiftWrk.0
 
 covars <- merge(covars, jobcodes[,c("ID", "employment", "TEU_EmpCat")], by="ID", all=TRUE)
@@ -129,13 +129,13 @@ covars <- merge(covars, employment[,c("ID", "shiftwork")], by="ID", all=TRUE)
 
 #--------------------------------------------------------------------------------------------------------------
 # Physical Activity
-phys_act <- readRDS(paste0(config$data$received, "Pha_base.rds"))
+phys_act <- readRDS(file.path(config$data$received, "Pha_base.rds"))
 
 covars <- merge(covars, phys_act[,c("ID", "PhA_METsWkAllAct")], by="ID", all=TRUE)
 
 #--------------------------------------------------------------------------------------------------------------
 # Other from verbal interview
-veint <- readRDS(paste0(config$data$derived, "VeIcovars_base.rds"))
+veint <- readRDS(file.path(config$data$derived, "VeIcovars_base.rds"))
 names(veint)[names(veint)=="VeI_Ncancer.0"] <- "NumberCancers"
 names(veint)[names(veint)=="VeI_NNonCancer.0"] <- "NumberDiagnoses"
 names(veint)[names(veint)=="VeI_NOperation.0"] <- "NumberOperations"
@@ -150,4 +150,4 @@ covars <- merge(covars, veint[,c("ID", "BirthContinent", "BirthCountry", "BirthC
 
 #--------------------------------------------------------------------------------------------------------------
 # Save the resulting conglomerate
-saveRDS(covars, file=paste0(config$data$derived, "covars.rds"))
+saveRDS(covars, file=file.path(config$data$derived, "covars.rds"))

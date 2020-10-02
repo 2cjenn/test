@@ -12,9 +12,9 @@ config = yaml.load_file("config.yml")
 #--------------------------------------------------------------------------------------------------------------
 
 # Read in the raw data
-base <- readRDS(paste0(config$data$received, "BaC.rds"))
-rec <- readRDS(paste0(config$data$received, "Rec_base.rds"))
-gac <- readRDS(paste0(config$data$received, "GAC_base.rds"))
+base <- readRDS(file.path(config$data$received, "BaC.rds"))
+rec <- readRDS(file.path(config$data$received, "Rec_base.rds"))
+gac <- readRDS(file.path(config$data$received, "GAC_base.rds"))
 
 basechar <-merge(merge(base, rec, by="ID", all=TRUE), gac, by="ID", all=TRUE)
 
@@ -36,4 +36,4 @@ names(basechar)[names(basechar)=="Rec_AssessCentre"] <- "assess_centre"
 
 saveRDS(basechar[,c("ID", "dob", "age", "gender", "lfudate", "lfureason", "townsend_depind", 
                     "recdate", "assess_centre", "aide_memoir")], 
-        file=paste0(config$data$derived, "basechar.rds"))
+        file=file.path(config$data$derived, "basechar.rds"))
