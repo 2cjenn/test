@@ -988,6 +988,28 @@ TEU_LDL_C_PRS_quintiles <- function() {
   )
 }
 
+TEU_LDL_C_PRS_deciles <- function() {
+  list(
+    name = "TEU_LDL_C_PRS_deciles", 
+    source = c("TEU_LDL_C_PRS"), 
+    mapper = FN_quantiles(quant=10),
+    post_exclusion = TRUE,
+    display_name = "LDL Cholesterol PRS deciles",
+    description = "Deciles of the LDL Cholesterol PRS score"
+  )
+}
+
+TEU_LDL_C_PRS_centiles <- function() {
+  list(
+    name = "TEU_LDL_C_PRS_centiles", 
+    source = c("TEU_LDL_C_PRS"), 
+    mapper = FN_quantiles(quant=100),
+    post_exclusion = TRUE,
+    display_name = "LDL Cholesterol PRS centiles",
+    description = "Centiles of the LDL Cholesterol PRS score"
+  )
+}
+
 TEU_HMH_VascCond <- function() {
   list(
     name = "TEU_HMH_VascCond", 
@@ -1100,7 +1122,7 @@ BBC_LDL_Result <- function() {
 
 GeP_PC <- function(pc=1) {
   list(
-    name = glue("GeP_PC.0.{pc}"), 
+    name = paste0("GeP_PC_", pc), 
     source = glue("GeP_PC.0.{pc}"), 
     mapper = FN_id,
     post_exclusion = FALSE,
@@ -1108,3 +1130,16 @@ GeP_PC <- function(pc=1) {
     description = glue("Genetic principal component {pc}, from Bycroft")
   )
 }
+
+GeP_Batch <- function() {
+  list(
+    name = "GeP_Batch", 
+    source = "GeP_Batch.0.0", 
+    mapper = FN_id,
+    post_exclusion = FALSE,
+    display_name = "Genotype measurement batch",
+    description = "Genotype measurement batch"
+  )
+}
+
+
