@@ -542,10 +542,10 @@ TEU_Rec_Country <- function() {
         ) ~ "England",
         x %in% c(11004, 11005) ~ "Scotland",
         x %in% c(11003, 11022, 11023) ~ "Wales",
-        TRUE ~ "Other"
+        TRUE ~ x
       )
-      if ("Other" %in% y) {
-        warning("Unrecognised centre code")
+      if (!all(y %in% c("England", "Scotland", "Wales"))) {
+        warning(paste0("Unrecognised centre code: ", y[!y %in% c("England", "Scotland", "Wales")]))
       }
       return(y)
     },
@@ -607,6 +607,19 @@ TEU_HMH_Meds_BP <- function() {
     post_exclusion = FALSE,
     display_name = "HBPmeds",
     description = "Participant self-reported taking BP medication in the touchscreen questionnaire"
+  )
+}
+
+TEU_HMH_Meds_Chol <- function() {
+  list(
+    name = "TEU_HMH_Meds_Chol",
+    source = c(paste0("HMH_MedCholBPDiabHorm.0.", c(0:3)),
+               paste0("HMH_MedCholBPDiab.0.", c(0:2))
+    ),
+    mapper = FN_HMHmeds_type(medtype = "Cholesterol lowering medication", string = "cholesterol meds"),
+    post_exclusion = FALSE,
+    display_name = "Cholmeds",
+    description = "Participant self-reported taking cholesterol lowering medication in the touchscreen questionnaire"
   )
 }
 
@@ -914,7 +927,7 @@ TEU_SBP_PRS <- function() {
                         colname="PRS_SBP"),
     post_exclusion = FALSE,
     display_name = "SBP polygenic risk score",
-    description = "SBP polygenic risk score"
+    description = "SBP polygenic risk score from Evangelou 2018 paper"
   )
 }
 
@@ -926,7 +939,7 @@ TEU_DBP_PRS <- function() {
                         colname="PRS_DBP"),
     post_exclusion = FALSE,
     display_name = "DBP polygenic risk score",
-    description = "DBP polygenic risk score"
+    description = "DBP polygenic risk score from Evangelou 2018 paper"
   )
 }
 
@@ -949,6 +962,29 @@ TEU_BP_PRS_quintiles <- function() {
     post_exclusion = FALSE,
     display_name = "BP PRS Quintiles",
     description = "Quintiles of the BP PRS score"
+  )
+}
+
+TEU_LDL_C_PRS <- function() {
+  list(
+    name = "TEU_LDL_C_PRS", 
+    source = c("ID"), 
+    mapper = FN_JoinPRS(filepath="K:/TEU/UKB_Genetic_Data/bmrc-ukb-repo/prs/projects/PGS000115/outputs/PGS000115_PRS_QC1.rds",
+                        colname="PRS"),
+    post_exclusion = FALSE,
+    display_name = "LDL Cholesterol polygenic risk score",
+    description = "LDL Cholesterol polygenic risk score, from Trinder 2020 paper"
+  )
+}
+
+TEU_LDL_C_PRS_quintiles <- function() {
+  list(
+    name = "TEU_LDL_C_PRS_quintiles", 
+    source = c("TEU_LDL_C_PRS"), 
+    mapper = FN_quantiles(quant=5),
+    post_exclusion = FALSE,
+    display_name = "LDL Cholesterol PRS Quintiles",
+    description = "Quintiles of the LDL Cholesterol PRS score"
   )
 }
 
@@ -1026,5 +1062,49 @@ HMH_HTNAge <- function() {
     post_exclusion = FALSE,
     display_name = "Age HTN diagnosed",
     description = "Participant self-reported age of hypertension diagnosis on the touchscreen questionnaire"
+  )
+}
+
+BBC_CHOL_Result <- function() {
+  list(
+    name = "BBC_CHOL_Result", 
+    source = c("BBC_CHOL_Result.0.0"), 
+    mapper = FN_id,
+    post_exclusion = FALSE,
+    display_name = "Total cholesterol level at baseline",
+    description = "Total cholesterol assay from baseline blood serum"
+  )
+}
+
+BBC_HDL_Result <- function() {
+  list(
+    name = "BBC_HDL_Result", 
+    source = c("BBC_HDL_Result.0.0"), 
+    mapper = FN_id,
+    post_exclusion = FALSE,
+    display_name = "HDL cholesterol level at baseline",
+    description = "HDL cholesterol assay from baseline blood serum"
+  )
+}
+
+BBC_LDL_Result <- function() {
+  list(
+    name = "BBC_LDL_Result", 
+    source = c("BBC_LDL_Result.0.0"), 
+    mapper = FN_id,
+    post_exclusion = FALSE,
+    display_name = "LDL cholesterol level at baseline",
+    description = "LDL cholesterol assay from baseline blood serum"
+  )
+}
+
+GeP_PC <- function(pc=1) {
+  list(
+    name = glue("GeP_PC.0.{pc}"), 
+    source = glue("GeP_PC.0.{pc}"), 
+    mapper = FN_id,
+    post_exclusion = FALSE,
+    display_name = glue("Principal component {pc}"),
+    description = glue("Genetic principal component {pc}, from Bycroft")
   )
 }
