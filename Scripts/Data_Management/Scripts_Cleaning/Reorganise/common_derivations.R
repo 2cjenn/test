@@ -959,7 +959,7 @@ TEU_BP_PRS_quintiles <- function() {
     name = "TEU_BP_PRS_quintiles", 
     source = c("TEU_BP_PRS"), 
     mapper = FN_quantiles(quant=5),
-    post_exclusion = FALSE,
+    post_exclusion = TRUE,
     display_name = "BP PRS Quintiles",
     description = "Quintiles of the BP PRS score"
   )
@@ -982,7 +982,7 @@ TEU_LDL_C_PRS_quintiles <- function() {
     name = "TEU_LDL_C_PRS_quintiles", 
     source = c("TEU_LDL_C_PRS"), 
     mapper = FN_quantiles(quant=5),
-    post_exclusion = FALSE,
+    post_exclusion = TRUE,
     display_name = "LDL Cholesterol PRS Quintiles",
     description = "Quintiles of the LDL Cholesterol PRS score"
   )
