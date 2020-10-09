@@ -119,8 +119,7 @@ DBfunc$derive_fn <- function(data, field_definition) {
   } else {
     data[[field_definition$name]] <- colfunc(data[[field_definition$source]])
   }
-  print(field_definition$name)
-  print(field_definition$description)
+  print(paste0("Derived ", field_definition$name))
 
   return(data)
 }

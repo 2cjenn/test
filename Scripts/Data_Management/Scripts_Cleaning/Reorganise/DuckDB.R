@@ -26,9 +26,6 @@ DB_extract <- function(extract_cols, db = "ukb_v2.db",
   
   mapping <- read.csv(name_map, stringsAsFactors = FALSE)
   
-  # col_obj <- Map(function(p) {if(is.function(p)) {p()} else {p}}, col_list)
-  # col_names <- sapply(col_obj, function(x) x$name)
-  
   # Connect to the database
   con <- dbConnect(duckdb::duckdb(), db)
   on.exit(dbDisconnect(con, shutdown=TRUE))
@@ -39,8 +36,8 @@ DB_extract <- function(extract_cols, db = "ukb_v2.db",
   
   # Join all download tables to get all data and extract requested columns
   view <- lapply(tables, function(x) tbl(con, from=x)) %>% 
-    reduce(inner_join, by = "f.eid") %>%
-    select(any_of(name_to_fdot(extract_cols, mapping))) %>%
+    reduce(inner_join, by = "f.eid", suffix = c("", ".delete")) %>%
+    select(any_of(name_to_fdot(extract_cols, mapping)), -ends_with(".delete")) %>%
     collect %>%
     rename_with(fdot_to_name, mapping=mapping)
   
