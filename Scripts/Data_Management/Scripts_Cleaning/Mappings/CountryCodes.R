@@ -8,7 +8,7 @@ config = yaml.load_file("config.yml")
 #-----------------------------------------------------------------------------------------------------------------------
 # Combine the different tiers of country code
 #-----------------------------------------------------------------------------------------------------------------------
-coding89 <- read.table(file.path(config$cleaning$coding, "coding89.tsv"), sep="\t", header=TRUE, quote="", comment.char="$", fill=FALSE)
+coding89 <- read.table(file.path(config$cleaning$coding, "coding89.csv"), sep="\t", header=TRUE, quote="", comment.char="$", fill=FALSE)
 
 # And rearrange them into a more sensible format
 joinables <- coding89[,c("coding", "meaning", "node_id", "parent_id")]

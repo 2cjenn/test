@@ -13,7 +13,7 @@ config = yaml.load_file("config.yml")
 
 #--------------------------------------------------------------------------------------------------------------
 # Load the codings
-coding2 <- read.table(file.path(config$cleaning$coding, "coding2.tsv"), 
+coding2 <- read.table(file.path(config$cleaning$coding, "coding2.csv"), 
                       sep="\t", header=TRUE, quote="", comment.char="$", fill=FALSE)
 
 # And rearrange them into a more sensible format
