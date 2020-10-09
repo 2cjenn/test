@@ -38,6 +38,7 @@ DB_extract <- function(extract_cols, db = "ukb_v2.db",
   view <- lapply(tables, function(x) tbl(con, from=x)) %>% 
     reduce(inner_join, by = "f.eid", suffix = c("", ".delete")) %>%
     select(any_of(name_to_fdot(extract_cols, mapping)), -ends_with(".delete")) %>%
+    filter(f.eid != 6025392) %>% # NOTE: HACKY FIX TO DEAL WITH BROKEN PARTICIPANT
     collect %>%
     rename_with(fdot_to_name, mapping=mapping)
   
