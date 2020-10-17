@@ -172,3 +172,60 @@ FN_JoinPRS <- function(filepath, colname) {
     return(y)
   }
 }
+
+FN_toLong <- function(data, colname, instance, mapper) {
+  
+  if (is.null(instance)) {
+    pattern <- paste0(colname, "(.*).(.*)")
+  } else {
+    pattern <- paste0(colname, "(.*).", instance, ".(.*)")
+  }
+  
+  long <- evalWithMemoization({
+    data %>% pivot_longer(
+      cols = starts_with(colname),
+      names_to = c(".value", "measure"),
+      names_pattern = pattern
+    ) %>%
+      drop_na(Code) %>%
+      mutate(Code = as.numeric(Code)) %>%
+      left_join(x = ., y = mapper, by = "Code")
+  },
+  key = c(data, pattern, mapper))
+}
+
+
+FN_VInoncancer_first <- function(dx_codes, instance = 0, return_label = "dx", mapper = NULL) {
+  function(data) {
+    if(is.null(mapper)){
+      source(file.path(config$scripts$cleaning, "Mappings", "NonCancerIllnessCodes.R"))
+      mapper <- noncancer_illness()
+    }
+    
+    long_dx <- evalWithMemoization(
+      FN_toLong(
+        data,
+        colname = "VeI_NonCancer",
+        instance = instance,
+        mapper = mapper
+      ) %>%
+        filter(Code %in% dx_codes) %>%
+        group_by(ID) %>%
+        arrange(Year) %>%
+        slice_head %>%
+        mutate(Year_date = date_decimal(Year),
+               duration = as.numeric(round(
+                 difftime(Rec_DateAssess, Year_date, unit = "days") / 365.25,
+                 digits = 2
+               ))),
+      key = c(dx_codes, instance, mapper)
+    )
+    
+    y <- factor(long_dx[[return_label]][match(data$ID, long_dx$ID)])
+    return(y)
+  }
+}
+
+
+
+

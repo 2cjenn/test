@@ -50,6 +50,7 @@ specs <- function() {
   HTN_control <- c(
     TEUvars_common,
     TEUvars_BP,
+    TEU_VeI_CVD_prevalent(dx_codes = c(1065, 1074)),
     list(
       VeI_PregnantNow,
       TEU_BaC_AgeCat,

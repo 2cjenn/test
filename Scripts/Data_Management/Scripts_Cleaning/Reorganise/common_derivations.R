@@ -65,7 +65,7 @@ BaC_Sex <- function() {
 
 Rec_DateAssess <- function() {
   list(
-    name = "Rec_DateAssess.0.0",
+    name = "Rec_DateAssess",
     source = c("Rec_DateAssess.0.0"),
     mapper = FN_toDate,
     post_exclusion = FALSE,
@@ -139,9 +139,9 @@ TEU_BaC_DateOfBirth <- function() {
 TEU_BaC_AgeAtRec <- function() {
   list(
     name = "TEU_BaC_AgeAtRec",
-    source = c("TEU_BaC_DateOfBirth", "Rec_DateAssess.0.0"),
+    source = c("TEU_BaC_DateOfBirth", "Rec_DateAssess"),
     mapper = function(data) {
-      as.numeric(round(difftime(data[["Rec_DateAssess.0.0"]], data[["TEU_BaC_DateOfBirth"]], unit =
+      as.numeric(round(difftime(data[["Rec_DateAssess"]], data[["TEU_BaC_DateOfBirth"]], unit =
                                   "days") / 365.25,
                        digits = 2))
     },
@@ -1142,4 +1142,32 @@ GeP_Batch <- function() {
   )
 }
 
+TEU_VeI_CVD_prevalent <- function(dx_codes) {
+  list(
+    list(
+      name = "TEU_VeI_CVD_prevalent_type",
+      source = c("ID", "Rec_DateAssess",
+                 paste0("VeI_NonCancerCode.0.", seq(0, 33, by=1)),
+                 paste0("VeI_NonCancerYear.0.", seq(0, 33, by=1))),
+      mapper = FN_VInoncancer_first(dx_codes = dx_codes,
+                                 instance = 0,
+                                 return_label = "dx"),
+      post_exclusion = FALSE,
+      display_name = "Category of CVD reported in verbal interview at baseline",
+      description = "Type of CVD"
+    ),
+    list(
+      name = "TEU_VeI_CVD_prevalent_dur",
+      source = c("ID", "Rec_DateAssess",
+                 paste0("VeI_NonCancerCode.0.", seq(0, 33, by=1)),
+                 paste0("VeI_NonCancerYear.0.", seq(0, 33, by=1))),
+      mapper = FN_VInoncancer_first(dx_codes = dx_codes,
+                                   instance = 0, 
+                                   return_label = "duration"),
+      post_exclusion = FALSE,
+      display_name = "Duration of CVD reported in verbal interview at baseline",
+      description = "Time since CVD diagnosis"
+    )
+  )
+}
 

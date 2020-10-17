@@ -4,6 +4,8 @@
 library(DBI)
 library(duckdb)
 library(tidyverse)
+library(R.cache)
+setCacheRootPath(path="Data/Cache")
 
 # Load the project config file for filepaths etc
 if (!exists("config")) {
@@ -32,7 +34,7 @@ derive_variables <- function(database, field_definitions, exclusions=function(x)
   outcols <- sapply(objects, function(x) x$name)
   
   # And the names of all the source columns required
-  source_cols <- unlist(sapply(objects, function(x) x$source))
+  source_cols <- unique(unlist(sapply(objects, function(x) x$source)))
   
   # Extract data fields from database
   data <- DBfunc$DB_extract(source_cols, db = database)
