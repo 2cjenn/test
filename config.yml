@@ -6,7 +6,7 @@ data:
  prs: "K:/TEU/UKB_Genetic_Data/bmrc-ukb-repo/prs/projects/htn-evangelou2018/outputs"
 cleaning:
  withdrawals: "K:/TEU/UKB33952_Data/Data_Downloads/Withdrawals/w33952_20200204.csv"
- coding: "K:/TEU/UKB33952_Data/Data_Dictionary/Mappings"
+ coding: "K:/TEU/UKB33952_Data/Data_Dictionary/Mappings/Encoding_files"
  mapping: "Data/Mappings"
 outputs:
  figures: "Scripts/Stats_Analysis/RMarkdown/Figures"
