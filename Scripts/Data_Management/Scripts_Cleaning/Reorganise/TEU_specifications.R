@@ -56,6 +56,8 @@ specs <- function() {
       TEU_BaC_AgeCat,
       TEU_BlP_measuredHTN,
       TEU_HMH_BowelCancerScreen,
+      TEU_Rec_AssessCentre,
+      TEU_Rec_Country,
       TEU_Edu_HighestQual,
       TEU_Edu_ISCED,
       TEU_HoH_PreTaxInc,

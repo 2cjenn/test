@@ -103,7 +103,8 @@ DBfunc$source_rotation <- function(data, field_definitions) {
       # If there are still derivation objects waiting but no new variables have been derived
       # Then we know that these objects can't be derived on the next loop either
       # We print out the objects so the user can see which they are
-      warning(paste0("Unable to derive variables: ", paste(sapply(field_definitions, function(x) x$name), collapse=", ")))
+      warning(paste0("Source columns not available to derive variables: ", 
+                     paste(sapply(field_definitions, function(x) x$name), collapse=", ")))
       # And exit the while loop
       break
     }

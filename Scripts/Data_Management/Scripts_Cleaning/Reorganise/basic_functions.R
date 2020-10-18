@@ -111,7 +111,7 @@ FN_HMHmeds_type <- function(medtype, string){
     y[x %in% c("Prefer not to answer", "Do not know", "Unanswered")] <- "Unanswered"
     y[is.na(y)] <- "FALSE"
     y <- factor(y, levels=c("TRUE", "FALSE", "Unanswered"), 
-                labels=c(paste0("Self-reported ", string), paste0("Did not report", string), "Unanswered"))
+                labels=c(paste0("Self-reported ", string), paste0("Did not report ", string), "Unanswered"))
     return(y)
   }
 }

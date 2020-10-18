@@ -424,46 +424,28 @@ CoF_RTTTimeID <- function() {
 TEU_Edu_HighestQual <- function() {
   list(
     name = "TEU_Edu_HighestQual",
-    source = c(
-      "Edu_Qualif.0.0",
-      "Edu_Qualif.0.1",
-      "Edu_Qualif.0.2",
-      "Edu_Qualif.0.3",
-      "Edu_Qualif.0.4",
-      "Edu_Qualif.0.5"
-    ),
+    source = c(paste0("Edu_Qualif.0.", seq(0, 5, by=1)),
+               paste0("Edu_Qualif_p.0.", seq(0, 4, by=1))),
     mapper = function(data) {
-      y <- rep(NA, nrow(data))
-      for (qual in c(
-        "College or University degree",
-        "NVQ or HND or HNC or equivalent",
-        "Other professional qualifications eg: nursing, teaching",
-        "A levels/AS levels or equivalent",
-        "O levels/GCSEs or equivalent",
+      qual_list <- c(
+        "Unanswered",
+        "None of the above",
         "CSEs or equivalent",
-        "None of the above"
-      )) {
-        y[is.na(y)] <-
-          ifelse(apply(data[is.na(y), grep("Edu_Qualif", colnames(data), fixed =
-                                             TRUE)], 1,
-                       function(x)
-                         any(x == qual & !is.na(x))),
-                 qual,
-                 NA)
+        "O levels/GCSEs or equivalent",
+        "A levels/AS levels or equivalent",
+        "Other professional qualifications eg: nursing, teaching",
+        "NVQ or HND or HNC or equivalent",
+        "College or University degree"
+      )
+      for(i in seq(1, length(qual_list), by=1)) {
+        data[data == qual_list[i]] <- as.character(i)
       }
-      y <-
-        factor(
-          y,
-          levels = c(
-            "College or University degree",
-            "NVQ or HND or HNC or equivalent",
-            "Other professional qualifications eg: nursing, teaching",
-            "A levels/AS levels or equivalent",
-            "O levels/GCSEs or equivalent",
-            "CSEs or equivalent",
-            "None of the above"
-          )
-        )
+      y <- do.call(pmax, c(data, list(na.rm=TRUE)))
+      y[is.na(y)] <- 1
+      y <- factor(y,
+                  levels = seq(1, length(qual_list), by=1),
+                  labels = qual_list
+                  )
       return(y)
     },
     post_exclusion = FALSE,
@@ -488,19 +470,12 @@ TEU_Rec_AssessCentre <- function() {
     name = "TEU_Rec_AssessCentre",
     source = "Rec_AssessCentre.0.0",
     mapper = function(x) {
-      map <-
-        read.table(
-          "K:\\TEU\\CancerPRS\\Data_Dictionary\\Mappings\\coding10.tsv", # https://biobank.ndph.ox.ac.uk/showcase/coding.cgi?id=10
-          sep = "\t",
-          header = TRUE,
-          quote = "",
-          comment.char = "$",
-          fill = FALSE
-        )
+      map <- read.csv("K:/TEU/UKB33952_Data/Data_Dictionary/Mappings/Encoding_files/coding10.csv")
+      # https://biobank.ndph.ox.ac.uk/showcase/coding.cgi?id=10
       y <- merge(x,
                  map,
                  by.x = "x",
-                 by.y = "coding",
+                 by.y = "value",
                  all.x = TRUE)
       y <- y[["meaning"]]
     },
