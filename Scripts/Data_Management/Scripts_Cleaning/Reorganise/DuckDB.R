@@ -80,14 +80,23 @@ fdot_to_name <- function(ukb_col, mapping) {
 # @param col_list A vector of human-readable names
 # @param mapping A dataframe with the mapping between UKB field IDs and human readable variable names
 #
-name_to_fdot <- function(col_names, mapping) {
+name_to_fdot <- function(col_names, 
+                         mapping = read.csv("K:/TEU/UKB33952_Data/Data_Dictionary/Renaming_List_UPDATE_Nov2019_TEU.csv", stringsAsFactors = FALSE),
+                         link = FALSE) {
   col_names <- strsplit(col_names, split = ".", fixed = TRUE)
   col_names <- sapply(col_names, function(x){
     if(x[1] %in% mapping$NewVarName) {
-      x[1] <- mapping$Field_ID[mapping$NewVarName == x[1]]
+      code <- mapping$Field_ID[mapping$NewVarName == x[1]]
+      x[1] <- code
       x <- c("f", x)
+      x <- paste(x, collapse=".")
+      
+      if(link==TRUE) {
+        x <- text_spec(x, link = paste0("http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=", code))
+      }
+    } else {
+      x <- paste(x, collapse=".")
     }
-    x <- paste(x, collapse=".")
     return(x)
   })
   return(col_names)

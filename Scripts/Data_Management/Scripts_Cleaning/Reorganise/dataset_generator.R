@@ -59,10 +59,11 @@ derive_variables <- function(database, field_definitions, exclusions=function(x)
   data <- data[,outcols[outcols %in% colnames(data)]]
   
   if(!is.null(dictionary)) {
-    kable(DBfunc$make_dict(data, objects), "html") %>%
-      kable_styling(bootstrap_options = c("striped", "hover")) %>%
+    kable(DBfunc$make_dict(data, objects), "html", escape = FALSE,  table.attr = "class=\"striped\"") %>%
+      kable_styling(bootstrap_options = c("hover"), html_font = "arial") %>%
       collapse_rows(columns = c(1, 2, 5, 6), target = 1, valign = "top") %>%
-      cat(., file = dictionary)
+      cat("<link rel=\"stylesheet\" href=\"https://cdn.jsdelivr.net/npm/bootstrap@4.5.3/dist/css/bootstrap.min.css\">", 
+          ., file = dictionary)
   }
   
   return(data)
@@ -176,7 +177,7 @@ DBfunc$make_dict <- function(data, objects, na.rm=TRUE) {
   # Extract variable descriptions from the derivation objects
   linker <- data.frame(variable_name = sapply(objects, function(x) x$name),
                        variable_description = sapply(objects, function(x) x$description),
-                       source_vars = sapply(objects, function(x) paste(x$source, collapse=", ")))
+                       source_vars = sapply(objects, function(x) paste(DBfunc$name_to_fdot(x$source, link=TRUE), collapse=", ")))
   
   dict_df <- inner_join(dict, linker, by="variable_name")
   
