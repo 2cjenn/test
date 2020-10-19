@@ -684,7 +684,7 @@ TEU_Alc_WeeklyAlcUnits <- function() {
       "Alc_OtherAlcWk.0.0"
     ),
     mapper = function(data) {
-      alcservings <- list()
+      alcservings <- data
       for (alc in c(
         "Alc_RedWineWk.0.0",
         "Alc_WhiteWineWk.0.0",
@@ -693,22 +693,22 @@ TEU_Alc_WeeklyAlcUnits <- function() {
         "Alc_FortWineWk.0.0",
         "Alc_OtherAlcWk.0.0"
       )) {
-        alcservings[[alc]][data[[alc]] < 0 | is.na(data[[alc]])] <-  0
+        alcservings[[alc]][alcservings[[alc]] < 0 | is.na(alcservings[[alc]])] <-  0
       }
       
       weekly_alcunits <-
         #	Red wine (1 glass, 125ml, ABV 12% = 1.5 units)
-        (1.5 * data$Alc_RedWineWk.0.0) +
+        (1.5 * alcservings$Alc_RedWineWk.0.0) +
         # White wine, champagne (1 glass, 125ml, ABV 12% = 1.5 units)
-        (1.5 * data$Alc_WhiteWineWk.0.0) +
+        (1.5 * alcservings$Alc_WhiteWineWk.0.0) +
         #	Fortified wines: e.g. sherry, port (1 measure, 50ml, ABV 20% = 1 unit)
-        (1.0 * data$Alc_FortWineWk.0.0) +
+        (1.0 * alcservings$Alc_FortWineWk.0.0) +
         #	Beer, cider including bitter, lager, stout, ale, Guinness (1 pint, 568ml, ABV 3.6% = 2 units)
-        (2.0 * data$Alc_BeerCiderWk.0.0) +
+        (2.0 * alcservings$Alc_BeerCiderWk.0.0) +
         #	Spirits, liquors (1 measure or shot, 25ml, ABV 40% = 1 unit)
-        (1.0 * data$Alc_SpiritsWk.0.0) +
+        (1.0 * alcservings$Alc_SpiritsWk.0.0) +
         #	For "other" types of alcohol, will use alcopops as proxy ( 1 drink, 275ml, ABV 5.5% = 1.5 units)
-        (1.5 * data$Alc_OtherAlcWk.0.0)
+        (1.5 * alcservings$Alc_OtherAlcWk.0.0)
       
       # Truncate alcohol consumption at upper 95th percentile
       upper95 <- quantile(weekly_alcunits, 0.95, na.rm = TRUE)
@@ -719,7 +719,7 @@ TEU_Alc_WeeklyAlcUnits <- function() {
     },
     post_exclusion = FALSE,
     display_name = "WeeklyAlcUnits",
-    description = "Total weekly units of alcohol, derived from self-reported average weekly consumption of each different type alcoholand truncated at the upper 95th percentile"
+    description = "Total weekly units of alcohol, derived from self-reported average weekly consumption of each different type alcohol and truncated at the upper 95th percentile"
   )
 }
 
