@@ -8,10 +8,14 @@ FN_id <- function(x){x}
 
 FN_unorder <- function(x){factor(x, ordered=FALSE)}
 
-FN_reorderfactor <- function(levelorder, ordered=FALSE){
+FN_factor <- function(levelorder, ordered=FALSE){
   function(x){
     factor(x, levels=levelorder, ordered=ordered)
   }
+}
+
+FN_toNumeric <- function(x) {
+  as.numeric(x)
 }
 
 FN_toDate <- function(x){

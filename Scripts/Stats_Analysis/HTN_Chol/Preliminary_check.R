@@ -19,7 +19,9 @@ exclusions <- function(data){
 
 data <- derive_variables(database = "K:/TEU/UKB33952_Data/Data_Downloads/V3_database/ukb_v3.db", 
                          field_definitions = TEU_SPECS$Cholesterol_PRS, 
-                         exclusions = exclusions)
+                         exclusions = exclusions,
+                         dictionary = "LDL-C_PRS_Dict.html")
+
 
 
 # Scatter-plot
@@ -31,6 +33,10 @@ cor(data$TEU_LDL_C_PRS, data$BBC_LDL_Result)
 # Simple linear regression
 model <- lm(BBC_LDL_Result ~ TEU_LDL_C_PRS, data=data)
 summary(model)
+
+# Simple linear regression
+agesex <- lm(BBC_LDL_Result ~ TEU_LDL_C_PRS_deciles + TEU_BaC_AgeAtRec + BaC_Sex, data=data)
+summary(agesex)
 
 # Trinder's multivariable linear regression: 
 # LDL-C and PRS, adjusted for age, sex, first 4 PCs, genotyping array and batch

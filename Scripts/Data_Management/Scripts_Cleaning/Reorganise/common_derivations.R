@@ -78,7 +78,7 @@ Eth_ethnicity <- function() {
   list(
     name = "Eth_ethnicity.0.0",
     source = "Eth_ethnicity.0.0",
-    mapper = FN_reorderfactor(
+    mapper = FN_factor(
       levelorder = c(
         "White",
         "British",
@@ -279,7 +279,7 @@ Alc_Status <- function() {
   list(
     name = "Alc_Status",
     source = "Alc_Status.0.0",
-    mapper = FN_reorderfactor(
+    mapper = FN_factor(
       levelorder = c("Never", "Previous", "Current", "Prefer not to answer")
     ),
     post_exclusion = FALSE,
@@ -292,7 +292,7 @@ Smo_Status <- function() {
   list(
     name = "Smo_Status",
     source = "Smo_Status.0.0",
-    mapper = FN_reorderfactor(
+    mapper = FN_factor(
       levelorder = c("Never", "Previous", "Current", "Prefer not to answer")
     ),
     post_exclusion = FALSE,
@@ -428,16 +428,16 @@ TEU_Edu_HighestQual <- function() {
                paste0("Edu_Qualif_p.0.", seq(0, 4, by=1))),
     mapper = function(data) {
       qual_list <- c(
-        "Unanswered",
-        "None of the above",
-        "CSEs or equivalent",
-        "O levels/GCSEs or equivalent",
-        "A levels/AS levels or equivalent",
-        "Other professional qualifications eg: nursing, teaching",
+        "College or University degree",
         "NVQ or HND or HNC or equivalent",
-        "College or University degree"
+        "Other professional qualifications eg: nursing, teaching",
+        "A levels/AS levels or equivalent",
+        "O levels/GCSEs or equivalent",
+        "CSEs or equivalent",
+        "None of the above",
+        "Unanswered"
       )
-      for(i in seq(1, length(qual_list), by=1)) {
+      for(i in seq(length(qual_list), 1, by=-1)) {
         data[data == qual_list[i]] <- as.character(i)
       }
       y <- do.call(pmax, c(data, list(na.rm=TRUE)))
@@ -522,6 +522,7 @@ TEU_Rec_Country <- function() {
       if (!all(y %in% c("England", "Scotland", "Wales"))) {
         warning(paste0("Unrecognised centre code: ", y[!y %in% c("England", "Scotland", "Wales")]))
       }
+      y <- factor(y, levels=c("England", "Scotland", "Wales"))
       return(y)
     },
     post_exclusion = FALSE,
@@ -1033,7 +1034,7 @@ HMH_IllDisab <- function() {
   list(
     name = "HMH_IllDisab", 
     source = c("HMH_IllDisab.0.0"), 
-    mapper = FN_id,
+    mapper = FN_factor(levelorder=c("No", "Yes", "Do not know", "Prefer not to answer")),
     post_exclusion = FALSE,
     display_name = "Self-reported illness or disability",
     description = "Participant self-reported longstanding illness, disability or infirmity on the touchscreen questionnaire"
@@ -1044,7 +1045,7 @@ HMH_Diabetes <- function() {
   list(
     name = "HMH_Diabetes", 
     source = c("HMH_Diabetes.0.0"), 
-    mapper = FN_id,
+    mapper = FN_factor(levelorder=c("No", "Yes", "Do not know", "Prefer not to answer")),
     post_exclusion = FALSE,
     display_name = "Self-reported diabetes",
     description = "Participant self-reported diabetes on the touchscreen questionnaire"
@@ -1110,7 +1111,7 @@ GeP_Batch <- function() {
   list(
     name = "GeP_Batch", 
     source = "GeP_Batch.0.0", 
-    mapper = FN_id,
+    mapper = FN_toNumeric,
     post_exclusion = FALSE,
     display_name = "Genotype measurement batch",
     description = "Genotype measurement batch"

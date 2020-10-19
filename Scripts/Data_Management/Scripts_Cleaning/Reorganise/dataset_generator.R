@@ -4,6 +4,8 @@
 library(DBI)
 library(duckdb)
 library(tidyverse)
+library(knitr)
+library(kableExtra)
 library(R.cache)
 setCacheRootPath(path="Data/Cache")
 
@@ -25,7 +27,7 @@ source(file.path(config$scripts$cleaning, "Reorganise", "DuckDB.R"), local=DBfun
 # Better practice
 
 
-derive_variables <- function(database, field_definitions, exclusions=function(x){x}){
+derive_variables <- function(database, field_definitions, exclusions=function(x){x}, dictionary=NULL){
   
   # Extract the lists from the list of functions
   objects <- Map(function(p) {if(is.function(p)) {p()} else {p}}, field_definitions)
@@ -55,6 +57,14 @@ derive_variables <- function(database, field_definitions, exclusions=function(x)
   
   # Return only requested columns
   data <- data[,outcols[outcols %in% colnames(data)]]
+  
+  if(!is.null(dictionary)) {
+    kable(DBfunc$make_dict(data, objects), "html") %>%
+      kable_styling(bootstrap_options = c("striped", "hover")) %>%
+      collapse_rows(columns = c(1, 2, 5, 6), target = 1, valign = "top") %>%
+      cat(., file = dictionary)
+  }
+  
   return(data)
 }
 
@@ -127,3 +137,57 @@ DBfunc$derive_fn <- function(data, field_definition) {
   return(data)
 }
 
+# Generate the data dictionary
+DBfunc$make_dict <- function(data, objects, na.rm=TRUE) {
+  # Implementation ideas from https://github.com/dmrodz/dataMeta
+  
+  # Extract descriptive properties of the data, one variable at a time
+  data_list = list()
+  for(i in seq(1, length(names(data)))) {
+    vartype <- class(data[[i]])
+    
+    if(vartype %in% c("factor", "logical", "character")) {
+      tab <- data.frame(table(data[i], useNA = ifelse(na.rm==TRUE, "no", "ifany")))
+      var_opt <- c("", as.character(tab[,1]))
+      n <- c(length(data[i][!is.na(data[i])]), tab[,2])
+    } else if (vartype %in% c("integer", "numeric")) {
+      var_opt <- paste(range(data[i], na.rm = na.rm), sep = "", collapse = " to ")
+      n <- length(data[i][!is.na(data[i])])
+    } else if (vartype == "Date") {
+      var_opt <- paste(min(data[[i]]), max(data[[i]]), sep = " to ")
+      n <- length(data[i][!is.na(data[i])])
+    } else {
+      warning(paste0("Unrecognised variable type: ", vartype))
+    }
+    
+    d <- data.frame(variable_name = names(data[i]),
+                    variable_type = vartype,
+                    variable_options = var_opt, 
+                    n = n, 
+                    stringsAsFactors = FALSE)
+    d$i <- i
+    data_list[[i]] <- d
+  }
+  # Join all the variables together into one dataframe
+  dict = do.call(rbind, data_list) %>%
+    as.data.frame %>% 
+    select(-i)
+  
+  # Extract variable descriptions from the derivation objects
+  linker <- data.frame(variable_name = sapply(objects, function(x) x$name),
+                       variable_description = sapply(objects, function(x) x$description),
+                       source_vars = sapply(objects, function(x) paste(x$source, collapse=", ")))
+  
+  dict_df <- inner_join(dict, linker, by="variable_name")
+  
+  dictdf <- dict_df #%>%
+    # mutate(
+    #   variable_name = ifelse(duplicated(variable_name), " ", as.character(variable_name)),
+    #   variable_description = ifelse(duplicated(variable_description), " ", as.character(variable_description)),
+    #   variable_type = ifelse(duplicated(variable_type), " ", as.character(variable_type))
+    #   )
+  
+  dictdf <- as.data.frame(dictdf)
+  
+  return(dictdf)
+}
