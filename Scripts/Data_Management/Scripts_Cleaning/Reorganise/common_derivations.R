@@ -2,6 +2,7 @@
 # 22/09/20
 
 library(glue)
+library(lubridate)
 
 # Load the project config file for filepaths etc
 if (!exists("config")) {
@@ -1125,9 +1126,11 @@ TEU_VeI_CVD_prevalent <- function(dx_codes) {
       source = c("ID", "Rec_DateAssess",
                  paste0("VeI_NonCancerCode.0.", seq(0, 33, by=1)),
                  paste0("VeI_NonCancerYear.0.", seq(0, 33, by=1))),
-      mapper = FN_VInoncancer_first(dx_codes = dx_codes,
+      mapper = FN_VI_filtercodes(dx_codes = dx_codes,
+                                    colname = "VeI_NonCancer",
                                  instance = 0,
-                                 return_label = "dx"),
+                                 return_label = "dx",
+                                 mapper = read.csv("K:/TEU/UKB33952_Data/Data_Dictionary/Mappings/Encoding_files/coding6_noncancerVI.csv")),
       post_exclusion = FALSE,
       display_name = "Category of CVD reported in verbal interview at baseline",
       description = "Type of CVD"
@@ -1137,12 +1140,106 @@ TEU_VeI_CVD_prevalent <- function(dx_codes) {
       source = c("ID", "Rec_DateAssess",
                  paste0("VeI_NonCancerCode.0.", seq(0, 33, by=1)),
                  paste0("VeI_NonCancerYear.0.", seq(0, 33, by=1))),
-      mapper = FN_VInoncancer_first(dx_codes = dx_codes,
+      mapper = FN_VI_filtercodes(dx_codes = dx_codes,
+                                    colname = "VeI_NonCancer",
                                    instance = 0, 
-                                   return_label = "duration"),
+                                   return_label = "duration",
+                                 mapper = read.csv("K:/TEU/UKB33952_Data/Data_Dictionary/Mappings/Encoding_files/coding6_noncancerVI.csv")),
       post_exclusion = FALSE,
       display_name = "Duration of CVD reported in verbal interview at baseline",
       description = "Time since CVD diagnosis"
+    )
+  )
+}
+
+TEU_HES_CVD_prevalent <- function(ICD10_codes, ICD9_codes) {
+  list(
+    list(
+      name = "TEU_HES_CVD_prevalent_type",
+      source = c("ID", "Rec_DateAssess",
+                 paste0("HES_ICD10Diag.0.", seq(0, 65, by=1)),
+                 paste0("HES_ICD9Diag.0.", seq(0, 27, by=1))),
+      mapper = FN_HES_first(ICD10_codes = ICD10_codes,
+                            ICD9_codes = ICD9_codes,
+                            instance = 0,
+                            return_label = "dx"),
+      post_exclusion = FALSE,
+      display_name = "Category of CVD recorded in HES data prior to baseline",
+      description = "Type of CVD"
+    ),
+    list(
+      name = "TEU_HES_CVD_prevalent_dur",
+      source = c("ID", "Rec_DateAssess",
+                 paste0("HES_ICD10Diag.0.", seq(0, 65, by=1)),
+                 paste0("HES_ICD9Diag.0.", seq(0, 27, by=1))),
+      mapper = FN_HES_first(ICD10_codes = ICD10_codes,
+                            ICD9_codes = ICD9_codes,
+                            instance = 0,
+                            return_label = "duration"),
+      post_exclusion = FALSE,
+      display_name = "Duration of CVD recorded in HES data prior to baseline",
+      description = "Time since CVD diagnosis"
+    )
+  )
+}
+
+ADO_DateFirstMI <- function() {
+  list(
+    name = "ADO_DateFirstMI", 
+    source = c("ADO_DateFirstMI.0.0"), 
+    mapper = FN_id,
+    post_exclusion = FALSE,
+    display_name = "Date of first MI",
+    description = paste0("Date of first myocardial infarction, algorithmically defined by UKB. See ",
+                         text_spec("Resource 461", link = "https://biobank.ndph.ox.ac.uk/showcase/showcase/docs/alg_outcome_mi.pdf"),
+                         " for more information. Note values of 1900-01-01 are unknown.")
+  )
+}
+
+ADO_DateFirstIStroke <- function() {
+  list(
+    name = "ADO_DateFirstIStroke", 
+    source = c("ADO_DateFirstIStroke.0.0"), 
+    mapper = FN_id,
+    post_exclusion = FALSE,
+    display_name = "Date of first ischaemic stroke",
+    description = paste0("Date of first ischaemic stroke, algorithmically defined by UKB. See ",
+                         text_spec("Resource 462", link = "https://biobank.ndph.ox.ac.uk/showcase/showcase/docs/alg_outcome_stroke.pdf"),
+                         " for more information. Note values of 1900-01-01 are unknown.")
+  )
+}
+
+TEU_VeI_CVD_operation <- function(dx_codes) {
+  list(
+    list(
+      name = "TEU_VeI_CVD_operation_type",
+      source = c("ID", "Rec_DateAssess",
+                 paste0("VeI_OperationCode.0.", seq(0, 31, by=1)),
+                 paste0("VeI_OperationYear.0.", seq(0, 31, by=1))),
+      mapper = FN_VI_filtercodes(dx_codes = dx_codes,
+                                    colname = "VeI_Operation",
+                                    instance = 0,
+                                    return_label = "dx",
+                                    mapper = read.csv("K:/TEU/UKB33952_Data/Data_Dictionary/Mappings/Encoding_files/coding5_operationsVI.csv")
+                                    ),
+      post_exclusion = FALSE,
+      display_name = "Category of CVD operation reported in verbal interview at baseline",
+      description = "Type of CVD operation"
+    ),
+    list(
+      name = "TEU_VeI_CVD_operation_dur",
+      source = c("ID", "Rec_DateAssess",
+                 paste0("VeI_OperationCode.0.", seq(0, 31, by=1)),
+                 paste0("VeI_OperationYear.0.", seq(0, 31, by=1))),
+      mapper = FN_VI_filtercodes(dx_codes = dx_codes,
+                                    colname = "VeI_Operation",
+                                    instance = 0, 
+                                    return_label = "duration",
+                                    mapper = read.csv("K:/TEU/UKB33952_Data/Data_Dictionary/Mappings/Encoding_files/coding5_operationsVI.csv")
+                                    ),
+      post_exclusion = FALSE,
+      display_name = "Duration of CVD operation reported in verbal interview at baseline",
+      description = "Time since CVD operation"
     )
   )
 }

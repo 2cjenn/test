@@ -162,7 +162,7 @@ DBfunc$make_dict <- function(data, objects, na.rm=TRUE) {
       var_opt <- paste(range(data[i], na.rm = na.rm), sep = "", collapse = " to ")
       n <- length(data[i][!is.na(data[i])])
     } else if (vartype == "Date") {
-      var_opt <- paste(min(data[[i]]), max(data[[i]]), sep = " to ")
+      var_opt <- paste(min(data[[i]], na.rm = na.rm), max(data[[i]], na.rm = na.rm), sep = " to ")
       n <- length(data[i][!is.na(data[i])])
     } else {
       warning(paste0("Unrecognised variable type: ", vartype))

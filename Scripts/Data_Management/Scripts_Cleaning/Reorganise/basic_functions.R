@@ -177,7 +177,7 @@ FN_JoinPRS <- function(filepath, colname) {
   }
 }
 
-FN_toLong <- function(data, colname, instance, mapper) {
+FN_VItoLong <- function(data, colname, instance, mapper) {
   
   if (is.null(instance)) {
     pattern <- paste0(colname, "(.*).(.*)")
@@ -191,25 +191,19 @@ FN_toLong <- function(data, colname, instance, mapper) {
       names_to = c(".value", "measure"),
       names_pattern = pattern
     ) %>%
-      drop_na(Code) %>%
+      drop_na(starts_with(colname)) %>%
       mutate(Code = as.numeric(Code)) %>%
       left_join(x = ., y = mapper, by = "Code")
   },
-  key = c(data, pattern, mapper))
+  key = c(data, colname, instance, mapper))
 }
 
-
-FN_VInoncancer_first <- function(dx_codes, instance = 0, return_label = "dx", mapper = NULL) {
+FN_VI_filtercodes <- function(dx_codes, colname, instance = 0, return_label = "dx", mapper) {
   function(data) {
-    if(is.null(mapper)){
-      source(file.path(config$scripts$cleaning, "Mappings", "NonCancerIllnessCodes.R"))
-      mapper <- noncancer_illness()
-    }
-    
     long_dx <- evalWithMemoization(
-      FN_toLong(
+      FN_VItoLong(
         data,
-        colname = "VeI_NonCancer",
+        colname = colname,
         instance = instance,
         mapper = mapper
       ) %>%
@@ -217,7 +211,9 @@ FN_VInoncancer_first <- function(dx_codes, instance = 0, return_label = "dx", ma
         group_by(ID) %>%
         arrange(Year) %>%
         slice_head %>%
-        mutate(Year_date = date_decimal(Year),
+        mutate(dx = factor(dx),
+               Year = ifelse(Year %in% c(-1, -3), NA, Year),
+               Year_date = date_decimal(Year),
                duration = as.numeric(round(
                  difftime(Rec_DateAssess, Year_date, unit = "days") / 365.25,
                  digits = 2
@@ -225,11 +221,24 @@ FN_VInoncancer_first <- function(dx_codes, instance = 0, return_label = "dx", ma
       key = c(dx_codes, instance, mapper)
     )
     
-    y <- factor(long_dx[[return_label]][match(data$ID, long_dx$ID)])
+    y <- long_dx[[return_label]][match(data$ID, long_dx$ID)]
     return(y)
   }
 }
 
-
-
-
+FN_ICDtoLong <- function(data, colname, mapper) {
+  
+  pattern <- paste0(colname, "(.*).0.(.*)")
+  
+  long <- evalWithMemoization({
+    data <- data %>% pivot_longer(
+      cols = starts_with(colname),
+      names_to = c(".value", "measure"),
+      names_pattern = pattern
+    ) 
+    data %>%
+      drop_na(starts_with(colname)) %>%
+      select(-measure)
+  },
+  key = c(data, colname, mapper))
+}

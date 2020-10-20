@@ -89,6 +89,7 @@ specs <- function() {
                    
   Cholesterol_PRS <- c(
     TEUvars_common,
+    TEU_VeI_CVD_operation(dx_codes = c(1069, 1070, 1095, 1105)),
     list(
       TEU_BaC_AgeCat,
       TEU_HMH_BowelCancerScreen,
@@ -120,7 +121,9 @@ specs <- function() {
       GeP_PC(pc=1),
       GeP_PC(pc=2),
       GeP_PC(pc=3),
-      GeP_PC(pc=4)
+      GeP_PC(pc=4),
+      ADO_DateFirstMI,
+      ADO_DateFirstIStroke
     )
   )
  
