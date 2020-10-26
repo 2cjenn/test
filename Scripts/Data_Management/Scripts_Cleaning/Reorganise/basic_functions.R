@@ -180,9 +180,9 @@ FN_JoinPRS <- function(filepath, colname) {
 FN_VItoLong <- function(data, colname, instance, mapper) {
   
   if (is.null(instance)) {
-    pattern <- paste0(colname, "(.*).(.*)")
+    pattern <- paste0(colname, "(.*)\\.(.*)")
   } else {
-    pattern <- paste0(colname, "(.*).", instance, ".(.*)")
+    pattern <- paste0(colname, "(.*)\\.", instance, "\\.(.*)")
   }
   
   long <- evalWithMemoization({
@@ -226,9 +226,9 @@ FN_VI_filtercodes <- function(dx_codes, colname, instance = 0, return_label = "d
   }
 }
 
-FN_ICDtoLong <- function(data, colname, mapper) {
+FN_HEStoLong <- function(data, colname, removeNAfrom) {
   
-  pattern <- paste0(colname, "(.*).0.(.*)")
+  pattern <- paste0(colname, "(.*)\\.0\\.(.*)")
   
   long <- evalWithMemoization({
     data <- data %>% pivot_longer(
@@ -237,8 +237,8 @@ FN_ICDtoLong <- function(data, colname, mapper) {
       names_pattern = pattern
     ) 
     data %>%
-      drop_na(starts_with(colname)) %>%
+      drop_na(!!removeNAfrom) %>%
       select(-measure)
   },
-  key = c(data, colname, mapper))
+  key = c(data, colname, removeNAfrom))
 }
