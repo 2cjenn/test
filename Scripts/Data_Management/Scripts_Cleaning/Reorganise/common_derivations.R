@@ -107,7 +107,7 @@ Eth_ethnicity <- function() {
     ),
     post_exclusion = FALSE,
     display_name = "ethnicity",
-    description = "The participant's self-reported ethnicity"
+    description = "The participant's self-reported ethnicity (raw UKB categories)"
   )
 }
 
@@ -148,7 +148,7 @@ TEU_BaC_AgeAtRec <- function() {
     },
     post_exclusion = FALSE,
     display_name = "AgeAtRecruitment",
-    description = "The participant's approximate age at recruitment"
+    description = "The participant's approximate age at recruitment, derived from date of assessment centre visit and self-reported month and year of birth (date of birth estimated as 15th of the month)"
   )
 }
 
@@ -161,7 +161,7 @@ TEU_BlP_SBP.0.0 <- function() {
     },
     post_exclusion = FALSE,
     display_name = "First SBP at baseline",
-    description = "First SBP measurement at baseline, automated or manual"
+    description = "First SBP measurement at baseline, either automated or manual"
   )
 }
 
@@ -174,7 +174,7 @@ TEU_BlP_SBP.0.1 <- function() {
     },
     post_exclusion = FALSE,
     display_name = "Second SBP at baseline",
-    description = "Second SBP measurement at baseline, automated or manual"
+    description = "Second SBP measurement at baseline, either automated or manual"
   )
 }
 
@@ -187,7 +187,7 @@ TEU_BlP_DBP.0.0 <- function() {
     },
     post_exclusion = FALSE,
     display_name = "First DBP at baseline",
-    description = "First DBP measurement at baseline, automated or manual"
+    description = "First DBP measurement at baseline, either automated or manual"
   )
 }
 
@@ -200,7 +200,7 @@ TEU_BlP_DBP.0.1 <- function() {
     },
     post_exclusion = FALSE,
     display_name = "Second DBP at baseline",
-    description = "Second DBP measurement at baseline, automated or manual"
+    description = "Second DBP measurement at baseline, either automated or manual"
   )
 }
 
@@ -239,7 +239,7 @@ TEU_BlP_SBP.avg <- function() {
                                      "TEU_BlP_SBP.0.1")),
     post_exclusion = FALSE,
     display_name = "SBP",
-    description = "The average systolic blood pressure from two measurements at baseline"
+    description = "The average systolic blood pressure at baseline"
   )
 }
 
@@ -252,7 +252,7 @@ TEU_BlP_DBP.avg <- function() {
                                      "TEU_BlP_DBP.0.1")),
     post_exclusion = FALSE,
     display_name = "DBP",
-    description = "The average diastolic blood pressure from two measurements at baseline"
+    description = "The average diastolic blood pressure at baseline"
   )
 }
 
@@ -370,7 +370,7 @@ TEU_BSM_BMIcat <- function() {
     },
     post_exclusion = FALSE,
     display_name = "BMIcat",
-    description = "BMI category"
+    description = "BMI below 18.5 was considered “underweight”, between 18.5 and 25 was “normal”, between 25 and 30 was “overweight” and above 30 was “obese”"
   )
 }
 
@@ -382,11 +382,9 @@ TEU_BSM_WaistCircCat <- function() {
       # Categorise waist circ into labelled categories
       y <- dplyr::case_when(
         data[["BaC_Sex.0.0"]] == "Female" & data[["BSM_Waist.0.0"]] >= 88 ~ "Obese",
-        data[["BaC_Sex.0.0"]] == "Female" &
-          data[["BSM_Waist.0.0"]] ~ "Overweight",
-        data[["BaC_Sex.0.0"]] == "Male" & data[["BSM_Waist.0.0"]] ~ "Obese",
-        data[["BaC_Sex.0.0"]] == "Male" &
-          data[["BSM_Waist.0.0"]] ~ "Overweight",
+        data[["BaC_Sex.0.0"]] == "Female" & data[["BSM_Waist.0.0"]] >= 80 ~ "Overweight",
+        data[["BaC_Sex.0.0"]] == "Male" & data[["BSM_Waist.0.0"]] >= 102 ~ "Obese",
+        data[["BaC_Sex.0.0"]] == "Male" & data[["BSM_Waist.0.0"]] >= 94 ~ "Overweight",
         is.na(data[["BSM_Waist.0.0"]]) ~ "Unknown",
         TRUE ~ "Normal"
       )
@@ -396,7 +394,7 @@ TEU_BSM_WaistCircCat <- function() {
     },
     post_exclusion = FALSE,
     display_name = "WaistCirc",
-    description = "Categorised waist circumference"
+    description = "Categorised waist circumference.\nFemales with a waist circumference between 80 and 88cm were considered overweight, greater than 88cm was considered obese.\nMales with a waist circumference between 94 and 102cm were considered overweight, greater than 102cm was considered obese."
   )
 }
 
@@ -407,7 +405,9 @@ PhA_METsWkAllAct <- function() {
     mapper = FN_id,
     post_exclusion = FALSE,
     display_name = "WeeklyMETs",
-    description = "Average weekly METs, derived from participant self-reported weekly exercise"
+    description = paste0("Summed MET minutes per week for all activity, derived from participant self-reported weekly exercise. This variable was generated as part of ",
+                         text_spec("UKB application 12184", link = "http://bmjopen.bmj.com/content/6/3/e010038"), 
+                         " and made available on the Data Showcase.")
   )
 }
 
@@ -642,7 +642,7 @@ TEU_ethnicgrp <- function() {
     },
     post_exclusion = FALSE,
     display_name = "ethnic_group",
-    description = "The participant's self-reported ethnicity"
+    description = "The participant's self-reported ethnicity, condensed into categories.\n'White', 'British', 'Irish' and 'Any other white background' were coded as 'White'.\n'Indian', 'Pakinstani' and 'Bangladeshi' were coded as 'S. Asian'.\n'Black or Black British', 'Carribean', 'African' and 'Any other Black background' were coded as 'Black'.\n'Mixed', 'White and Black Caribbean', 'White and Black African', 'White and Asian' and 'Any other mixed background' were coded as 'Mixed'.\n'Other ethnic group', 'Asian or Asian British', 'Any other Asian background' and 'Chinese' were coded as 'Other'"
   )
 }
 
@@ -721,7 +721,7 @@ TEU_Alc_WeeklyAlcUnits <- function() {
     },
     post_exclusion = FALSE,
     display_name = "WeeklyAlcUnits",
-    description = "Total weekly units of alcohol, derived from self-reported average weekly consumption of each different type alcohol and truncated at the upper 95th percentile"
+    description = "Total weekly units of alcohol, derived from self-reported average weekly consumption of each different type alcohol and truncated at the upper 95th percentile. This data was available for participants who said they drank alcohol more than once or twice a week."
   )
 }
 
@@ -735,7 +735,7 @@ TEU_Alc_WeeklyCat <- function() {
                         right=FALSE),
     post_exclusion = FALSE,
     display_name = "Weekly alcohol, categorical",
-    description = "Categorised weekly alcohol intake, derived from self-reported average weekly consumption of different types of alcohol"
+    description = "Categorised weekly alcohol intake, derived from self-reported average weekly consumption of different types of alcohol. This data was available for participants who said they drank alcohol more than once or twice a week."
   )
 }
 
@@ -752,7 +752,7 @@ TEU_Alc_Binge <- function() {
     },
     post_exclusion = FALSE,
     display_name = "HarmfulAlcohol",
-    description = "Does the patient's self-reported weekly alcohol consumption exceed the threshold for binge drinking"
+    description = "Does the patient's self-reported weekly alcohol consumption exceed the threshold for binge drinking. Data on weekly alcohol consumption was available for participants who said they drank alcohol more than once or twice a week, those who drank less frequently were not considered to have harmful alcohol consumption."
   )
 }
 
@@ -763,18 +763,20 @@ TEU_Pha_METsover1200 <- function() {
     mapper = function(x) {
       y <- dplyr::case_when(
         is.na(x) ~ "Unknown",
-        x > 1200 ~ "High (METs > 1200)",
-        x <= 1200 ~ "Low (METs <= 1200)",
+        x > 1200 ~ "High (MET minutes > 1200)",
+        x <= 1200 ~ "Low (MET minutes <= 1200)",
         TRUE ~ "Other"
       )
       y <-
         factor(y,
-               levels = c("High (METs > 1200)", "Low (METs <= 1200)", "Unanswered"))
+               levels = c("High (MET minutes > 1200)", "Low (MET minutes <= 1200)", "Unanswered"))
       return(y)
     },
     post_exclusion = FALSE,
     display_name = "Sufficient_METs",
-    description = "Indicates whether the participant's average daily METs exceed 150"
+    description = paste0("Indicates whether the participant is exceeding 1200 MET minutes per week. The source variable (summed MET minutes per week for all activity, derived from participant self-reported weekly exercise) was generated as part of ",
+                         text_spec("UKB application 12184", link = "http://bmjopen.bmj.com/content/6/3/e010038"), 
+                         " and made available on the Data Showcase.")
   )
 }
 
@@ -836,8 +838,8 @@ TEU_BlP_HTNseverity <- function() {
       return(y)
     },
     post_exclusion = FALSE,
-    display_name = "",
-    description = ""
+    display_name = "Hypertension severity",
+    description = "Stage I corresponds to systolic BP 140-159 mmHg or diastolic BP 90-99 mmHg, stage II mean systolic BP 160-179 mmHg or diastolic BP 100-110 mmHg, and stage III mean systolic BP>180 mmHg or diastolic BP>110 mmHg (also referred to as hypertensive crisis)."
   )
 }
 
@@ -881,7 +883,7 @@ TEU_FaH_CVD <- function() {
     ),
     post_exclusion = FALSE,
     display_name = "FamilyHistoryCVD",
-    description = "Family history of CVD (Heart disease, high blood pressure, stroke)"
+    description = "Family history of CVD (Heart disease, high blood pressure, stroke), derived by combining reported medical history of father, mother and siblings (adopted relatives were not included)"
   )
 }
 
