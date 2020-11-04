@@ -1119,14 +1119,136 @@ GeP_Batch <- function() {
   )
 }
 
-TEU_VeI_CVD_prevalent <- function(dx_codes) {
+TEU_VeI_HTN_prevalent <- function(dx_codes = c(1065, 1072)) {
+  list(
+    list(
+      name = "TEU_VeI_HTN",
+      source = c("ID", "Rec_DateAssess",
+                 paste0("VeI_NonCancerCode.0.", seq(0, 33, by=1)),
+                 paste0("VeI_NonCancerYear.0.", seq(0, 33, by=1))),
+      mapper = FN_VI_filtercodes(dx_codes = dx_codes,
+                                 colname = "VeI_NonCancer",
+                                 instance = 0,
+                                 return_label = "dx",
+                                 mapper = read.csv("K:/TEU/UKB33952_Data/Data_Dictionary/Mappings/Encoding_files/coding6_noncancerVI.csv")),
+      post_exclusion = FALSE,
+      display_name = "Self-reported HTN, verbal interview",
+      description = "Whether hypertension was reported in verbal interview at baseline"
+    ),
+    list(
+      name = "TEU_VeI_HTN_dur",
+      source = c("ID", "Rec_DateAssess",
+                 paste0("VeI_NonCancerCode.0.", seq(0, 33, by=1)),
+                 paste0("VeI_NonCancerYear.0.", seq(0, 33, by=1))),
+      mapper = FN_VI_filtercodes(dx_codes = dx_codes,
+                                 colname = "VeI_NonCancer",
+                                 instance = 0, 
+                                 return_label = "duration",
+                                 mapper = read.csv("K:/TEU/UKB33952_Data/Data_Dictionary/Mappings/Encoding_files/coding6_noncancerVI.csv")),
+      post_exclusion = FALSE,
+      display_name = "Self-reported duration of hypertension, verbal interview",
+      description = "Duration of hypertension reported in verbal interview at baseline"
+    )
+  )
+}
+
+TEU_selfrepHTN_dx <- function() {
+  list(
+    name = "TEU_selfrepHTN_dx", 
+    source = c("TEU_VeI_HTN", "TEU_HMH_prevHTN"), 
+    mapper = function(data) {
+      VI <- !is.na(data[["TEU_VeI_HTN"]])
+      TQ <- (data[["TEU_HMH_prevHTN"]] == "Self-reported hypertension")
+      y <- (VI | TQ)
+      return(y)
+    },
+    post_exclusion = FALSE,
+    display_name = "Self-reported hypertension",
+    description = "Whether the participant self-reported a previous diagnosis of hypertension, either in the touchscreen questionnaire or verbal interview"
+  )
+}
+
+TEU_selfrepHTN_meds <- function() {
+  list(
+    name = "TEU_selfrepHTN_meds", 
+    source = c("TEU_VeI_HTNmeds_rubric", "TEU_HMH_Meds_BP"), 
+    mapper = function(data) {
+      VI <- data[["TEU_VeI_HTNmeds_rubric"]]
+      TQ <- (data[["TEU_HMH_Meds_BP"]] == "Self-reported BP meds")
+      y <- (VI | TQ)
+      return(y)
+    },
+    post_exclusion = FALSE,
+    display_name = "Self-reported hypertension medication",
+    description = "Whether the participant self-reported that they were taking 'blood pressure medication' either in the touchscreen questionnaire or verbal interview"
+  )
+}
+
+TEU_VeI_HTNmeds_rubric <- function() {
+  list(
+    name = "TEU_VeI_HTNmeds_rubric",
+    source = "ID",
+    mapper = function(x) {
+      rubric <- readRDS(file.path(config$data$derived, "HTNMedsRubric.rds"))
+      y <- rubric[["HTN_probablemeds"]][match(x, rubric$ID)]
+    },
+    post_exclusion = FALSE,
+    display_name = "Self-reported BP meds in VI",
+    description = "Self-reported medications that correspond to a hypertension treatment pathway under our rubric"
+  )
+}
+
+TEU_evidenceHTN <- function() {
+  list(
+    name = "TEU_evidenceHTN", 
+    source = c("TEU_selfrepHTN_dx", "TEU_selfrepHTN_meds", "TEU_BlP_measuredHTN"), 
+    mapper = function(data) {
+      y <- (data[["TEU_selfrepHTN_dx"]] | data[["TEU_selfrepHTN_meds"]] | data[["TEU_BlP_measuredHTN"]])
+    },
+    post_exclusion = FALSE,
+    display_name = "Evidence of hypertension",
+    description = "Did the participant have evidence of hypertension, defined as self-reported HTN, self-reported HTN meds, or measured HTN at baseline"
+  )
+}
+
+TEU_awareHTN <- function() {
+  list(
+    name = "TEU_awareHTN", 
+    source = c("TEU_selfrepHTN_dx", "TEU_selfrepHTN_meds", "TEU_evidenceHTN"), 
+    mapper = function(data) {
+      y <- (data[["TEU_selfrepHTN_dx"]] | data[["TEU_selfrepHTN_meds"]])
+      y[(data[["TEU_evidenceHTN"]] == FALSE | is.na(data[["TEU_evidenceHTN"]]))] <- NA
+      return(y)
+    },
+    post_exclusion = FALSE,
+    display_name = "Awareness of hypertension",
+    description = "Was the participant aware of their hypertension, defined as self-reported HTN or self-reported HTN meds among those with evidence of hypertension"
+  )
+}
+
+TEU_treatedHTN <- function() {
+  list(
+    name = "TEU_treatedHTN", 
+    source = c("TEU_selfrepHTN_meds", "TEU_awareHTN"), 
+    mapper = function(data) {
+      y <- data[["TEU_selfrepHTN_meds"]]
+      y[(data[["TEU_awareHTN"]] == FALSE | is.na(data[["TEU_awareHTN"]]))] <- NA
+      return(y)
+    },
+    post_exclusion = FALSE,
+    display_name = "Treated hypertension",
+    description = "Was the participant taking treatment for their hypertension, defined as self-reported HTN meds among those who were aware of their hypertension"
+  )
+}
+
+TEU_VeI_CVD_prevalent <- function() {
   list(
     list(
       name = "TEU_VeI_CVD_prevalent_type",
       source = c("ID", "Rec_DateAssess",
                  paste0("VeI_NonCancerCode.0.", seq(0, 33, by=1)),
                  paste0("VeI_NonCancerYear.0.", seq(0, 33, by=1))),
-      mapper = FN_VI_filtercodes(dx_codes = dx_codes,
+      mapper = FN_VI_filtercodes(dx_codes = c(1065, 1074),
                                     colname = "VeI_NonCancer",
                                  instance = 0,
                                  return_label = "dx",
@@ -1140,7 +1262,7 @@ TEU_VeI_CVD_prevalent <- function(dx_codes) {
       source = c("ID", "Rec_DateAssess",
                  paste0("VeI_NonCancerCode.0.", seq(0, 33, by=1)),
                  paste0("VeI_NonCancerYear.0.", seq(0, 33, by=1))),
-      mapper = FN_VI_filtercodes(dx_codes = dx_codes,
+      mapper = FN_VI_filtercodes(dx_codes = c(1065, 1074),
                                     colname = "VeI_NonCancer",
                                    instance = 0, 
                                    return_label = "duration",

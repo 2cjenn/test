@@ -17,7 +17,7 @@ config = yaml.load_file("config.yml")
 # Also generate a table with a column per drug class
 #--------------------------------------------------------------------------------------------------------------
 
-htmeds <- read_excel(paste0(config$cleaning$mapping, "UKBmedsHypertension_JC_20200122.xlsx"), 
+htmeds <- read_excel(file.path(config$cleaning$mapping, "UKBmedsHypertension_JC_20200122.xlsx"), 
                      sheet="MedicationCodes", col_names=TRUE, na="0")
 
 # Consider only hypertensive medications - makes dataset smaller and easier to work with
@@ -58,7 +58,7 @@ rm(htmeds, htmedslong, codegeneric, codeclass)
 # Note: We are considering hypertensive medications ONLY
 #--------------------------------------------------------------------------------------------------------------
 
-veint <- readRDS(paste0(config$data$derived, "VeI_medcodes_base.rds"))
+veint <- readRDS(file.path(config$data$derived, "VeI_medcodes_base.rds"))
 # We have this field for all 502520 individuals
 sum(rowSums(veint[,c(2:49)], na.rm=TRUE)==0)
 # But for 138537 individuals it is NA across all columns

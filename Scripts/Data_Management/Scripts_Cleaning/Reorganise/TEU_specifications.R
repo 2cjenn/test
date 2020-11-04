@@ -8,10 +8,11 @@ if (!exists("config")) {
 }
 
 
-
-
 specs <- function() {
-  # Source the variable maps
+  
+  # If you're here to write a new spec, you can run this source line interactively
+  # to load all the variable derivation objects into your working environment
+  # so you get autocomplete when typing them!
   source(file.path(config$scripts$cleaning, "Reorganise", "common_derivations.R"),
          local = if (sys.nframe() == 0L) {
            FALSE
@@ -33,6 +34,7 @@ specs <- function() {
     Rec_DateAssess,
     TEU_BaC_AgeAtRec,
     TEU_ethnicgrp,
+    TEU_Rec_AssessCentre,
     TEU_Rec_Country
   )
   
@@ -50,14 +52,18 @@ specs <- function() {
   HTN_control <- c(
     TEUvars_common,
     TEUvars_BP,
-    TEU_VeI_CVD_prevalent(dx_codes = c(1065, 1074)),
+    TEU_VeI_HTN_prevalent(),
     list(
+      TEU_selfrepHTN_dx,
+      TEU_VeI_HTNmeds_rubric,
+      TEU_selfrepHTN_meds,
       VeI_PregnantNow,
       TEU_BaC_AgeCat,
       TEU_BlP_measuredHTN,
+      TEU_evidenceHTN,
+      TEU_awareHTN,
+      TEU_treatedHTN,
       TEU_HMH_BowelCancerScreen,
-      TEU_Rec_AssessCentre,
-      TEU_Rec_Country,
       TEU_Edu_HighestQual,
       TEU_Edu_ISCED,
       TEU_HoH_PreTaxInc,
