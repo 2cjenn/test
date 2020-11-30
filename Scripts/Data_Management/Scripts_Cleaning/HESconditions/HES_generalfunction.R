@@ -202,7 +202,7 @@ post <- HES_condition(ICD10codes = CVD_ICD10,
                       colprefix = "CVD",
                       recordlevel=FALSE)
 
-what <- HES_condition(ICD10codes = CVD_ICD10,
+recordlevel <- HES_condition(ICD10codes = CVD_ICD10,
                       ICD9codes = CVD_ICD9,
                       incident=TRUE,
                       filename=file.path(config$data$derived, "CVD1_HESevents.rds"),

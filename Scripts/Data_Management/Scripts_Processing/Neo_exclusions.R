@@ -128,15 +128,14 @@ excl$pregnant <- nrow(data)
 
 # Exclude individuals who have serious health conditions
 # n = 489006 - 483794 = 5212
-# seriouscomorbid <- readRDS("K:/TEU/APOE on Dementia/Data_Management/Data/archive/Organised/Hypertension/Neo/VIhypExclude.rds")
-seriouscomorbid <- readRDS(paste0(config$data$derived, "VIhypExclude.rds"))
+seriouscomorbid <- readRDS(file.path(config$data$derived, "VIhypExclude.rds"))
 data <- data[!data$ID %in% seriouscomorbid$ID[!is.na(seriouscomorbid$Yes)],]
 
 excl$seriouscomorb <- nrow(data)
 
 # And individuals with cancer (except for skin cancer?)
 # n = 483794 - 443782 = 40,012
-cancer <- readRDS(paste0(config$data$derived, "Cancer_pts.rds"))
+cancer <- readRDS(file.path(config$data$derived, "Cancer_pts.rds"))
 exceptskincancer <- cancer$ID[cancer$TL!="skin cancer"]
 data <- data[!data$ID %in% exceptskincancer,]
 
@@ -175,8 +174,8 @@ for(variable in c("evidenceHTN", "aware", "treated", "controlled")){
 }
 
 # Create exclusion flowchart
-export_svg(DiagrammeR::grViz(paste0(config$outputs$flowcharts, "ExclusionFlowchartTree.gv"))
-           ) %>% charToRaw %>% rsvg %>% png::writePNG(paste0(config$outputs$figures, "ExclFlowchartTree.png"))
+export_svg(DiagrammeR::grViz(file.path(config$outputs$flowcharts, "ExclusionFlowchartTree.gv"))
+           ) %>% charToRaw %>% rsvg %>% png::writePNG(file.path(config$outputs$figures, "ExclFlowchartTree.png"))
 
 
 #--------------------------------------------------------------------------------------------------------------
@@ -406,7 +405,7 @@ data$HTNdx_durcat <- factor(data$HTNdx_durcat, levels=c("[0,1)", "[1,2)", "[2,5)
 
 
 # Add mapping to comorbidities of interest
-comorbs <- readRDS(paste0(config$data$derived, "VI_HTNcomorb.rds"))
+comorbs <- readRDS(file.path(config$data$derived, "VI_HTNcomorb.rds"))
 colnames(comorbs) <- c("ID", paste0("VI_", colnames(comorbs)[-1]))
 data <- merge(data, comorbs, by="ID", all.x=TRUE)
 for(comorb in names(comorbs)[-1]){

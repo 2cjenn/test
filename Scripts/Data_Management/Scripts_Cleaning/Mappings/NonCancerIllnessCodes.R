@@ -13,7 +13,7 @@ config = yaml.load_file("config.yml")
 
 #--------------------------------------------------------------------------------------------------------------
 # Load the codings
-coding6 <- read.table(paste0(config$cleaning$coding, "coding6.tsv"), 
+coding6 <- read.table(file.path(config$cleaning$coding, "coding6.csv"), 
                       sep="\t", header=TRUE, quote="", comment.char="$", fill=FALSE)
 
 # And rearrange them into a more sensible format
@@ -76,19 +76,19 @@ level4 <- unique(level4)
 level4 <- level4[order(level4$TL, level4$L1, level4$L2, level4$L3, level4$L4),]
 
 # Save the full table of codings to a csv so mappings can be produced in an Excel
-write.csv(level4, paste0(config$data$derived, "NonCancerIllness.csv"), 
+write.csv(level4, file.path(config$data$derived, "NonCancerIllness.csv"), 
           na="", row.names=FALSE)
 
 # And save it as an R data file, why not
-saveRDS(level4, paste0(config$data$derived, "NonCancerIllness.rds"))
+saveRDS(level4, file.path(config$data$derived, "NonCancerIllness.rds"))
 
 
 #--------------------------------------------------------------------------------------------------------------
 # Finally, join the coded participant data to the code labels
 # Load the long-format verbal interview data
-veint <- readRDS(paste0(config$data$derived, "VIDiagnosisCodes_long.rds"))
+veint <- readRDS(file.path(config$data$derived, "VIDiagnosisCodes_long.rds"))
 # And merge
 final <- merge(veint, level4, by="coding")
 
 # This is a version that lists the full tree-structure for each condition for each patient
-saveRDS(final, paste0(config$data$derived, "NonCancerIllness_pts.rds"))
+saveRDS(final, file.path(config$data$derived, "NonCancerIllness_pts.rds"))

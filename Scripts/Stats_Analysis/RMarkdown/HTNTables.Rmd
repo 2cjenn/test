@@ -18,13 +18,17 @@ library(here)
 library(survival)
 library(survminer)
 library(dplyr)
+library(dplyr)
+library(tidyr)
+
+options("scipen"=100)
 
 # Specify the markdown format for knitr tables, otherwise they're not compatible with kableExtra
 options(knitr.kable.NA='', knitr.table.format = "markdown")
 options(kableExtra.auto_format = FALSE)
 # Set the root directory to the project directory (otherwise knitr works in the directory of the Rmd file by default)
 knitr::opts_knit$set(root.dir = here::here())
-knitr::opts_chunk$set(include=TRUE, echo = FALSE)
+knitr::opts_chunk$set(include=TRUE, echo=FALSE)
 
 # Load the project config file for filepaths etc
 config = yaml.load_file(here::here("config.yml"))
@@ -109,6 +113,9 @@ footnote_no <- 1
 ```
 
 # Description
+## Figure `r figure`. Flowchart illustrating selection of analytic dataset (n = `r nrow(treated)`).
+`r figure <- figure + 1`
+![Missing BP data was fewer than 2 BP measurements, or missing answers to the prior diagnosis and treatment questions. Hypertension was defined as self-report of hypertensive medication use, or self-report of a prior diagnosis of hypertension, or mean BP >= 140 /90 mmHg at baseline assessment. Awareness was defined as self-report of a prior diagnosis of hypertension among those who were hypertensive. Treatment was defined as self-report of hypertensive medication among those who were aware. Control was defined as mean BP < 140/90 mmHg at baseline assessment, among those who were treated.](Figures/ExclFlowchartTree.png){height=700px}
 
 ## Aim
 

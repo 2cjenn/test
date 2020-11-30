@@ -13,7 +13,7 @@ if(!exists("config")){
 #--------------------------------------------------------------------------------------------------------------
 
 # Read in the raw data
-medhist <- readRDS(paste0(config$data$received, "HMH_base.rds"))
+medhist <- readRDS(file.path(config$data$received, "HMH_base.rds"))
 
 #--------------------------------------------------------------------------------------------------------------
 # Medications
@@ -76,4 +76,4 @@ medhist$diabetes <- factor(medhist$HMH_Diabetes, levels=c("No", "Yes", "Prefer n
 
 saveRDS(medhist[,c("ID", "medication", "HBPmeds", "diabmeds", "cholmeds", "contraceptive", "HRT", 
                    "vasc_cond", "prevHBP", "prevstroke", "prevCVD", "illdisab", "diabetes", "BowelCancerScreening", "HBPAge")],
-        file=paste0(config$data$derived, "tq_medhist.rds"))
+        file=file.path(config$data$derived, "tq_medhist.rds"))

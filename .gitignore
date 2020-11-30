@@ -1,5 +1,5 @@
 # Don't track documents and outputs #
-# They are binary files and we can't easily view difffs on them, so it wouldn't be super useful #
+# They are binary files and we can't easily view diffs on them, so it wouldn't be super useful #
 # We track the code that generates them, so we don't need them #
 ########################################################
 **.docx
@@ -14,9 +14,10 @@
 **.rds
 **.RData
 **.RDataTmp
-
-# No longer using databases, so don't waste space tracking these #
 **.db
+**.wal
+**duck.db.tmp/
+**.Rcache
 
 # Note excel and csv could be important mapping tables, so worth tracking these! #
 # Except this one which is data#

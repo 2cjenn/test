@@ -11,8 +11,8 @@ config = yaml.load_file("config.yml")
 
 #--------------------------------------------------------------------------------------------------------------
 
-VI_diag <- readRDS(paste0(config$data$derived, "VeI_diag_base.rds"))
-VI_diagdur <- readRDS(paste0(config$data$derived, "VeI_diagdur_base.rds"))
+VI_diag <- readRDS(file.path(config$data$derived, "VeI_diag_base.rds"))
+VI_diagdur <- readRDS(file.path(config$data$derived, "VeI_diagdur_base.rds"))
 
 # Use the "year" columns for duration
 VI_diagage <- VI_diagdur[,c(1, grep("VeI_NonCancerAge.",  colnames(VI_diagdur),  fixed=TRUE))]

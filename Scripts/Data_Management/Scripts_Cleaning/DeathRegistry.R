@@ -12,7 +12,7 @@ config = yaml.load_file("config.yml")
 #--------------------------------------------------------------------------------------------------------------
 
 # Read in the raw data
-deaths <- readRDS(paste0(config$data$received, "Dth.rds"))
+deaths <- readRDS(file.path(config$data$received, "Dth.rds"))
 
 # ICD 10 codes for dementia
 alz_ICD10 <- c("F00")

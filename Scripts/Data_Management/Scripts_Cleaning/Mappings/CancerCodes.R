@@ -13,7 +13,7 @@ config = yaml.load_file("config.yml")
 
 #--------------------------------------------------------------------------------------------------------------
 # Load the codings
-coding3 <- read.table(paste0(config$cleaning$coding, "coding3.tsv"), sep="\t", header=TRUE, quote="", comment.char="$", fill=FALSE)
+coding3 <- read.table(file.path(config$cleaning$coding, "coding3.csv"), sep="\t", header=TRUE, quote="", comment.char="$", fill=FALSE)
 
 # And rearrange them into a more sensible format
 joinables <- coding3[,c("coding", "meaning", "node_id", "parent_id")]
@@ -72,18 +72,18 @@ for(col in c("TL", "L1", "L2", "L3")){
 }
 
 # Save the full table of codings to a csv so mappings can be produced in an Excel
-write.csv(level3, paste0(config$data$derived, "CancerCodes.csv"), 
+write.csv(level3, file.path(config$data$derived, "CancerCodes.csv"), 
           na="", row.names=FALSE)
 
 # And save it as an R data file, why not
-saveRDS(level3, paste0(config$data$derived, "CancerCodes.rds"))
+saveRDS(level3, file.path(config$data$derived, "CancerCodes.rds"))
 
 
 #--------------------------------------------------------------------------------------------------------------
 # Finally, join the coded participant data to the code labels
 
-VI_diag <- readRDS(paste0(config$data$derived, "VeI_cancer_base.rds"))
-VI_diagdur <- readRDS(paste0(config$data$derived, "VeI_cancerdur_base.rds"))
+VI_diag <- readRDS(file.path(config$data$derived, "VeI_cancer_base.rds"))
+VI_diagdur <- readRDS(file.path(config$data$derived, "VeI_cancerdur_base.rds"))
 
 # Long-format verbal interview data
 # Prepare a list of all participants and their diagnosis codes 
@@ -106,14 +106,14 @@ VI_diaglong$year[VI_diaglong$year %in% c(-1,-3)] <- NA
 # two subtly different conditions that fit in the same UKB category?
 VI_diaglong <- unique(VI_diaglong[,c("ID", "coding", "year")])
 # Save this ready to be joined to any diagnosis mapping
-saveRDS(VI_diaglong, paste0(config$data$derived, "VICancerCodes_long.rds"))
+saveRDS(VI_diaglong, file.path(config$data$derived, "VICancerCodes_long.rds"))
 
 
 
-veint <- readRDS(paste0(config$data$derived, "VICancerCodes_long.rds"))
+veint <- readRDS(file.path(config$data$derived, "VICancerCodes_long.rds"))
 # And merge
 final <- merge(veint, level3, by="coding")
 
 
 # This is a version that lists the full tree-structure for each condition for each patient
-saveRDS(final, paste0(config$data$derived, "Cancer_pts.rds"))
+saveRDS(final, file.path(config$data$derived, "Cancer_pts.rds"))

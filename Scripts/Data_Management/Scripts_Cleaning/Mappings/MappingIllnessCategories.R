@@ -10,7 +10,7 @@ noncancerillness_mapping <- function(mappath, mapcol="Mapping", outfile) {
   require(reshape2)
   require(readxl)
   # Load the long-format data of participant IDs and verbal interview diagnosis codes
-  pts <- readRDS(paste0(config$data$derived, "VIDiagnosisCodes_long.rds"))
+  pts <- readRDS(file.path(config$data$derived, "VIDiagnosisCodes_long.rds"))
   
   # Load the mapped diagnoses data
   diagnoses <- read_excel(mappath)
@@ -36,7 +36,7 @@ noncancerillness_mapping <- function(mappath, mapcol="Mapping", outfile) {
   
   # Save the result
   
-  saveRDS(ptdiagnoses, file=paste0(outfile,".rds"))
+  saveRDS(ptdiagnoses, file=file.path(outfile,".rds"))
 }
 
 #--------------------------------------------------------------------------------------------------------------
@@ -44,18 +44,18 @@ noncancerillness_mapping <- function(mappath, mapcol="Mapping", outfile) {
 #--------------------------------------------------------------------------------------------------------------
 
 # Really serious conditions to be excluded from the data set
-noncancerillness_mapping(mappath=paste0(config$cleaning$mapping, "UKBHtn_NonCancerIllness_Mapping.xlsx"),
+noncancerillness_mapping(mappath=file.path(config$cleaning$mapping, "UKBHtn_NonCancerIllness_Mapping.xlsx"),
                          mapcol="Exclude",
-                         outfile=paste0(config$data$derived, "VIhypExclude"))
+                         outfile=file.path(config$data$derived, "VIhypExclude"))
 
 
 # Hopefully final set of comorbidities of interest
-noncancerillness_mapping(mappath=paste0(config$cleaning$mapping, "UKBHtn_NonCancerIllness_Mapping.xlsx"),
+noncancerillness_mapping(mappath=file.path(config$cleaning$mapping, "UKBHtn_NonCancerIllness_Mapping.xlsx"),
                          mapcol="ComorbidityCondition",
-                         outfile=paste0(config$data$derived, "VI_HTNcomorb"))
+                         outfile=file.path(config$data$derived, "VI_HTNcomorb"))
 
 # Alternate diagnoses for "probable" BP med rubric
-noncancerillness_mapping(mappath=paste0(config$cleaning$mapping, "UKBHtn_NonCancerIllness_Mapping.xlsx"),
+noncancerillness_mapping(mappath=file.path(config$cleaning$mapping, "UKBHtn_NonCancerIllness_Mapping.xlsx"),
                         mapcol="AlternateDiagnoses",
-                          outfile=paste0(config$data$derived, "VIhypAltDiagnoses"))
+                          outfile=file.path(config$data$derived, "VIhypAltDiagnoses"))
 
