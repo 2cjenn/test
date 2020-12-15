@@ -21,10 +21,13 @@
 #' DB_extract(HTNcols, db="ukb_v2.db")
 #' }
 #'
-DB_extract <- function(extract_cols, db = "ukb_v2.db", 
-                       name_map = "K:/TEU/UKB33952_Data/Data_Dictionary/Renaming_List_UPDATE_Nov2019_TEU.csv"){
+DB_extract <- function(extract_cols, db = config$data$database, 
+                       name_map = config$cleaning$renaming,
+                       withdrawals = config$cleaning$withdrawals){
   
   mapping <- read.csv(name_map, stringsAsFactors = FALSE)
+  withdrawals <- read.csv(withdrawals, header=FALSE)
+  withdrawn_ids <- withdrawals$V1
   
   # Connect to the database
   con <- dbConnect(duckdb::duckdb(), db)
@@ -38,6 +41,7 @@ DB_extract <- function(extract_cols, db = "ukb_v2.db",
   view <- lapply(tables, function(x) tbl(con, from=x)) %>% 
     reduce(inner_join, by = "f.eid", suffix = c("", ".delete")) %>%
     select(any_of(name_to_fdot(extract_cols, mapping)), -ends_with(".delete")) %>%
+    filter(!(f.eid %in% withdrawn_ids)) %>% # Exclude participants who have withdrawn
     filter(f.eid != 6025392) %>% # NOTE: HACKY FIX TO DEAL WITH BROKEN PARTICIPANT
     collect %>%
     rename_with(fdot_to_name, mapping=mapping)
@@ -81,7 +85,7 @@ fdot_to_name <- function(ukb_col, mapping) {
 # @param mapping A dataframe with the mapping between UKB field IDs and human readable variable names
 #
 name_to_fdot <- function(col_names, 
-                         mapping = read.csv("K:/TEU/UKB33952_Data/Data_Dictionary/Renaming_List_UPDATE_Nov2019_TEU.csv", stringsAsFactors = FALSE),
+                         mapping = read.csv(config$cleaning$renaming, stringsAsFactors = FALSE),
                          link = FALSE) {
   col_names <- strsplit(col_names, split = ".", fixed = TRUE)
   col_names <- sapply(col_names, function(x){

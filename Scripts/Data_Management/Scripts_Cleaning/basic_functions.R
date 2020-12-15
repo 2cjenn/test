@@ -101,6 +101,30 @@ FN_HMHmeds_any <- function(data){
   return(y)
 }
 
+# XL add: 17/11/2020
+FN_HMHmeds_any_raw <- function(data){
+  # Combine the first medication field across males and females
+  medcombine <- coalesce(data[["HMH_MedCholBPDiabHorm.0.0"]], data[["HMH_MedCholBPDiab.0.0"]])
+  # Create a new medication variable: yes/no/do not know/prefer not to answer/NA
+  medlist <- c("Cholesterol lowering medication",
+               "Blood pressure medication",
+               "Oral contraceptive pill or minipill",
+               "Hormone replacement therapy",
+               "Insulin"
+  )
+  y <- dplyr::case_when(
+    is.na(medcombine) ~ NA_character_,
+    medcombine == "None of the above" ~ "No",
+    medcombine == "Do not know" ~ "Do not know",
+    medcombine == "Prefer not to answer" ~ "Prefer not to answer",
+    medcombine %in% medlist ~ "Yes",
+    TRUE ~ "Unexpected answer"
+  )
+  y <- factor(y, levels = c("Yes", "No", "Do not know", "Prefer not to answer"))
+  return(y)
+}
+
+
 FN_HMHmeds_type <- function(medtype, string){
   function(data){
     x <- FN_HMHmeds_any(data)
@@ -138,6 +162,26 @@ FN_Vascular_any <- function(data) {
   return(y)
 }
 
+# XL add: Same as above except not assigning 'Unanswered' to NA
+FN_Vascular_any_raw <- function(data) {
+  # Combine the vascular condition columns
+  vcon <- coalesce(data[["HMH_HeartProbs.0.0"]], data[["HMH_HeartProbs.0.1"]], 
+                   data[["HMH_HeartProbs.0.2"]], data[["HMH_HeartProbs.0.3"]])
+  # Create a new medication variable: yes/no/do not know/prefer not to answer/NA
+  condlist <- c("High blood pressure", "Stroke", "Angina", "Heart attack")
+  y <- dplyr::case_when(
+    is.na(vcon) ~ NA_character_,
+    vcon == "None of the above" ~ "No",
+    vcon == "Do not know" ~ "Do not know",
+    vcon == "Prefer not to answer" ~ "Prefer not to answer",
+    vcon %in% condlist ~ "Yes",
+    TRUE ~ "Unexpected answer"
+  )
+  y <- factor(y, levels = c("Yes", "No", "Do not know", "Prefer not to answer"))
+  return(y)
+}
+
+
 FN_Vascular_condition <- function(conditions, string) {
   function(data){
     x <- FN_Vascular_any(data)
@@ -159,6 +203,8 @@ FN_Vascular_condition <- function(conditions, string) {
 
 FN_MissingCategory <- function(missingvals, categ_name){
   function(x){
+    # XL add: Need to assign variable as factor format first 
+    x<-factor(x)
     # Categorise missing data - change levels so Prefer not to answer and NA are both "Unanswered"
     labels <- c(levels(x)[-which(levels(x) %in% missingvals)], categ_name)
     y <- as.character(x)
@@ -198,6 +244,7 @@ FN_VItoLong <- function(data, colname, instance, mapper) {
   key = c(data, colname, instance, mapper))
 }
 
+# XL: Below is for filtering VI diagnoses codes
 FN_VI_filtercodes <- function(dx_codes, colname, instance = 0, return_label = "dx", mapper) {
   function(data) {
     long_dx <- evalWithMemoization(
@@ -225,6 +272,61 @@ FN_VI_filtercodes <- function(dx_codes, colname, instance = 0, return_label = "d
     return(y)
   }
 }
+
+#XL add: 19/11/2020 Below is for filtering VI medication codes
+# Can produce meds taken status and number of meds taken in that category
+FN_VImed_filtercodes <- function(med_codes, med_name= 'statin', colname, instance = 0, return_label, mapper) {
+  function(data) {
+    long_med <- evalWithMemoization(
+      FN_VItoLong(
+        data,
+        colname = colname,
+        instance = instance,
+        mapper = mapper
+      ) %>%
+        filter(Code %in% med_codes)%>%
+        # Meds taken status
+        mutate(!!med_name:=1)%>%
+        # Number of meds taken in that category
+        add_count(ID)%>%
+        rename(!!paste0(med_name,'_num'):=n)%>%
+        #remove duplicate ID
+        distinct(ID,.keep_all = TRUE),
+      key = c(med_codes, instance, mapper)
+    )
+    
+    y <- long_med[[return_label]][match(data$ID, long_med$ID)]
+    y[is.na(y)]=0
+    
+    # If want to return med status, transfer to factor with level No/Yes; If want to return number of meds, transfer to factor format
+    if(return_label==med_name){
+      y<-factor(y,levels = c(0,1),labels = c('No','Yes'))
+    } else if(return_label==paste0(med_name,'_num')){
+      y<-factor(y)
+    }
+    
+    return(y)
+  }
+}
+
+# XL add: based on returned mapping list xlsx filter VI code
+FN_VI_comorb<-function(condition,returned_mapping){
+  function(data){
+    # Coding list of interest
+    dx_codes<-returned_mapping[which(returned_mapping$Conditions==condition),]$coding
+    y<- FN_VI_filtercodes(dx_codes = dx_codes,
+                          colname = "VeI_NonCancer",
+                          instance = 0,
+                          return_label = "dx",
+                          mapper = read.csv("K:/TEU/UKB33952_Data/Data_Dictionary/Mappings/Encoding_files/coding6_noncancerVI.csv"))(data)
+    # If not blank, assign yes
+    y<- factor(ifelse(is.na(y), 0, 1), levels = c(0,1), labels = c('No','Yes'))
+    return(y)
+  }
+  
+}
+
+
 
 FN_HEStoLong <- function(data, colname, removeNAfrom) {
   

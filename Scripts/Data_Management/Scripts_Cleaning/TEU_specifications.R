@@ -13,7 +13,7 @@ specs <- function() {
   # If you're here to write a new spec, you can run this source line interactively
   # to load all the variable derivation objects into your working environment
   # so you get autocomplete when typing them!
-  source(file.path(config$scripts$cleaning, "Reorganise", "common_derivations.R"),
+  source(file.path(config$scripts$cleaning, "derivation_objects.R"),
          local = if (sys.nframe() == 0L) {
            FALSE
            } else {
@@ -49,6 +49,38 @@ specs <- function() {
     TEU_BlP_DBP.avg
   )
   
+  HTN_control_comorb <- list(
+    TEU_VeI_CVD,
+    TEU_VeI_diab,
+    TEU_VeI_arrhy,
+    TEU_VeI_osteo,
+    TEU_VeI_joint,
+    TEU_VeI_epil,
+    TEU_VeI_mig,
+    TEU_VeI_anx,
+    TEU_VeI_dep,
+    TEU_VeI_asthCOPD
+    
+    
+  )
+ 
+  # TEUvars_raw added by XL 
+  # This block of variables are for exploring how we handle categories such as 'Prefer not to answer' and 'Do not know'
+  TEUvars_raw <-list(
+    ID,
+    Eth_Ethnicity,
+    Edu_HighestQual,
+    Alc_Status,
+    Smo_Status,
+    TEU_HoH_PreTaxInc,
+    HMH_BowelSc,
+    HMH_Diabetes,
+    HMH_IllDisab,
+    HMH_VascCond,
+    HMH_Meds_any,
+    HMH_HTNAge
+  )
+  
   HTN_control <- c(
     TEUvars_common,
     TEUvars_BP,
@@ -66,6 +98,9 @@ specs <- function() {
       TEU_HMH_BowelCancerScreen,
       TEU_Edu_HighestQual,
       TEU_Edu_ISCED,
+      TEU_Emp_CurrStat,
+      TEU_Emp_JobCode_v2,
+      TEU_HTN_Emp_category,
       TEU_HoH_PreTaxInc,
       TEU_TownsendDepInd_Quint,
       TEU_HMH_Meds_BP,
@@ -92,6 +127,67 @@ specs <- function() {
       
     )
   )
+  
+  
+  Cholstrl_control<-c(
+    TEUvars_common,
+    TEU_VeI_statin(),
+    HTN_control_comorb,
+    list(
+      # Exclusion criteria
+      TEU_VeI_seriouscomb,
+      TEU_VeI_cancer,
+      VeI_PregnantNow,
+      
+      # Covariates
+      TEU_BaC_AgeCat,
+      BSM_BMI,
+      TEU_BSM_BMIcat,
+      TEU_Smo_Status,
+      TEU_Alc_Status,
+      TEU_Alc_WeeklyAlcUnits,
+      TEU_Alc_WeeklyCat,
+      PhA_METsWkAllAct,
+      TEU_Pha_METsover1200,
+      TEU_FaH_CVD,
+      TEU_HMH_BowelCancerScreen,
+      HTN_comorb_num,
+      HTN_comorb_numcat,
+      TownsendDepInd,
+      TEU_TownsendDepInd_Quint,
+      TEU_HoH_PreTaxInc,
+      TEU_Emp_CurrStat,
+      TEU_Emp_JobCode_v2,
+      TEU_HTN_Emp_category,
+      TEU_Edu_HighestQual,
+      TEU_Edu_ISCED,
+      TEU_CountryIncome,
+      
+      ## PRS
+      TEU_LDL_C_PRS,
+      
+      #GeP_Batch,
+      GeP_ethnic,
+      GeP_PC(pc=1),
+      GeP_PC(pc=2),
+      GeP_PC(pc=3),
+      GeP_PC(pc=4),
+      GeP_PC(pc=5),
+      GeP_PC(pc=6),
+      GeP_PC(pc=7),
+      GeP_PC(pc=8),
+      GeP_PC(pc=9),
+      GeP_PC(pc=10),
+      
+      # cholesterol related
+      BBC_CHOL_Result,
+      BBC_HDL_Result,
+      BBC_LDL_Result,
+      TEU_LDLctrl_v1
+    )
+  )
+  
+
                    
   Cholesterol_PRS <- c(
     TEUvars_common,
@@ -132,6 +228,7 @@ specs <- function() {
       ADO_DateFirstIStroke
     )
   )
+
  
   return(environment())
 }

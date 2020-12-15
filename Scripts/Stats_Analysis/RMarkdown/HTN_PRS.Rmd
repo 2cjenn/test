@@ -41,7 +41,7 @@ fig <- 1
 # Load our cholesterol data
 
 source(config$functions)
-source(file.path(config$scripts$cleaning, "Reorganise", "dataset_generator.R"))
+source(file.path(config$scripts$cleaning, "dataset_generator.R"))
 
 exclusions <- function(data){
   
@@ -91,12 +91,12 @@ exclusions <- function(data){
 data <-
   evalWithMemoization(
     derive_variables(
-      database = "K:/TEU/UKB33952_Data/Data_Downloads/V2_database/ukb_v2.db",
+      database = "K:/TEU/UKB33952_Data/Data_Downloads/V2_database_duckdb0.2.1/ukb_v2.db",
       field_definitions = TEU_SPECS$HTN_control,
       exclusions = exclusions,
       dictionary = "HTN_PRS_Dict.html"
     ),
-    key = c(TEU_SPECS$HTN_control)
+    key = c(TEU_SPECS$HTN_control, exclusions)
   )
 
 

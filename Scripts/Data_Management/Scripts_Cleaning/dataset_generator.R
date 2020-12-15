@@ -19,15 +19,17 @@ if (!exists("config")) {
 DBfunc <- new.env()
 
 # Source the variable maps into the TEUmaps environment
-source(file.path(config$scripts$cleaning, "Reorganise", "TEU_specifications.R"))
-source(file.path(config$scripts$cleaning, "Reorganise", "DuckDB.R"), local=DBfunc)
+source(file.path(config$scripts$cleaning, "TEU_specifications.R"))
+source(file.path(config$scripts$cleaning, "DuckDB.R"), local=DBfunc)
 
 # Note - may in future want to use https://cran.r-project.org/web/packages/modules/
 # This means stuff in the modules *can't* see and interact with stuff in global env
 # Better practice
 
 
-derive_variables <- function(database, field_definitions, exclusions=function(x){x}, dictionary=NULL){
+derive_variables <- function(database, field_definitions, exclusions=function(x){x}, dictionary=NULL,
+                             name_map = config$cleaning$renaming,
+                             withdrawals = config$cleaning$withdrawals){
   
   # Extract the lists from the list of functions
   objects <- Map(function(p) {if(is.function(p)) {p()} else {p}}, field_definitions)
@@ -39,7 +41,7 @@ derive_variables <- function(database, field_definitions, exclusions=function(x)
   source_cols <- unique(unlist(sapply(objects, function(x) x$source)))
   
   # Extract data fields from database
-  data <- DBfunc$DB_extract(source_cols, db = database)
+  data <- DBfunc$DB_extract(source_cols, db = database, name_map = name_map, withdrawals = withdrawals)
 
   # Separate into derivations to be calculated before and after exclusion criteria
   before <- objects[sapply(objects, function(x) x$post_exclusion==FALSE)]
