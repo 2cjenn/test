@@ -5,11 +5,11 @@ library(yaml)
 
 config = yaml.load_file("config.yml")
 
-altdiag <- readRDS(file=paste0(config$data$derived, "VIhypAltDiagnoses.rds"))
+altdiag <- readRDS(file=file.path(config$data$derived, "VIhypAltDiagnoses.rds"))
 altdiag[altdiag==0] <- NA
-load(paste0(config$data$derived, "VIhypmeds.RData"))
-bac <- readRDS(paste0(config$data$derived, "basechar.rds"))
-eth <- readRDS(paste0(config$data$derived, "ethnicity.rds"))
+load(file.path(config$data$derived, "VIhypmeds.RData"))
+bac <- readRDS(file.path(config$data$derived, "basechar.rds"))
+eth <- readRDS(file.path(config$data$derived, "ethnicity.rds"))
 
 # Keep all individuals with medication data, we may not have diagnosis data for some of them
 VImeds <- merge(VImeds, altdiag[,-which(names(altdiag)=="other")], by="ID", all.x=TRUE)
@@ -161,4 +161,4 @@ table(VImeds$HTN_probablemeds, useNA='ifany')
 
 # saveRDS(medsdata, file="K:\\TEU\\APOE on Dementia\\Data Management\\R_Dataframes_TLA\\38358\\Organised\\Hypertension\\Neo\\ClassifiedHypMedGroups.rds")
 saveRDS(VImeds[,c("ID", hypdruglist, hypclasslist, "hypmedsno", "hypmeds", "HTN_txalg", "HTN_probablemeds")], 
-        file=paste0(config$data$derived, "HTNMedsRubric.rds"))
+        file=file.path(config$data$derived, "HTNMedsRubric.rds"))

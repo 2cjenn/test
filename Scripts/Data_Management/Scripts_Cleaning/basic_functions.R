@@ -1,0 +1,346 @@
+# Jennifer Collister
+# 30/03/2020
+# Create functions 
+
+# Formatting of existing UKB variables
+
+FN_id <- function(x){x}
+
+FN_unorder <- function(x){factor(x, ordered=FALSE)}
+
+FN_factor <- function(levelorder, ordered=FALSE){
+  function(x){
+    factor(x, levels=levelorder, ordered=ordered)
+  }
+}
+
+FN_toNumeric <- function(x) {
+  as.numeric(x)
+}
+
+FN_toDate <- function(x){
+  as.Date(x, origin=as.Date("1970-01-01"))
+}
+
+# Derived variables
+
+FN_labelfactor <- function(levels, labels, recodeNA=NULL){
+  function(x){
+    y <- factor(x, levels=levels, labels=labels)
+    if(!is.null(recodeNA)){
+      levels(y) <- unique(c(levels(y), recodeNA))
+      y[is.na(y)] <- recodeNA
+    }
+    return(y)
+  }
+}
+
+FN_average <- function(colnames, na.rm=TRUE){
+  function(data){
+    rowMeans(data[,colnames], na.rm)
+  }
+}
+
+FN_MYtoDate <- function(day, monthField, yearField, format="%d%B%Y"){
+  function(data){
+    as.Date(paste0(as.character(day), as.character(data[[monthField]]), as.character(data[[yearField]])), format)
+  }
+}
+
+
+FN_buckets <- function(breaks, labels=NULL, right=TRUE){
+  function(x){
+    cut(x, breaks=breaks, labels=labels, right=right)
+  }
+}
+
+FN_quantiles <- function(quant=4, labels=NULL, na.rm=TRUE){
+  function(x){
+    # if(anyNA(x)){warning("This vector contains NA values")}
+    quantiles <- quantile(x, probs=seq(0, 1, 1/quant), na.rm=na.rm)
+    if(is.null(labels)){
+      labels <- c("Q1: lowest", paste0("Q", seq(2, quant-1)), paste0("Q", quant, ": highest"))
+      }
+    test <- cut(x, breaks=quantiles, labels=labels, right=TRUE, include.lowest=TRUE)
+  }
+}
+
+FN_FamHist <- function(conditions, label){
+  function(data){
+    y <- apply(data[,c(grep("FaH_FatherIll.0.", colnames(data), fixed=TRUE),
+                       grep("FaH_MotherIll.0.", colnames(data), fixed=TRUE),
+                       grep("FaH_SibIll.0.", colnames(data), fixed=TRUE)
+    )
+    ], 1, function(x) any(x %in% conditions)
+    )
+    y <- factor(as.numeric(y), levels=c(0,1), 
+                labels=c(paste0("No family history of ", label), paste0("Family history of ", label)))
+    return(y)
+  }
+}
+
+FN_HMHmeds_any <- function(data){
+  # Combine the first medication field across males and females
+  medcombine <- coalesce(data[["HMH_MedCholBPDiabHorm.0.0"]], data[["HMH_MedCholBPDiab.0.0"]])
+  # Create a new medication variable: yes/no/do not know/prefer not to answer/NA
+  medlist <- c("Cholesterol lowering medication",
+               "Blood pressure medication",
+               "Oral contraceptive pill or minipill",
+               "Hormone replacement therapy",
+               "Insulin"
+               )
+  y <- dplyr::case_when(
+    is.na(medcombine) ~ "Unanswered",
+    medcombine == "None of the above" ~ "No",
+    medcombine == "Do not know" ~ "Do not know",
+    medcombine == "Prefer not to answer" ~ "Prefer not to answer",
+    medcombine %in% medlist ~ "Yes",
+    TRUE ~ "Unexpected answer"
+  )
+  y <- factor(y, levels = c("Yes", "No", "Do not know", "Prefer not to answer", "Unanswered"))
+  return(y)
+}
+
+# XL add: 17/11/2020
+FN_HMHmeds_any_raw <- function(data){
+  # Combine the first medication field across males and females
+  medcombine <- coalesce(data[["HMH_MedCholBPDiabHorm.0.0"]], data[["HMH_MedCholBPDiab.0.0"]])
+  # Create a new medication variable: yes/no/do not know/prefer not to answer/NA
+  medlist <- c("Cholesterol lowering medication",
+               "Blood pressure medication",
+               "Oral contraceptive pill or minipill",
+               "Hormone replacement therapy",
+               "Insulin"
+  )
+  y <- dplyr::case_when(
+    is.na(medcombine) ~ NA_character_,
+    medcombine == "None of the above" ~ "No",
+    medcombine == "Do not know" ~ "Do not know",
+    medcombine == "Prefer not to answer" ~ "Prefer not to answer",
+    medcombine %in% medlist ~ "Yes",
+    TRUE ~ "Unexpected answer"
+  )
+  y <- factor(y, levels = c("Yes", "No", "Do not know", "Prefer not to answer"))
+  return(y)
+}
+
+
+FN_HMHmeds_type <- function(medtype, string){
+  function(data){
+    x <- FN_HMHmeds_any(data)
+    if(anyNA(x)){
+      stop("Unexpected value in source data for self-reported medication.")
+    }
+    
+    # Now check for the requested medication across the columns
+    y <- apply(data[,c(grep("HMH_MedCholBPDiab.0.", colnames(data), fixed=TRUE),
+                       grep("HMH_MedCholBPDiabHorm.0.", colnames(data), fixed=TRUE))], 1, function(x) any(x==medtype))
+    # And incorporate the info on whether this participant is taking any other medication
+    y[x %in% c("Prefer not to answer", "Do not know", "Unanswered")] <- "Unanswered"
+    y[is.na(y)] <- "FALSE"
+    y <- factor(y, levels=c("TRUE", "FALSE", "Unanswered"), 
+                labels=c(paste0("Self-reported ", string), paste0("Did not report ", string), "Unanswered"))
+    return(y)
+  }
+}
+
+FN_Vascular_any <- function(data) {
+  # Combine the vascular condition columns
+  vcon <- coalesce(data[["HMH_HeartProbs.0.0"]], data[["HMH_HeartProbs.0.1"]], 
+                   data[["HMH_HeartProbs.0.2"]], data[["HMH_HeartProbs.0.3"]])
+  # Create a new medication variable: yes/no/do not know/prefer not to answer/NA
+  condlist <- c("High blood pressure", "Stroke", "Angina", "Heart attack")
+  y <- dplyr::case_when(
+    is.na(vcon) ~ "Unanswered",
+    vcon == "None of the above" ~ "No",
+    vcon == "Do not know" ~ "Do not know",
+    vcon == "Prefer not to answer" ~ "Prefer not to answer",
+    vcon %in% condlist ~ "Yes",
+    TRUE ~ "Unexpected answer"
+  )
+  y <- factor(y, levels = c("Yes", "No", "Do not know", "Prefer not to answer", "Unanswered"))
+  return(y)
+}
+
+# XL add: Same as above except not assigning 'Unanswered' to NA
+FN_Vascular_any_raw <- function(data) {
+  # Combine the vascular condition columns
+  vcon <- coalesce(data[["HMH_HeartProbs.0.0"]], data[["HMH_HeartProbs.0.1"]], 
+                   data[["HMH_HeartProbs.0.2"]], data[["HMH_HeartProbs.0.3"]])
+  # Create a new medication variable: yes/no/do not know/prefer not to answer/NA
+  condlist <- c("High blood pressure", "Stroke", "Angina", "Heart attack")
+  y <- dplyr::case_when(
+    is.na(vcon) ~ NA_character_,
+    vcon == "None of the above" ~ "No",
+    vcon == "Do not know" ~ "Do not know",
+    vcon == "Prefer not to answer" ~ "Prefer not to answer",
+    vcon %in% condlist ~ "Yes",
+    TRUE ~ "Unexpected answer"
+  )
+  y <- factor(y, levels = c("Yes", "No", "Do not know", "Prefer not to answer"))
+  return(y)
+}
+
+
+FN_Vascular_condition <- function(conditions, string) {
+  function(data){
+    x <- FN_Vascular_any(data)
+    if(anyNA(x)){
+      stop("Unexpected value in source data for self-reported medication.")
+    }
+    
+    # Now check for the requested condition across the columns
+    y <- apply(data[,c("HMH_HeartProbs.0.0", "HMH_HeartProbs.0.1", "HMH_HeartProbs.0.2", "HMH_HeartProbs.0.3")],
+               1, function(x) any(x %in% conditions))
+    # And incorporate the info on whether this participant reported any condition
+    y[x %in% c("Prefer not to answer", "Do not know", "Unanswered")] <- "Unanswered"
+    y[is.na(y)] <- "FALSE"
+    y <- factor(y, levels=c("TRUE", "FALSE", "Unanswered"), 
+                labels=c(paste0("Self-reported ", string), paste0("Did not report ", string), "Unanswered"))
+    return(y)
+  }
+}
+
+FN_MissingCategory <- function(missingvals, categ_name){
+  function(x){
+    # XL add: Need to assign variable as factor format first 
+    x<-factor(x)
+    # Categorise missing data - change levels so specified levels and NA are both "Unanswered"
+    labels <- c(levels(x)[-which(levels(x) %in% missingvals)], categ_name)
+    y <- as.character(x)
+    y[y %in% missingvals] <- categ_name
+    y[is.na(y)] <- categ_name
+    y <- factor(y, levels=labels, ordered=FALSE)
+    return(y)
+  }
+}
+
+FN_JoinPRS <- function(filepath, colname) {
+  function(x) {
+    prs <- readRDS(filepath)
+    y <- prs[[colname]][match(x, prs$ID)]
+    return(y)
+  }
+}
+
+FN_VItoLong <- function(data, colname, instance, mapper) {
+  
+  if (is.null(instance)) {
+    pattern <- paste0(colname, "(.*)\\.(.*)")
+  } else {
+    pattern <- paste0(colname, "(.*)\\.", instance, "\\.(.*)")
+  }
+  
+  long <- evalWithMemoization({
+    data %>% pivot_longer(
+      cols = starts_with(colname),
+      names_to = c(".value", "measure"),
+      names_pattern = pattern
+    ) %>%
+      drop_na(starts_with(colname)) %>%
+      mutate(Code = as.numeric(Code)) %>%
+      left_join(x = ., y = mapper, by = "Code")
+  },
+  key = c(data, colname, instance, mapper))
+}
+
+# XL: Below is for filtering VI diagnoses codes
+FN_VI_filtercodes <- function(dx_codes, colname, instance = 0, return_label = "dx", mapper) {
+  function(data) {
+    long_dx <- evalWithMemoization(
+      FN_VItoLong(
+        data,
+        colname = colname,
+        instance = instance,
+        mapper = mapper
+      ) %>%
+        filter(Code %in% dx_codes) %>%
+        group_by(ID) %>%
+        arrange(Year) %>%
+        slice_head %>%
+        mutate(dx = factor(dx),
+               Year = ifelse(Year %in% c(-1, -3), NA, Year),
+               Year_date = date_decimal(Year),
+               duration = as.numeric(round(
+                 difftime(Rec_DateAssess, Year_date, unit = "days") / 365.25,
+                 digits = 2
+               ))),
+      key = c(dx_codes, instance, mapper)
+    )
+    
+    y <- long_dx[[return_label]][match(data$ID, long_dx$ID)]
+    return(y)
+  }
+}
+
+#XL add: 19/11/2020 Below is for filtering VI medication codes
+# Can produce meds taken status and number of meds taken in that category
+FN_VImed_filtercodes <- function(med_codes, med_name= 'statin', colname, instance = 0, return_label, mapper) {
+  function(data) {
+    long_med <- evalWithMemoization(
+      FN_VItoLong(
+        data,
+        colname = colname,
+        instance = instance,
+        mapper = mapper
+      ) %>%
+        filter(Code %in% med_codes)%>%
+        # Meds taken status
+        mutate(!!med_name:=1)%>%
+        # Number of meds taken in that category
+        add_count(ID)%>%
+        rename(!!paste0(med_name,'_num'):=n)%>%
+        #remove duplicate ID
+        distinct(ID,.keep_all = TRUE),
+      key = c(med_codes, instance, mapper)
+    )
+    
+    y <- long_med[[return_label]][match(data$ID, long_med$ID)]
+    y[is.na(y)]=0
+    
+    # If want to return med status, transfer to factor with level No/Yes; If want to return number of meds, transfer to factor format
+    if(return_label==med_name){
+      y<-factor(y,levels = c(0,1),labels = c('No','Yes'))
+    } else if(return_label==paste0(med_name,'_num')){
+      y<-factor(y)
+    }
+    
+    return(y)
+  }
+}
+
+# XL add: based on returned mapping list xlsx filter VI code
+FN_VI_comorb<-function(condition,returned_mapping){
+  function(data){
+    # Coding list of interest
+    dx_codes<-returned_mapping[which(returned_mapping$Conditions==condition),]$coding
+    y<- FN_VI_filtercodes(dx_codes = dx_codes,
+                          colname = "VeI_NonCancer",
+                          instance = 0,
+                          return_label = "dx",
+                          mapper = read.csv("K:/TEU/UKB33952_Data/Data_Dictionary/Mappings/Encoding_files/coding6_noncancerVI.csv"))(data)
+    # If not blank, assign yes
+    y<- factor(ifelse(is.na(y), 0, 1), levels = c(0,1), labels = c('No','Yes'))
+    return(y)
+  }
+  
+}
+
+
+
+FN_HEStoLong <- function(data, colname, removeNAfrom) {
+  
+  pattern <- paste0(colname, "(.*)\\.0\\.(.*)")
+  
+  long <- evalWithMemoization({
+    data <- data %>% pivot_longer(
+      cols = starts_with(colname),
+      names_to = c(".value", "measure"),
+      names_pattern = pattern
+    ) 
+    data %>%
+      drop_na(!!removeNAfrom) %>%
+      select(-measure)
+  },
+  key = c(data, colname, removeNAfrom))
+}

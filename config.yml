@@ -1,10 +1,12 @@
 data:
  received: "K:/TEU/UKB33952_Data/Data_Downloads/V2_TLAtables"
+ database: "K:/TEU/UKB33952_Data/Data_Downloads/V2_database/ukb_v2.db"
  derived: "Data/Derived"
  analysed: "Data/Analysed"
- prs: "K:/TEU/UKB_Genetic_Data/bmrc-ukb-repo/prs/htn-evangelou2018/outputs"
+ prs: "K:/TEU/UKB_Genetic_Data/bmrc-ukb-repo/prs/projects/htn-evangelou2018/outputs"
 cleaning:
  withdrawals: "K:/TEU/UKB33952_Data/Data_Downloads/Withdrawals/w33952_20200204.csv"
+ renaming: "K:/TEU/UKB33952_Data/Data_Dictionary/Renaming_List_UPDATE_Nov2019_TEU.csv"
  coding: "K:/TEU/UKB33952_Data/Data_Dictionary/Mappings/Encoding_files"
  mapping: "Data/Mappings"
 outputs:
