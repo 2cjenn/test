@@ -205,7 +205,7 @@ FN_MissingCategory <- function(missingvals, categ_name){
   function(x){
     # XL add: Need to assign variable as factor format first 
     x<-factor(x)
-    # Categorise missing data - change levels so Prefer not to answer and NA are both "Unanswered"
+    # Categorise missing data - change levels so specified levels and NA are both "Unanswered"
     labels <- c(levels(x)[-which(levels(x) %in% missingvals)], categ_name)
     y <- as.character(x)
     y[y %in% missingvals] <- categ_name

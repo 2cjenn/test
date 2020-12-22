@@ -72,6 +72,11 @@ exclusions <- function(data){
 
   excl$cancer <<- nrow(data)
   
+  
+  # Any durations less than 0 are clearly errors (only 2)
+  # Any diagnoses before the age of about 20 are probably due to other causes
+  data$HTNdx_duration[(data$HTNdx_duration < 0 | data$HTNdx_duration > data$age-20)& !is.na(data$HTNdx_duration)] <- NA
+  
   # Hypertension care cascade
   # excl$hypert <- nrow(data[data$evidenceHTN==TRUE,])
   # excl$aware <- nrow(data[data$aware==TRUE & !is.na(data$aware),])
@@ -79,9 +84,10 @@ exclusions <- function(data){
   return(data)
 }
 
-data <- derive_variables(database = config$data$database, 
-                         field_definitions = TEU_SPECS$HTN_control, 
-                         exclusions = exclusions)
+data <- evalWithMemoization(derive_variables(database = config$data$database, 
+                                             field_definitions = TEU_SPECS$HTN_control,
+                                             exclusions = exclusions),
+                            key = TEU_SPECS$HTN_control)
 
 #--------------------------------------------------------------------------------------------------------------
 # Create some more complex variables
@@ -95,10 +101,6 @@ Neo_HTN_all <- function(data){
   # Any diagnoses before the age of about 20 are probably due to other causes
   data$HTNdx_duration[(data$HTNdx_duration < 0 | data$HTNdx_duration > data$age-20)& !is.na(data$HTNdx_duration)] <- NA
   
-  # Single variable for self-reported hypertension
-  # If reported in either touchscreen questionnaire or verbal interview
-  data$selfrephyp <- (data$prevHBP==TRUE & !is.na(data$prevHBP)) | data$VIhyp==TRUE
-  data$selfrephyp[is.na(data$prevHBP) & is.na(data$NumberDiagnoses)] <- NA
   
   # Single variable for self-reported meds
   # If participant answered the question in touchscreen questionnaire, use this

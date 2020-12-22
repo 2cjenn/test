@@ -646,6 +646,87 @@ TEU_ethnicgrp <- function() {
   )
 }
 
+TEU_Emp_CurrStat <- function() {
+  list(
+    name = "TEU_Emp_CurrStat",
+    source = c("Emp_CurrStatUnc.0.0", "Emp_CurrStat.0.0"),
+    mapper = function(data) {
+      y <- factor(coalesce(as.character(data[["Emp_CurrStat.0.0"]]), 
+                           as.character(data[["Emp_CurrStatUnc.0.0"]])),
+                  ordered=FALSE)
+      return(y)
+    },
+    post_exclusion = FALSE,
+    display_name = "Employment status",
+    description = "Employment status at baseline, derived by taking the employment status from TQ and applying corrections made by UKB in light of participant jobs self-reported in VI"
+  )
+}
+  
+TEU_Emp_JobCode_v2 <- function() {
+  list(
+    name = "Emp_JobCode.0.0",
+    source = "ID",
+    mapper = function(x) {
+      v2_emp <- DBfunc$DB_extract(extract_cols = c("ID", "Emp_JobCode.0.0"),
+                                db = "K:/TEU/UKB33952_Data/Data_Downloads/V2_database_duckdb0.2.1/ukb_v2.db",
+                                name_map = "K:/TEU/UKB33952_Data/Data_Dictionary/Renaming_List_UPDATE_Nov2019_TEU.csv")
+      y <- v2_emp[["Emp_JobCode.0.0"]][match(x, v2_emp$ID)]
+      y <- as.numeric(y)
+      return(y)
+    },
+    post_exclusion = FALSE,
+    display_name = "Job code",
+    description = "Job code of participant at baseline self-reported in verbal interview"
+  )
+}
+
+TEU_HTN_Emp_category <- function() {
+  list(
+    name = "TEU_Emp_category",
+    source = c("Emp_JobCode.0.0", "TEU_Emp_CurrStat"),
+    mapper = function(data) {
+      map <- read.csv("K:/TEU/UKB33952_Data/Data_Dictionary/Mappings/Encoding_files/coding2_flattened.csv")
+      data <- left_join(data, map[,c("Code", "meaning_TL")], by=c("Emp_JobCode.0.0" = "Code"))
+      data$TEU_EmpCat <- coalesce(as.character(data[["meaning_TL"]]), 
+                                  as.character(data[["TEU_Emp_CurrStat"]]))
+        
+      y <- dplyr::case_when(
+        is.na(data$TEU_EmpCat) ~ "Unemployed/unanswered",
+        data$TEU_EmpCat %in% c("Managers and Senior Officials", "Professional Occupations",
+                               "Associate Professional and Technical Occupations",
+                               "Administrative and Secretarial Occupations") ~ "White collar",
+        data$TEU_EmpCat == "Skilled Trades Occupations" ~ "Skilled trades",
+        data$TEU_EmpCat %in% c("Personal Service Occupations",
+                               "Sales and Customer Service Occupations") ~ "Services",
+        data$TEU_EmpCat %in% c("Process, Plant and Machine Operatives",
+                               "Elementary Occupations") ~ "Blue collar",
+        data$TEU_EmpCat %in% c("Other job (free text entry)",
+                               "In paid employment or self-employed") ~ "Other employment",
+        data$TEU_EmpCat == "Retired" ~ "Retired",
+        data$TEU_EmpCat == "Unable to work because of sickness or disability" ~ "Disability",
+        data$TEU_EmpCat %in% c("Looking after home and/or family",
+                               "Unemployed", "Full or part-time student",
+                               "Doing unpaid or voluntary work",
+                               "None of the above", "Prefer not to answer") ~ "Unemployed/unanswered",
+        TRUE ~ "Error?"
+      )
+      y <- factor(y, 
+                  levels=c("White collar", "Skilled trades", "Services", 
+                           "Blue collar", "Other employment", "Retired", 
+                           "Disability", "Unemployed/unanswered"), 
+                  labels=c("Professional and Administrative", "Skilled trades", "Services", 
+                           "Manual and Industrial", "Other employment", "Retired", 
+                           "Unable to work because of sickness or disability", 
+                           "Unemployed/unanswered"),
+                  ordered=FALSE)
+      
+    },
+    post_exclusion = FALSE,
+    display_name = "Employment category",
+    description = "Employment category at baseline, collapsed from job codes self-reported in verbal interview"
+  )
+}
+
 TEU_Alc_Status <- function() {
   list(
     name = "TEU_Alc_Status",
