@@ -1,0 +1,235 @@
+---
+title: "Interrogation of surprising findings with respect to the relationship of hypertension control  and CVD outcomes"
+author: "Jennifer Collister"
+date: "`r format(Sys.time(), '%d %B %Y')`"
+subtitle: "Commit hash: `r system('git rev-parse HEAD', intern=TRUE)`"
+output: 
+  word_document:
+      reference_docx: "K:/TEU/TEU Guides/TEU_DocStyle_Rmd_2020.dotx"
+      fig_width: 7
+---
+
+```{r setup, include=FALSE}
+
+library(kableExtra)
+library(knitr)
+library(yaml)
+library(here)
+library(survival)
+library(survminer)
+library(dplyr)
+
+# Specify the markdown format for knitr tables, otherwise they're not compatible with kableExtra
+options(knitr.kable.NA='', knitr.table.format = "markdown")
+options(kableExtra.auto_format = FALSE)
+# Set the root directory to the project directory (otherwise knitr works in the directory of the Rmd file by default)
+knitr::opts_knit$set(root.dir = here::here())
+knitr::opts_chunk$set(include=TRUE, echo = FALSE)
+
+# Load the project config file for filepaths etc
+config = yaml.load_file(here::here("config.yml"))
+
+source(here::here(config$functions))
+
+#-------------------------------------------------------------------------------------------------------------------
+# Load the data 
+
+data <- readRDS(file=here::here(file.path(config$data$analysed, "HTN_trtCVD.rds")))
+
+# Continuous variables should be in more useful units for HR purposes
+data$age5 <- data$age/5 # Age in 5 year increments
+data$PhA_METsWkAllAct150 <- data$PhA_METsWkAllAct/150
+data$SBP5 <- data$SBP/5
+data$DBP5 <- data$DBP/5
+
+# Comorbidities of interest
+comorbs <- readRDS(here::here(file.path(config$data$derived, "VI_HTNcomorb.rds")))
+colnames(comorbs) <- c("ID", paste0("VI_", colnames(comorbs)[-1]))
+print(colnames(comorbs)[-1])
+comorbs_raw <- c("VI_CVD", "VI_diabetes", "VI_afib_or_aflutter", "VI_asthma_or_COPD", "VI_migraine", "VI_epilepsy",
+                 "VI_anxiety_or_stress", "VI_depression_or_bipolar", "VI_Osteoarthritis", "VI_Other_joint_disorder")
+comorbs_string <- paste0(comorbs_raw, "_")
+
+#-------------------------------------------------------------------------------------------------------------------
+# Pretty variable names
+
+pretty_names <- list(age = "age, years",
+                     age5 = "age, per 5 years",
+                     agegrp = "age group, years",
+                     gender = "gender",
+                     ethnicity = "ethnicity",
+                     eth_group = "ethnic group",
+                     genWhiteBrit = "genetically categorised as White British",
+                     BMIcat = "BMI (categorical)",
+                     Smo_Status = "smoking status",
+                     weekly_alcunits = "alcohol units reported per week",
+                     weekly_alccat = "alcohol units per week (categorical)",
+                     PhA_METsWkAllAct = "weekly physical activity, MET minutes",
+                     PhA_METsWkAllAct150 = "weekly physical activity, per 150 MET minutes",
+                     METs_over1200 = "weekly physical activity",
+                     townsend_quint = "Townsend Deprivation Index, quintiles",
+                     income = "household Income, GBP",
+                     employment = "occupation type",
+                     employcat = "occupation category",
+                     ISCED = "highest level of education (ISCED)",
+                     BirthCountryIncomeLevel = "country of birth, by income level",
+                     countryResidence = "UK country of residence",
+                     BowelCancerScreening = "ever screened for bowel cancer",
+                     HTNdx_duration = "reported duration of hypertension, years",
+                     HTNdx_durcat = "repoted duration of hypertension",
+                     antiHTNmedsno = "number of antihypertensive medications",
+                     FamilyHist_CVD_ = "family history of CVD",
+                     comorbNumber_ = "no. of comorbidities",
+                     VI_afib_or_aflutter_ = "arrhythmia (afib/flutter)",
+                     VI_anxiety_or_stress_ = "anxiety",
+                     VI_asthma_or_COPD_ = "asthma or COPD",
+                     VI_depression_or_bipolar_ = "depression",
+                     VI_diabetes_ = "diabetes",
+                     VI_epilepsy_ = "epilepsy",
+                     VI_CVD_ = "Self-reported history of CVD",
+                     VI_migraine_ = "migraines",
+                     VI_substance_use_ = "substance use",
+                     VI_Osteoarthritis_ = "osteoarthritis",
+                     VI_Other_joint_disorder_ = "other joint disorder",
+                     PRS = "polygenic risk score",
+                     PRS_quint = "polygenic risk score, quintiles",
+                     controlled_ = "HTN control status",
+                     diabetes = "Self-reported diabetes",
+                     VIchol = "Self-reported hyperlipidaemia",
+                     SBP5 = "Mean baseline SBP, per 5 mmHg",
+                     DBP5 = "Mean baseline DBP, per 5 mmHg"
+                     )
+
+#-------------------------------------------------------------------------------------------------------------------
+# Setup
+
+figure <- 1
+table <- 1
+suppfig <- 1
+footnote_no <- 1
+
+rawdata <- data
+data <- data[data$priorCVD=="No",]
+
+```
+
+# What were the baseline median/mean SBP values in the analyzed individuals?
+
+In our analysis population (treated hypertensives with no serious comorbidities and no prior CVD outcomes, n=`r nrow(data)`) at baseline:
+
+| Mean SBP	| Median SBP |
+|---|---|
+| `r pretty_dp(mean(data$SBP),2)` | `r pretty_dp(median(data$SBP),2)` |
+
+# Tabulate n/% of the discordance ‘HES/ICD positive for prior CVD but self-report negative for prior CVD’ 
+
+```{r}
+
+rawdata$priorCVD <- factor(rawdata$priorCVD, levels=c("Yes", "No"), 
+                        labels=c("CVD outcome in HES data prior to baseline", "No prior CVD in HES"))
+rawdata$VI_CVD_ <- factor(rawdata$VI_CVD_, levels=c("Yes", "No"), 
+                       labels=c("Self-reported history of CVD", "No self-reported CVD"))
+
+tab <- table(rawdata$priorCVD, rawdata$VI_CVD_)
+tab <- propped(tab)
+kable(tab)
+
+```
+
+## Does controlled HTN group have higher proportions of this discordance?
+
+### HTN successfully controlled
+
+```{r}
+
+tab <- table(rawdata$priorCVD[rawdata$controlled==TRUE], rawdata$VI_CVD_[rawdata$controlled==TRUE])
+tab <- propped(tab)
+kable(tab)
+
+```
+
+### HTN inadequately controlled
+
+```{r}
+
+tab <- table(rawdata$priorCVD[rawdata$controlled==FALSE], rawdata$VI_CVD_[rawdata$controlled==FALSE])
+tab <- propped(tab)
+kable(tab)
+
+```
+
+# Compute median/mean years smoked for HTN controlled vs sub-optimally controlled: is the number of years smoked (among current or past smokers) higher in controlled HTN group compared with uncontrolled?
+
+This will take a little while, haven't worked with these data fields before - have to combine several fields. Will get back to you on this.
+
+While on the topic of smoking, would this field [Pack years of smoking](https://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=20161) and the related [Pack years adult smoking as proportion of life span exposed to smoking](https://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=20162) be of interest?  It's a derived data field submitted to UKB by someone at the university of Leicester. We don't currently have access to it but could add it to the data request Xiaonan is making tomorrow.
+
+# Which factors may be confounding the relationship between HTN control and CVD outcomes to explain the difference in HR between Model 1 and Model 2?
+
+```{r}
+
+# Time to HES diagnosis of CVD
+data$CVDevent_time <- difftime(data$CVD_date, data$recdate, units="days") %>% as.numeric
+data$CVDevent_time[data$CVDevent_time<0] <- NA # Don't count times for prevalent events
+
+# Time to death with primary cause CVD
+data$CVDdeath_time[data$CVDdeath_primary==TRUE] <- difftime(data$deathdate[data$CVDdeath_primary==TRUE], 
+                                                            data$recdate[data$CVDdeath_primary==TRUE], units="days") %>%
+  as.numeric
+
+# Loss to follow up time
+data$lfu_time <- difftime(data$lfudate, data$recdate, units="days") %>% as.numeric
+
+
+# Administrative censoring date
+ACdate <- as.Date("31/03/2017", "%d/%m/%Y")
+
+# Administrative censoring time
+data$ac_time <- difftime(ACdate, data$recdate, units="days") %>% as.numeric
+
+
+# Time of death from other causes
+data$crdeath_time[data$CVDdeath_primary==FALSE] <- data$deathdate[data$CVDdeath_primary==FALSE]
+
+
+# Combine these to find follow-up time for survival modelling
+data$stime <- apply(data[,c("CVDevent_time", "CVDdeath_time", "lfu_time", "ac_time", "crdeath_time")],
+                    1, FUN=min, na.rm=TRUE)
+
+# Determine CVD status
+data$status <- (data$stime==data$CVDevent_time & !is.na(data$CVDevent_time))  | 
+  (data$stime==data$CVDdeath_time & !is.na(data$CVDdeath_time))
+
+# Convert survival time to years
+data$stime <- as.numeric(data$stime) / 365.25
+
+# Create survival object
+surv <- Surv(data$stime, data$status)
+
+```
+
+It looks like self-reported prior CVD is having the most impact here by far.
+
+##	Model 1 (age- and sex-standardised): Age, gender, hypertension control
+
+```{r}
+
+kable(printcoxresults(df=data, surv=surv, 
+                      varlist=c("age5", "gender", "controlled_"), 
+                      pretty_names = pretty_names))
+
+```
+
+## 4.2	Exploratory model: Age, gender, hypertension control, prior CVD
+
+```{r}
+
+kable(printcoxresults(df=data, surv=surv, 
+                      varlist=c("age5", "gender", "controlled_", "VI_CVD_"), 
+                      pretty_names = pretty_names))
+
+```
+
+Recall from HTN control analyses that self-reported history of CVD was associated with a strongly significant OR of 2.11 for HTN control.
+
+![](Figures/HTNControl_Table3.png){height=700px}

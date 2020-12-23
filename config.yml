@@ -1,6 +1,9 @@
 data:
  received: "K:/TEU/UKB33952_Data/Data_Downloads/V2_TLAtables"
  database: "K:/TEU/UKB33952_Data/Data_Downloads/V2_database/ukb_v2.db"
+ portal:
+  HES: "K:/TEU/UKB33952_Data/Data_Portal/HES_diagnoses/Full_Tables/20201222"
+  deaths: "K:/TEU/UKB33952_Data/Data_Portal/Death_Registry/20201222"
  derived: "Data/Derived"
  analysed: "Data/Analysed"
  prs: "K:/TEU/UKB_Genetic_Data/bmrc-ukb-repo/prs/projects/htn-evangelou2018/outputs"

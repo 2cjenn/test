@@ -36,6 +36,8 @@ veint_HTNhist$VIals <- apply(veint_HTNhist[,grep("VeI_NonCancerCode", colnames(v
 parkcodes <- coding6[grep("parkinsons disease", coding6$meaning),]
 veint_HTNhist$VIpark <- apply(veint_HTNhist[,grep("VeI_NonCancerCode", colnames(veint_HTNhist), fixed=TRUE)], 1, function(x) any(x %in% parkcodes$coding))
 
+cholcodes <- coding6[grep("high cholesterol",  coding6$meaning),]
+veint_HTNhist$VIchol <- apply(veint_HTNhist[,grep("VeI_NonCancerCode", colnames(veint_HTNhist), fixed=TRUE)], 1, function(x) any(x %in% cholcodes$coding))
 
 # asthcodes <- coding6[grep("asthma", coding6$meaning),]
 # VI_diag$VIasth <- apply(VI_diag[,grep("VeI_NonCancerCode", colnames(VI_diag), fixed=TRUE)], 1, function(x) any(x %in% asthcodes$coding))
@@ -50,8 +52,8 @@ veint_HTNhist$VIdementia <- apply(VI_diag[,grep("VeI_NonCancerCode", colnames(VI
 # for(col in c("VIstroke", "VIhyp", "VIasth", "VIcopd", "VIdementia")){
 #   veint[[col]][is.na(veint$VeI_NonCancerCode.0)] <- NA
 # }
-alspark <- veint_HTNhist[veint_HTNhist$VIals | veint_HTNhist$VIpark,c("ID", "VIals", "VIpark")]
-saveRDS(alspark, file=file.path(config$data$derived, "veint_ALSpark_hist.rds"))                      
+# alspark <- veint_HTNhist[veint_HTNhist$VIals | veint_HTNhist$VIpark,c("ID", "VIals", "VIpark")]
+# saveRDS(alspark, file=paste0(config$data$derived, "veint_ALSpark_hist.rds"))                      
 
 # Additionally, prepare a list of all participants and their diagnosis codes 
 # this can later be joined to mappings from codes to specific conditions of interest
@@ -89,8 +91,8 @@ VIhypfirstyr$VIhypdx_yr <- VIhypfirstyr$year
 VIhypyoungest <- VIhyp %>% group_by(ID) %>% slice(which.min(age))
 VIhypyoungest$VIhypdx_age <- VIhypyoungest$age
 
-veint_HTNhist <- merge(veint_HTNhist[,c("ID", "VIstroke", "VIhyp", "VIdementia", "VeI_NNonCancer.0")], 
+veint_HTNhist <- merge(veint_HTNhist[,c("ID", "VIstroke", "VIhyp", "VIdementia", "VIchol", "VeI_NNonCancer.0")], 
                        VIhypfirstyr[,c("ID", "VIhypdx_yr")], by="ID", all.x=TRUE)
 veint_HTNhist <- merge(veint_HTNhist, VIhypyoungest[,c("ID", "VIhypdx_age")], by="ID", all.x=TRUE)
-saveRDS(veint_HTNhist[,c("ID", "VIstroke", "VIhyp", "VIhypdx_yr", "VIhypdx_age", "VIdementia", "VeI_NNonCancer.0")], 
-        file=file.path(config$data$derived, "veint_HTNhist.rds"))
+saveRDS(veint_HTNhist[,c("ID", "VIstroke", "VIhyp", "VIhypdx_yr", "VIhypdx_age", "VIdementia", "VIchol", "VeI_NNonCancer.0")], 
+        file=paste0(config$data$derived, "veint_HTNhist.rds"))
