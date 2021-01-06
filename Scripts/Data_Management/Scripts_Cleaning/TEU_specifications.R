@@ -81,6 +81,27 @@ specs <- function() {
     HMH_HTNAge
   )
   
+  UKB_genetic <- list(
+    ID,
+    GeP_UsedInPCA, # Identifies participants which met UKB QC for inclusion in PCA
+    GeP_Outliers, # Identifies participants who are outliers for missingness and heterozygosity
+    GeP_ethnic, # Identifies participants with genetic White British ancestry
+    GeP_Batch, # We may wish to adjust for batch effect
+    GeP_Plate, # We may wish to adjust for plate effect
+    GeP_PC(pc=1),
+    GeP_PC(pc=2),
+    GeP_PC(pc=3),
+    GeP_PC(pc=4),
+    GeP_PC(pc=5),
+    GeP_PC(pc=6),
+    GeP_PC(pc=7),
+    GeP_PC(pc=8),
+    GeP_PC(pc=9),
+    GeP_PC(pc=10), # Genetic Principal Components of ancestry
+    GeP_Sex, # Used to check for sex discordance
+    BaC_Sex # Used to check for sex discordance
+  )
+  
   HTN_control <- c(
     TEUvars_common,
     TEUvars_BP,
@@ -131,6 +152,10 @@ specs <- function() {
     )
   )
   
+  HTN_control_PRS <- c(
+    UKB_genetic,
+    HTN_control
+  )
   
   Cholstrl_control<-c(
     TEUvars_common,
