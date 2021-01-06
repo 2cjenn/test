@@ -101,6 +101,33 @@ specs <- function() {
     GeP_Sex, # Used to check for sex discordance
     BaC_Sex # Used to check for sex discordance
   )
+
+  MACE <- c(
+    TEUvars_common,
+    list(
+      # MACE at baseline
+      TEU_HES_MACE_prev,
+      TEU_VeI_MACE_nonc,
+      TEU_VeI_MACE_op,
+      TEU_HMH_MACE_prev,
+      TEU_MACE_prev,
+      # MACE outcome
+      TEU_HES_MACE_fudate,
+      TEU_Dth_MACE_dthdate,
+      TEU_MACE_eventdate,
+      TEU_Dth_NotMACE_dthdate,
+      Admin_CensorDate,
+      BaC_LostFUDate,
+      TEU_MACE_censordate,
+      TEU_MACE_status,
+      TEU_MACE_time,
+      TEU_MACE_time_yrs,
+      # MACE subtypes 
+      TEU_HES_MACE_fucomp,
+      TEU_MACE_fucomp
+    )
+    
+  )
   
   HTN_control <- c(
     TEUvars_common,
@@ -158,7 +185,7 @@ specs <- function() {
   )
   
   Cholstrl_control<-c(
-    TEUvars_common,
+    MACE,
     TEU_VeI_statin(),
     HTN_control_comorb,
     list(
@@ -212,9 +239,11 @@ specs <- function() {
       BBC_HDL_Result,
       BBC_LDL_Result,
       TEU_LDLctrl_v1
+      
     )
   )
   
+ 
 
                    
   Cholesterol_PRS <- c(
@@ -257,6 +286,11 @@ specs <- function() {
     )
   )
 
+
+    
+    
+    
+  
  
   return(environment())
 }

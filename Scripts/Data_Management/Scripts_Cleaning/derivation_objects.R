@@ -1621,7 +1621,7 @@ TEU_VeI_statin <- function(){
                                       rename(Code=value)%>%select(Code,meaning)),
       post_exclusion = FALSE,
       display_name = 'Statin taken status at baseline',
-      description = 'Whether people self reported taking statin at baseline during verbal interview'
+      description = 'Whether people self reported taking statin at baseline during verbal interview (statin includes simvastatin, fluvastatin, pravastatin, atorvastatin, rosuvastatin)'
     ),
     list(
       name = 'TEU_VeI_statin_num',
@@ -1727,7 +1727,7 @@ TEU_VeI_diab <- function(condition='diabetes'){
     ,
     post_exclusion=FALSE,
     display_name = 'diabetes status at baseline (VI)',
-    description = 'Whether participant self reported CVD at baseline in verbal interview'
+    description = 'Whether participant self reported diabetes at baseline in verbal interview'
   )
 }
 
@@ -2075,4 +2075,374 @@ TEU_CountryIncome=function(){
     description = 'Categorise self-reported country of birth from touchscreen and verbal interview by income level'
   )
 }
+
+#--------------------------------------------------------------------------------------------------------------
+# XL add: MACE (status) at baseline (TEU_MACE_prev) 
+
+# 1. HES source 
+TEU_HES_MACE_prev<-function(){
+  list(
+    name='TEU_HES_MACE_prev',
+    source=c('ID','Rec_DateAssess',
+             paste0("HES_ICD9Diag.0.", seq(0, 46, by=1)),
+             paste0("HES_ICD9DateFirst.0.",seq(0,46,by=1)),
+             paste0("HES_ICD10Diag.0.", seq(0, 212, by=1)),
+             paste0("HES_ICD10DateFirst.0.",seq(0,212,by=1)),
+             paste0("HES_OPCS4Code.0.",seq(0,116,by=1)),
+             paste0("HES_OPCS4DateFirst.0.",seq(0,116,by=1))),
+    mapper=FN_HES_First(ICD9_xlsx = read_excel(file.path(config$cleaning$mapping,'MACE/HES_ICD9_Mapping_XL_V1.1_20201222.xlsx'),col_types = c('text')),
+                        ICD10_xlsx = read_excel(file.path(config$cleaning$mapping,'MACE/HES_ICD10_Mapping_XL_V1.2_20210104.xlsx'),col_types = c('text')),
+                        OPCS4_xlsx = read_excel(file.path(config$cleaning$mapping,'MACE/HES_OPCS4_Mapping_20201217.xlsx'),col_types = c('text')),
+                        condition = 'MACE',
+                        return_label = 'baseline'),
+    post_exclusion=FALSE,
+    display_name='MACE status identified from HES data prior to or at baseline',
+    description='MACE status identified from HES (ICD-9, ICD-10, OPCS-4) data prior to or at baseline'
+  )
+}
+
+
+# 2. Verbal Interview (VI)
+TEU_VeI_MACE_nonc<-function(condition='MACE'){
+  list(
+    name = 'TEU_VeI_MACE_nonc',
+    source=c("ID", "Rec_DateAssess",
+      paste0("VeI_NonCancerCode.0.", seq(0, 33, by=1)),
+      paste0("VeI_NonCancerYear.0.", seq(0, 33, by=1))),
+    mapper= function(data){
+      # read in analysis codings xlsx
+      mapping=read_excel(file.path(config$cleaning$mapping,'MACE/VI_NonCancerIllness_Mapping_20201215.xlsx'),col_types = c('text'))
+      
+      dx_codes<-as.numeric(mapping[which(mapping$Conditions==condition),]$Code)
+      
+      y<- FN_VI_filtercodes(dx_codes = dx_codes,
+                            colname = "VeI_NonCancer",
+                            instance = 0,
+                            return_label = "dx",
+                            mapper = read.csv("K:/TEU/UKB33952_Data/Data_Dictionary/Mappings/Encoding_files/coding6_noncancerVI.csv"))(data)
+      # If not blank, assign yes
+      y<- factor(ifelse(is.na(y), 0, 1), levels = c(0,1), labels = c('No','Yes'))
+      
+      return(y)
+    },      
+    post_exclusion = FALSE,
+    display_name = "Self-reported MACE from Verbal interview at baseline",
+    description = "Self-reported MACE from Verbal interview (Non-cancer illness) at baseline"
+  )
+}
+
+
+TEU_VeI_MACE_op<-function(condition='MACE'){
+  list(
+    name = 'TEU_VeI_MACE_op',
+    source = c("ID", "Rec_DateAssess",
+               paste0("VeI_OperationCode.0.", seq(0, 31, by=1)),
+               paste0("VeI_OperationYear.0.", seq(0, 31, by=1))),
+    mapper = function(data){
+      
+      mapping=read_excel(file.path(config$cleaning$mapping,'MACE/VI_Operations_Mapping_20201215.xlsx'),col_types = c('text'))
+      
+      dx_codes<-as.numeric(mapping[which(mapping$Conditions==condition),]$Code)
+      y<- FN_VI_filtercodes(dx_codes = dx_codes,
+                            colname = "VeI_Operation",
+                            instance = 0,
+                            return_label = "dx",
+                            mapper = read.csv("K:/TEU/UKB33952_Data/Data_Dictionary/Mappings/Encoding_files/coding5_operationsVI.csv"))(data)
+      # If not blank, assign yes
+      y<- factor(ifelse(is.na(y), 0, 1), levels = c(0,1), labels = c('No','Yes'))
+      
+      return(y)
+    },
+    post_exclusion = FALSE,
+    display_name = 'Self-reported MACE operation from Verbal interview at baseline',
+    description = 'Self-reported MACE operation from Verbal interview (Operations) at baseline'
+  )
+  
+}
+
+
+# XL add: MACE (TQ)
+TEU_HMH_MACE_prev <- function() {
+  list(
+    name = "TEU_HMH_MACE_prev", 
+    source = c(paste0("HMH_HeartProbs.0.", c(0:3))), 
+    mapper = function(data){
+      y<-FN_Vascular_condition(condition=c("Stroke", "Heart attack"), string="MACE")(data)
+      levels(y)<-c('Yes','No','Unanswered')
+      return(y)
+      },
+    post_exclusion = FALSE,
+    display_name = "Self-reported MACE on TQ at baseline",
+    description = "Self-reported MACE (Stroke or Heart attack) on touchscreen questionnaire at baseline"
+  )
+}
+
+# MACE at baseline (HES + VI + TQ)
+TEU_MACE_prev <- function(){
+  list(
+    name = 'TEU_MACE_prev',
+    source = c('TEU_HES_MACE_prev','TEU_VeI_MACE_nonc','TEU_VeI_MACE_op','TEU_HMH_MACE_prev'),
+    mapper = function(data){
+      y<-factor(apply(data,1, function(x) any(x %in% 'Yes')),levels = c('FALSE','TRUE'),labels = c('No','Yes'))
+      return(y)
+    },
+    post_exclusion = FALSE,
+    display_name = 'MACE status at baseline',
+    description = 'MACE status at baseline identified from HES, Verbal Interview (VI), Touchscreen (TQ)'
+  )
+}
+
+
+
+
+
+#--------------------------------------------------------------------------------------------------------------
+# XL add: MACE outcome (status + time) (TEU_MACE_outcome())
+
+#####################
+# MACE Event date (HES follow-up + Dth)
+####################
+
+# MACE HES date (follow-up)
+TEU_HES_MACE_fudate<-function(){
+  list(
+    name='TEU_HES_MACE_fudate',
+    source=c('ID','Rec_DateAssess',
+             paste0("HES_ICD9Diag.0.", seq(0, 46, by=1)),
+             paste0("HES_ICD9DateFirst.0.",seq(0,46,by=1)),
+             paste0("HES_ICD10Diag.0.", seq(0, 212, by=1)),
+             paste0("HES_ICD10DateFirst.0.",seq(0,212,by=1)),
+             paste0("HES_OPCS4Code.0.",seq(0,116,by=1)),
+             paste0("HES_OPCS4DateFirst.0.",seq(0,116,by=1))),
+    mapper=FN_HES_First(ICD9_xlsx = read_excel(file.path(config$cleaning$mapping,'MACE/HES_ICD9_Mapping_XL_V1.1_20201222.xlsx'),col_types = c('text')),
+                        ICD10_xlsx = read_excel(file.path(config$cleaning$mapping,'MACE/HES_ICD10_Mapping_XL_V1.2_20210104.xlsx'),col_types = c('text')),
+                        OPCS4_xlsx = read_excel(file.path(config$cleaning$mapping,'MACE/HES_OPCS4_Mapping_20201217.xlsx'),col_types = c('text')),
+                        condition = 'MACE',
+                        return_label = 'followup_date'),
+    post_exclusion=FALSE,
+    display_name='MACE date from HES data at follow-up',
+    description='We keep first occurrence date of MACE identified from HES (ICD-9, ICD-10, OPCS-4) and this field only returns the first occurrence dates that are after baseline'
+  )
+}
+
+# MACE subtypes (from HES ONLY)
+TEU_HES_MACE_fucomp<-function(){
+  list(
+    name='TEU_HES_MACE_fucomp',
+    source=c('ID','Rec_DateAssess',
+             paste0("HES_ICD9Diag.0.", seq(0, 46, by=1)),
+             paste0("HES_ICD9DateFirst.0.",seq(0,46,by=1)),
+             paste0("HES_ICD10Diag.0.", seq(0, 212, by=1)),
+             paste0("HES_ICD10DateFirst.0.",seq(0,212,by=1)),
+             paste0("HES_OPCS4Code.0.",seq(0,116,by=1)),
+             paste0("HES_OPCS4DateFirst.0.",seq(0,116,by=1))),
+    mapper=FN_HES_First(ICD9_xlsx = read_excel(file.path(config$cleaning$mapping,'MACE/HES_ICD9_Mapping_XL_V1.1_20201222.xlsx'),col_types = c('text')),
+                        ICD10_xlsx = read_excel(file.path(config$cleaning$mapping,'MACE/HES_ICD10_Mapping_XL_V1.2_20210104.xlsx'),col_types = c('text')),
+                        OPCS4_xlsx = read_excel(file.path(config$cleaning$mapping,'MACE/HES_OPCS4_Mapping_20201217.xlsx'),col_types = c('text')),
+                        condition = 'MACE',
+                        return_label = 'followup_comp'),
+    post_exclusion=FALSE,
+    display_name='MACE subtypes from HES data at follow-up',
+    description='MACE subtypes (Nonfatal MI/Nonfatal Stroke) from HES data at follow-up'
+  )
+}
+
+
+# MACE Dth date
+TEU_Dth_MACE_dthdate <-function(){
+    list(
+      name = 'TEU_Dth_MACE_dthdate',
+      source = c('ID',"Dth_ICD10Underlying.0.0","Dth_Date.0.0"),
+      mapper = function(data){
+        mapping=read_excel(file.path(config$cleaning$mapping,'MACE/HES_ICD10_Mapping_XL_V1.2_20210104.xlsx'),col_types = c('text'))
+        ICD10_codes<-mapping[which(mapping$Conditions=='MACE'),]$Code
+        
+        y<-FN_Dth_filtercodes(ICD10_codes = ICD10_codes,return_label = 'dth_date')(data)
+        
+        return(y)
+      },
+      post_exclusion = FALSE,
+      display_name = 'MACE death date',
+      description = 'Death date caused by MACE from Death Registry data'
+    )
+}
+
+
+# MACE event date (Based on MACE HES date (fu) + MACE Dth date)
+TEU_MACE_eventdate<-function(){
+  list(
+    name = 'TEU_MACE_eventdate',
+    source = c('TEU_HES_MACE_fudate','TEU_Dth_MACE_dthdate'),
+    mapper = function(data){
+      y<-pmin(data$TEU_HES_MACE_fudate,data$TEU_Dth_MACE_dthdate,na.rm = TRUE)
+      return(y)
+    },
+    post_exclusion = FALSE,
+    display_name = 'MACE event date',
+    description = 'MACE event date at follow-up based on HES and Death Registry data'
+  )
+  
+}
+
+#####################
+# MACE censoring date (Other Death date, Admin censoring date, lost to follow-up date)
+####################
+
+# Other cause dth date
+TEU_Dth_NotMACE_dthdate <-function(){
+    list(
+      name = 'TEU_Dth_NotMACE_dthdate',
+      source = c('ID', "Dth_ICD10Underlying.0.0","Dth_Date.0.0"),
+      mapper = function(data){
+        mapping=read_excel(file.path(config$cleaning$mapping,'MACE/HES_ICD10_Mapping_XL_V1.2_20210104.xlsx'),col_types = c('text'))
+        ICD10_codes<-mapping[which(is.na(mapping$Conditions)),]$Code
+        
+        y<-FN_Dth_filtercodes(ICD10_codes = ICD10_codes,return_label = 'dth_date')(data)
+        
+        return(y)
+      },
+      post_exclusion = FALSE,
+      display_name = 'Non MACE death date',
+      description = 'Death date caused by non MACE from Death Registry data'
+    )
+}
+
+
+# Admin censoring date
+#https://biobank.ndph.ox.ac.uk/showcase/exinfo.cgi?src=Data_providers_and_dates#:~:text=Censoring%20dates,that%20provider%20is%20mostly%20complete.
+# England 31/03/2017, Scotland 31/10/2016, Wales 29/02/2016
+Admin_CensorDate<-function(){
+  list(
+    name = 'Admin_CensorDate',
+    source = 'TEU_Rec_Country',
+    mapper = function(x){
+      y <- dplyr::case_when(
+        x=='England' ~ FN_toDate('2017-03-31'),
+        x=='Scotland' ~ FN_toDate('2016-10-31'),
+        x=='Wales' ~ FN_toDate('2016-02-29')
+      )
+      return(y)
+    },
+    post_exclusion = FALSE,
+    display_name = 'Administrative censoring date from UKB',
+    description = 'Censoring date according to origin of hospital data'
+  )
+}
+
+
+# Lost to follow-up
+BaC_LostFUDate<-function(){
+  list(
+    name = 'BaC_LostFUDate',
+    source = 'BaC_DateLostFU.0.0',
+    mapper = FN_toDate,
+    post_exclusion = FALSE,
+    display_name = 'Date lost to follow-up',
+    description = 'Date lost to follow-up'
+  )
+}
+
+
+# MACE censoring date (Based on Death date by non MACE + Admin censoring date + lost to follow-up)
+TEU_MACE_censordate<-function(){
+  list(
+    name = 'TEU_MACE_censordate',
+    source = c('TEU_Dth_NotMACE_dthdate','Admin_CensorDate','BaC_LostFUDate'),
+    mapper = function(data){
+      y<-pmin(data$TEU_Dth_NotMACE_dthdate,data$Admin_CensorDate,data$BaC_LostFUDate,na.rm = TRUE)
+      return(y)
+    },
+    post_exclusion = FALSE,
+    display_name = 'MACE censoring date',
+    description = 'Censoring date for MACE outcome'
+  )
+}
+
+
+
+# MACE censoring status (0=censored 1=MACE event)
+TEU_MACE_status<-function(){
+  list(
+    name = 'TEU_MACE_status',
+    source = c('TEU_MACE_censordate','TEU_MACE_eventdate'),
+    mapper = function(data){
+      # Check if censoring date has NA
+      if (anyNA(data$TEU_MACE_censordate)==TRUE){
+        warning('Missing Censoring Date: Need to double check!')
+      }
+      data<-data%>%
+        mutate(status=case_when(
+          !is.na(TEU_MACE_eventdate) & TEU_MACE_eventdate<=TEU_MACE_censordate ~ 1,
+          is.na(TEU_MACE_eventdate) |(!is.na(TEU_MACE_eventdate)&TEU_MACE_eventdate>TEU_MACE_censordate) ~ 0))
+      
+      return(data$status)
+      
+    },
+    post_exclusion = FALSE,
+    display_name = 'MACE censoring status',
+    description = 'Censoring status of MACE (0=censored, 1=MACE event)'
+    
+  )
+}
+
+# MACE subtypes at follow up
+# Note: If MACE dx date is the same as MACE dth date, we treat it as dx instead of dth (Only few people (about 56) had same MACE dx and dth date)
+TEU_MACE_fucomp<-function(){
+  list(
+    name = 'TEU_MACE_fucomp',
+    source = c('TEU_MACE_status','TEU_HES_MACE_fucomp','TEU_MACE_eventdate','TEU_HES_MACE_fudate'),
+    mapper = function(data){
+      data=data%>%
+        mutate(TEU_MACE_fucomp=case_when(TEU_MACE_status==0  ~ NA_character_,
+                                         TEU_MACE_status==1 & is.na(TEU_HES_MACE_fudate) & !is.na(TEU_MACE_eventdate) ~ 'CVD death',
+                                         TRUE ~ TEU_HES_MACE_fucomp
+        ))
+      return(data$TEU_MACE_fucomp)
+    },
+    post_exclusion = FALSE,
+    display_name = 'MACE subtypes at follow-up',
+    description = 'MACE subtypes at follow-up (Nonfatal MI/Nonfatal Stroke/Cardiovascular Death)'
+  )
+}
+
+
+
+# MACE follow-up time
+TEU_MACE_time<-function(){
+  list(
+    name = 'TEU_MACE_time',
+    source = c('TEU_MACE_status','TEU_MACE_censordate','TEU_MACE_eventdate','Rec_DateAssess'),
+    mapper = function(data){
+      
+      data=data%>%
+        mutate(time=case_when(
+          TEU_MACE_status==0 ~ as.numeric(difftime(TEU_MACE_censordate, Rec_DateAssess, unit='days')),
+          TEU_MACE_status==1 ~ as.numeric(difftime(TEU_MACE_eventdate, Rec_DateAssess, unit='days'))))
+      
+      return(data$time)
+      
+    },
+    post_exclusion = FALSE,
+    display_name = 'MACE follow up time',
+    description = 'If censoring status=0, this fields returns time difference in days between censoring date and baseline date.
+    If censoring status=1, this fields returns time to MACE event.'
+  )
+}
+
+# MACE follow-up time (in years)
+TEU_MACE_time_yrs<-function(){
+  list(
+    name = 'TEU_MACE_time_yrs',
+    source = 'TEU_MACE_time',
+    mapper = function(x){
+      as.numeric(round(x/365.25, digits = 2)) 
+    },
+    post_exclusion = FALSE,
+    display_name = 'MACE follow up time in years',
+    description = 'Transfer TEU_MACE_time variable in years'
+  )
+}
+
+
+
 

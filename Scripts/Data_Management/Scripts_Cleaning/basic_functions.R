@@ -344,3 +344,132 @@ FN_HEStoLong <- function(data, colname, removeNAfrom) {
   },
   key = c(data, colname, removeNAfrom))
 }
+
+
+# XL add: 10/12/2020
+
+# First occurrence dataset within each HES source (ICD9 or ICD10 or OPCS4)
+# data should contain ID, RecDate and corresponding HES dx and date fields
+# Return dataset with ID, RecDate, Dx, DateFirst for first occurrence of condition from each HES source
+FN_eachHES_First<-function(data,HES_xlsx,condition='MACE',colname,removeNAfrom){
+  
+  # Produce code of interest from analysis codings xlsx
+  #HES_codes=HES_xlsx[which(HES_xlsx$Conditions==condition),]$Code
+  
+  # First occurrence of condition
+  sub_long <- evalWithMemoization(
+    FN_HEStoLong(
+      data=data,
+      colname = colname,
+      removeNAfrom = removeNAfrom
+    ) %>%
+      rename_at(vars(starts_with('Diag')),~paste0('Code'))%>%
+      # Left join to get 'Conditions' and 'ConditionsType' column
+      left_join(x = ., y = HES_xlsx, by = "Code")%>%
+      # Filter based on condition of interest
+      filter(Conditions==condition)%>%
+      #filter(Code %in% HES_codes) %>%
+      group_by(ID) %>%
+      # Select the first occurrence
+      slice(which.min(DateFirst))%>%
+      # Keep essential columns only
+      select(ID,Rec_DateAssess,ConditionsType,DateFirst)
+    ,
+    key = c(data,colname,removeNAfrom,HES_xlsx,condition)
+  )
+}
+
+# First occurrence dataset among all HES source (ICD9 + ICD10 + OPCS4)
+# Note: One can specify which source they do not wish to use as NULL (e.g. ICD9_xlsx=NULL)
+# * return_label='baseline': condition status at baseline
+# * return_label='baseline_comp': condition subtype at baseline
+# * return_label='followup': condition status at followup 
+# * return_label='followup_date': Date of condition at follow up (used for deriving outcome)
+# * return_label='followup_comp': condition subtype at follow up
+FN_HES_First<-function(ICD9_xlsx,ICD10_xlsx,OPCS4_xlsx,condition='MACE',return_label='baseline'){
+  function(data){
+    
+    HES_total<-NULL
+    
+    # Get first occurrence dataset from each HES source and rbind together
+    if (!is.null(ICD9_xlsx)){
+      HES_total<-FN_eachHES_First(data%>%select(ID,'Rec_DateAssess',
+                                                paste0("HES_ICD9Diag.0.", seq(0, 46, by=1)),
+                                                paste0("HES_ICD9DateFirst.0.",seq(0,46,by=1))),
+                                  HES_xlsx = ICD9_xlsx,
+                                  condition = condition,
+                                  colname = 'HES_ICD9',
+                                  removeNAfrom = c('Diag','DateFirst'))
+    }
+    
+    if (!is.null(ICD10_xlsx)){
+      HES_total<-HES_total%>%bind_rows(
+        FN_eachHES_First(data%>%select(ID,'Rec_DateAssess',
+                                       paste0("HES_ICD10Diag.0.", seq(0, 212, by=1)),
+                                       paste0("HES_ICD10DateFirst.0.",seq(0,212,by=1))),
+                         HES_xlsx = ICD10_xlsx,
+                         condition = condition,
+                         colname = 'HES_ICD10',
+                         removeNAfrom = c('Diag','DateFirst')))
+    }
+    
+    if (!is.null(OPCS4_xlsx)){
+      HES_total<-HES_total%>%bind_rows(
+        FN_eachHES_First(data%>%select(ID,'Rec_DateAssess',
+                                       paste0("HES_OPCS4Code.0.",seq(0,116,by=1)),
+                                       paste0("HES_OPCS4DateFirst.0.",seq(0,116,by=1))),
+                         HES_xlsx = OPCS4_xlsx,
+                         condition = condition,
+                         colname = 'HES_OPCS4',
+                         removeNAfrom = c('Code','DateFirst')))
+    }
+    
+    # Select first occurrence among all HES source
+    long_dx=HES_total%>%
+      group_by(ID)%>%
+      # Select the first occurrence
+      slice(which.min(DateFirst))%>%
+      
+      mutate(
+        # Indicator column for previous dx (prior to or at baseline)
+        baseline=ifelse(DateFirst<=Rec_DateAssess,1,0),
+        # Subtype column (prior to or at baseline)
+        baseline_comp=ifelse(DateFirst<=Rec_DateAssess,ConditionsType,NA),
+        # Indicator column for dx (Follow-Up)
+        followup=ifelse(DateFirst>Rec_DateAssess,1,0),
+        # Date of condition (Follow-up)
+        followup_date=if_else(DateFirst>Rec_DateAssess,DateFirst,as.Date(NA)),
+        # Subtype column (Follow-up)
+        followup_comp=ifelse(DateFirst>Rec_DateAssess,ConditionsType,NA)
+      )
+    
+    y <- long_dx[[return_label]][match(data$ID, long_dx$ID)]
+    
+    if(return_label%in%c('baseline','followup')){
+      y[is.na(y)]=0
+      y<-factor(y,levels = c(0,1),labels = c('No','Yes'))
+    }
+    return(y)
+    
+  }
+}
+
+# Filter death registry data based on ICD10 codes
+# * return_label='dth': return 'yes' for ones with primary cause of death by specified ICD10 codes  
+# * return_label='dth_date': return death date by specified ICD10 codes 
+FN_Dth_filtercodes <- function(ICD10_codes, return_label = "dth") {
+  function(data) {
+    
+    subdata <- data %>%
+      filter(Dth_ICD10Underlying.0.0 %in% ICD10_codes) %>%
+      mutate(dth = 'Yes',
+             dth_date = Dth_Date.0.0)
+
+    y <- subdata[[return_label]][match(data$ID, subdata$ID)]
+    return(y)
+  }
+}
+
+
+
+
