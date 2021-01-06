@@ -1295,6 +1295,51 @@ GeP_ethnic <- function() {
 }
 
 
+GeP_UsedInPCA <- function() {
+  list(
+    name = "GeP_UsedInPCA", 
+    source = c("GeP_UsedInPCA.0.0"), 
+    mapper = FN_id,
+    post_exclusion = FALSE,
+    display_name = "string",
+    description = "text"
+  )
+}
+
+GeP_Outliers <- function() {
+  list(
+    name = "GeP_Outliers", 
+    source = c("GeP_Outliers.0.0"), 
+    mapper = FN_id,
+    post_exclusion = FALSE,
+    display_name = "string",
+    description = "text"
+  )
+}
+
+GeP_Plate <- function() {
+  list(
+    name = "GeP_Plate", 
+    source = c("GeP_Plate.0.0"), 
+    mapper = FN_id,
+    post_exclusion = FALSE,
+    display_name = "string",
+    description = "text"
+  )
+}
+
+GeP_Sex <- function() {
+  list(
+    name = "GeP_Sex", 
+    source = c("GeP_Sex.0.0"), 
+    mapper = FN_id,
+    post_exclusion = FALSE,
+    display_name = "string",
+    description = "text"
+  )
+}
+
+
 TEU_VeI_HTN_prevalent <- function(dx_codes = c(1065, 1072)) {
   list(
     list(
@@ -2030,5 +2075,4 @@ TEU_CountryIncome=function(){
     description = 'Categorise self-reported country of birth from touchscreen and verbal interview by income level'
   )
 }
-
 
