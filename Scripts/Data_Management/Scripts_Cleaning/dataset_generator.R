@@ -37,6 +37,10 @@ derive_variables <- function(database, field_definitions, exclusions=function(x)
   # Find the names of the requested columns
   outcols <- sapply(objects, function(x) x$name)
   
+  # Remove duplicated variables that have been entered more than once in spec
+  objects <- objects[!duplicated(outcols)]
+  outcols <- outcols[!duplicated(outcols)]
+  
   # And the names of all the source columns required
   source_cols <- unique(unlist(sapply(objects, function(x) x$source)))
   
