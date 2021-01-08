@@ -2,6 +2,12 @@
 # 30/03/2020
 # Create functions 
 
+# Load the project config file for filepaths etc
+if (!exists("config")) {
+  library(yaml)
+  config = yaml.load_file("config.yml")
+}
+
 # Formatting of existing UKB variables
 
 FN_id <- function(x){x}
@@ -326,6 +332,69 @@ FN_VI_comorb<-function(condition,returned_mapping){
   
 }
 
+
+
+FN_HES_episodes <- function(episodePath=file.path(config$data$portal$HES, "hesin.txt")) {
+  
+  episodes <- evalWithMemoization(
+    fread(episodePath) %>%
+      select(eid, ins_index, dsource, epistart, admidate) %>%
+      rename(ID = eid) %>%
+      mutate(Date = as.Date(coalesce(epistart, admidate), format="%d/%m/%Y")) %>%
+      select(-epistart, -admidate),
+    key = episodePath
+  )
+  
+  return(episodes)
+}
+
+FN_HES_diagnoses <- function(icd=10,
+                          episodePath=file.path(config$data$portal$HES, "hesin.txt"),
+                          diagnosisPath=file.path(config$data$portal$HES, "hesin_diag.txt")) {
+  
+  # Not going to spend ages building in loads of tolerance but here's a simple check!
+  if(is.character(icd)) {
+    icd <- as.numeric(str_remove(tolower(icd), "icd"))
+  }
+  stopifnot(icd %in% c(9, 10))
+  
+  codecol <- glue("diag_icd{icd}")
+  
+  diagnoses <- evalWithMemoization(
+    fread(diagnosisPath) %>%
+      rename(ID = eid,
+             Code = !!codecol) %>%
+      select(ID, ins_index, arr_index, level, Code) %>%
+      filter(!is.na(Code)) %>%
+      inner_join(FN_HES_episodes(episodePath), by=c("ID", "ins_index")),
+    key = c(episodePath, diagnosisPath, icd)
+  )
+  return(diagnoses)
+}
+
+FN_HES_operations <- function(opcs=4,
+                           episodePath=file.path(config$data$portal$HES, "hesin.txt"),
+                           operationPath=file.path(config$data$portal$HES, "hesin_oper.txt")) {
+  
+  # Not going to spend ages building in loads of tolerance but here's a simple check!
+  if(is.character(opcs)) {
+    opcs <- as.numeric(str_remove(tolower(opcs), "opcs"))
+  }
+  stopifnot(opcs %in% c(3, 4))
+  
+  codecol <- glue("oper{opcs}")
+  
+  operations <- evalWithMemoization(
+    fread(operationPath) %>%
+      rename(ID = eid,
+             Code = !!codecol) %>%
+      select(ID, ins_index, arr_index, level, Code) %>%
+      filter(!is.na(Code)) %>%
+      inner_join(FN_HES_episodes(episodePath), by=c("ID", "ins_index")),
+    key = c(episodePath, operationPath, opcs)
+  )
+  return(operations)
+}
 
 
 FN_HEStoLong <- function(data, colname, removeNAfrom) {
