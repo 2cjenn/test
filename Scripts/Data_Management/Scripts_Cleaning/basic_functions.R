@@ -334,8 +334,10 @@ FN_VI_comorb<-function(condition,returned_mapping){
 
 
 
-FN_HES_episodes <- function(episodePath=file.path(config$data$portal$HES, "hesin.txt")) {
+FN_HES_episodes <- function(HESPath=config$data$portal$HES) {
   
+  episodePath=file.path(HESPath, "hesin.txt")
+                        
   episodes <- evalWithMemoization(
     fread(episodePath) %>%
       select(eid, ins_index, dsource, epistart, admidate) %>%
@@ -348,9 +350,10 @@ FN_HES_episodes <- function(episodePath=file.path(config$data$portal$HES, "hesin
   return(episodes)
 }
 
-FN_HES_diagnoses <- function(icd=10,
-                          episodePath=file.path(config$data$portal$HES, "hesin.txt"),
-                          diagnosisPath=file.path(config$data$portal$HES, "hesin_diag.txt")) {
+FN_HES_diagnoses <- function(icd=10, HESPath=config$data$portal$HES) {
+  
+  episodePath=file.path(HESPath, "hesin.txt")
+  diagnosisPath=file.path(HESPath, "hesin_diag.txt")
   
   # Not going to spend ages building in loads of tolerance but here's a simple check!
   if(is.character(icd)) {
@@ -372,9 +375,10 @@ FN_HES_diagnoses <- function(icd=10,
   return(diagnoses)
 }
 
-FN_HES_operations <- function(opcs=4,
-                           episodePath=file.path(config$data$portal$HES, "hesin.txt"),
-                           operationPath=file.path(config$data$portal$HES, "hesin_oper.txt")) {
+FN_HES_operations <- function(opcs=4, HESPath=config$data$portal$HES) {
+  
+  episodePath=file.path(HESPath, "hesin.txt")
+  operationPath=file.path(HESPath, "hesin_oper.txt")
   
   # Not going to spend ages building in loads of tolerance but here's a simple check!
   if(is.character(opcs)) {
@@ -396,6 +400,30 @@ FN_HES_operations <- function(opcs=4,
   return(operations)
 }
 
+FN_Death_registry <- function(deathPath=config$data$portal$deaths) {
+  
+  recordPath <- file.path(deathPath, "death.txt")
+  causePath <- file.path(deathPath, "death_cause.txt")
+  
+  deaths <- evalWithMemoization(
+    fread(recordPath) %>%
+      select(eid, ins_index, dsource, date_of_death) %>%
+      rename(ID = eid) %>%
+      mutate(Date = as.Date(date_of_death, format="%d/%m/%Y")) %>%
+      select(-date_of_death),
+    key = recordPath
+  )
+  
+  causes <- evalWithMemoization(
+    fread(causePath) %>%
+      rename(ID = eid,
+             Code = cause_icd10) %>%
+      inner_join(deaths, by=c("ID", "ins_index")),
+    key = c(causePath, deaths)
+  )
+  
+  return(causes)
+}
 
 FN_HEStoLong <- function(data, colname, removeNAfrom) {
   
