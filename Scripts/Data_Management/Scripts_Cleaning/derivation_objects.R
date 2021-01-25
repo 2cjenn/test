@@ -518,12 +518,12 @@ TEU_Rec_AssessCentre <- function() {
     name = "TEU_Rec_AssessCentre",
     source = "Rec_AssessCentre.0.0",
     mapper = function(x) {
-      map <- read.csv("K:/TEU/UKB33952_Data/Data_Dictionary/Mappings/Encoding_files/coding10.csv")
+      map <- read.csv_kdrive(file.path(config$cleaning$coding,"coding10_AssessmentCentre.csv"))
       # https://biobank.ndph.ox.ac.uk/showcase/coding.cgi?id=10
       y <- merge(x,
                  map,
                  by.x = "x",
-                 by.y = "value",
+                 by.y = "Code",
                  all.x = TRUE)
       y <- y[["meaning"]]
     },
@@ -1351,7 +1351,7 @@ TEU_VeI_HTN_prevalent <- function(dx_codes = c(1065, 1072)) {
                                  colname = "VeI_NonCancer",
                                  instance = 0,
                                  return_label = "dx",
-                                 mapper = read.csv("K:/TEU/UKB33952_Data/Data_Dictionary/Mappings/Encoding_files/coding6_noncancerVI.csv")),
+                                 mapper = file.path(config$cleaning$coding,"coding6_flat_NonCancerIllness.csv")),
       post_exclusion = FALSE,
       display_name = "Self-reported HTN, verbal interview",
       description = "Whether hypertension was reported in verbal interview at baseline"
@@ -1365,7 +1365,7 @@ TEU_VeI_HTN_prevalent <- function(dx_codes = c(1065, 1072)) {
                                  colname = "VeI_NonCancer",
                                  instance = 0, 
                                  return_label = "duration",
-                                 mapper = read.csv("K:/TEU/UKB33952_Data/Data_Dictionary/Mappings/Encoding_files/coding6_noncancerVI.csv")),
+                                 mapper = file.path(config$cleaning$coding,"coding6_flat_NonCancerIllness.csv")),
       post_exclusion = FALSE,
       display_name = "Self-reported duration of hypertension, verbal interview",
       description = "Duration of hypertension reported in verbal interview at baseline"
@@ -1474,7 +1474,7 @@ TEU_VeI_CVD_prevalent <- function() {
                                     colname = "VeI_NonCancer",
                                  instance = 0,
                                  return_label = "dx",
-                                 mapper = read.csv("K:/TEU/UKB33952_Data/Data_Dictionary/Mappings/Encoding_files/coding6_noncancerVI.csv")),
+                                 mapper = file.path(config$cleaning$coding,"coding6_flat_NonCancerIllness.csv")),
       post_exclusion = FALSE,
       display_name = "Category of CVD reported in verbal interview at baseline",
       description = "Type of CVD"
@@ -1488,7 +1488,7 @@ TEU_VeI_CVD_prevalent <- function() {
                                     colname = "VeI_NonCancer",
                                    instance = 0, 
                                    return_label = "duration",
-                                 mapper = read.csv("K:/TEU/UKB33952_Data/Data_Dictionary/Mappings/Encoding_files/coding6_noncancerVI.csv")),
+                                 mapper = file.path(config$cleaning$coding,"coding6_flat_NonCancerIllness.csv")),
       post_exclusion = FALSE,
       display_name = "Duration of CVD reported in verbal interview at baseline",
       description = "Time since CVD diagnosis"
@@ -1506,7 +1506,8 @@ TEU_HES_CVD_prevalent <- function(ICD10_codes, ICD9_codes) {
       mapper = FN_HES_first(ICD10_codes = ICD10_codes,
                             ICD9_codes = ICD9_codes,
                             instance = 0,
-                            return_label = "dx"),
+                            return_label = "dx",
+                            record_level = FALSE),
       post_exclusion = FALSE,
       display_name = "Category of CVD recorded in HES data prior to baseline",
       description = "Type of CVD"
@@ -1519,7 +1520,8 @@ TEU_HES_CVD_prevalent <- function(ICD10_codes, ICD9_codes) {
       mapper = FN_HES_first(ICD10_codes = ICD10_codes,
                             ICD9_codes = ICD9_codes,
                             instance = 0,
-                            return_label = "duration"),
+                            return_label = "duration",
+                            record_level = FALSE),
       post_exclusion = FALSE,
       display_name = "Duration of CVD recorded in HES data prior to baseline",
       description = "Time since CVD diagnosis"
@@ -1564,7 +1566,7 @@ TEU_VeI_CVD_operation <- function(dx_codes) {
                                     colname = "VeI_Operation",
                                     instance = 0,
                                     return_label = "dx",
-                                    mapper = read.csv("K:/TEU/UKB33952_Data/Data_Dictionary/Mappings/Encoding_files/coding5_operationsVI.csv")
+                                    mapper = file.path(config$cleaning$coding,"coding5_flat_Operation.csv")
                                     ),
       post_exclusion = FALSE,
       display_name = "Category of CVD operation reported in verbal interview at baseline",
@@ -1579,7 +1581,7 @@ TEU_VeI_CVD_operation <- function(dx_codes) {
                                     colname = "VeI_Operation",
                                     instance = 0, 
                                     return_label = "duration",
-                                    mapper = read.csv("K:/TEU/UKB33952_Data/Data_Dictionary/Mappings/Encoding_files/coding5_operationsVI.csv")
+                                    mapper = file.path(config$cleaning$coding,"coding5_flat_Operation.csv")
                                     ),
       post_exclusion = FALSE,
       display_name = "Duration of CVD operation reported in verbal interview at baseline",
@@ -1617,8 +1619,7 @@ TEU_VeI_statin <- function(){
                                     colname = "VeI_Med", 
                                     instance = 0,
                                     return_label = 'statin',
-                                    mapper = read.csv(paste0(config$cleaning$coding,'coding4.csv'))%>%
-                                      rename(Code=value)%>%select(Code,meaning)),
+                                    mapper = file.path(config$cleaning$coding,'coding4_Treatments.csv')),
       post_exclusion = FALSE,
       display_name = 'Statin taken status at baseline',
       description = 'Whether people self reported taking statin at baseline during verbal interview (statin includes simvastatin, fluvastatin, pravastatin, atorvastatin, rosuvastatin)'
@@ -1632,8 +1633,7 @@ TEU_VeI_statin <- function(){
                                     colname = "VeI_Med", 
                                     instance = 0,
                                     return_label = 'statin_num',
-                                    mapper = read.csv(paste0(config$cleaning$coding,'coding4.csv'))%>%
-                                      rename(Code=value)%>%select(Code,meaning)),
+                                    mapper = file.path(config$cleaning$coding,'coding4_Treatments.csv')),
       post_exclusion = FALSE,
       display_name = 'Number of statin taken at baseline',
       description = 'Number of statin people self reported taking at baseline during verbal interview'
@@ -1651,14 +1651,14 @@ TEU_VeI_seriouscomb <- function(){
                paste0("VeI_NonCancerYear.0.", seq(0, 33, by=1))),
     mapper = function(data){
       # read in finalised excel mapping
-      noncancer=read_excel('K:\\TEU\\TEU_Members\\Xiaonan_Liu\\Projects\\PRSonCholstrl\\Data\\Mappings\\UKBHtn_NonCancerIllness_Mapping.xlsx')
+      noncancer=read.xlsx_kdrive(file.path(config$cleaning$mapping,'UKBHtn_NonCancerIllness_Mapping.xlsx'))
       # Coding list for serious comorbidities
       serious_comb<-noncancer[which(noncancer$Exclude=='Yes'),]$coding
       y<- FN_VI_filtercodes(dx_codes = serious_comb,
                         colname = "VeI_NonCancer",
                         instance = 0,
                         return_label = "dx",
-                        mapper = read.csv("K:/TEU/UKB33952_Data/Data_Dictionary/Mappings/Encoding_files/coding6_noncancerVI.csv"))(data)
+                        mapper = file.path(config$cleaning$coding,"coding6_flat_NonCancerIllness.csv"))(data)
       
       return(y)
     },      
@@ -1677,15 +1677,14 @@ TEU_VeI_cancer<- function(){
                paste0("VeI_CancerYear.0.",c(0:5))),
     mapper =function(data){
       
-      cancer_mapper=read.csv("K:/TEU/UKB33952_Data/Data_Dictionary/Mappings/Encoding_files/coding3_flattened.csv")%>%
-        rename(dx=meaning)
-      cancer_codes=cancer_mapper[-which(cancer_mapper$meaning_TL%in% c('skin cancer')),]$Code
+      cancer_mapper=read.csv_kdrive(file.path(config$cleaning$coding,"coding3_flat_Cancer.csv"))
+      cancer_codes=cancer_mapper[-which(cancer_mapper$L0%in% c('skin cancer')),]$Code
       
       y<- FN_VI_filtercodes(dx_codes = cancer_codes,
                             colname = "VeI_Cancer",
                             instance = 0,
                             return_label = "dx",
-                            mapper = cancer_mapper)(data)
+                            mapper = file.path(config$cleaning$coding,"coding3_flat_Cancer.csv"))(data)
       return(y)
     },
     post_exclusion = FALSE,
@@ -1704,7 +1703,7 @@ TEU_VeI_CVD <- function(condition='CVD'){
                paste0("VeI_NonCancerCode.0.", seq(0, 33, by=1)),
                paste0("VeI_NonCancerYear.0.", seq(0, 33, by=1))),
     mapper = FN_VI_comorb(condition=condition,
-                          returned_mapping = read_excel('K:\\TEU\\TEU_Members\\Xiaonan_Liu\\Projects\\PRSonCholstrl\\Data\\Mappings\\UKBHtn_NonCancerIllness_Mapping.xlsx')%>%
+                          returned_mapping = read.xlsx_kdrive(file.path(config$cleaning$mapping,'UKBHtn_NonCancerIllness_Mapping.xlsx'))%>%
                             rename(Conditions=ComorbidityCondition))
   ,
   post_exclusion=FALSE,
@@ -1722,7 +1721,7 @@ TEU_VeI_diab <- function(condition='diabetes'){
                paste0("VeI_NonCancerCode.0.", seq(0, 33, by=1)),
                paste0("VeI_NonCancerYear.0.", seq(0, 33, by=1))),
     mapper = FN_VI_comorb(condition=condition,
-                          returned_mapping = read_excel('K:\\TEU\\TEU_Members\\Xiaonan_Liu\\Projects\\PRSonCholstrl\\Data\\Mappings\\UKBHtn_NonCancerIllness_Mapping.xlsx')%>%
+                          returned_mapping = read.xlsx_kdrive(file.path(config$cleaning$mapping,'UKBHtn_NonCancerIllness_Mapping.xlsx'))%>%
                             rename(Conditions=ComorbidityCondition))
     ,
     post_exclusion=FALSE,
@@ -1739,7 +1738,7 @@ TEU_VeI_arrhy <- function(condition="afib or aflutter"){
                paste0("VeI_NonCancerCode.0.", seq(0, 33, by=1)),
                paste0("VeI_NonCancerYear.0.", seq(0, 33, by=1))),
     mapper = FN_VI_comorb(condition=condition,
-                          returned_mapping = read_excel('K:\\TEU\\TEU_Members\\Xiaonan_Liu\\Projects\\PRSonCholstrl\\Data\\Mappings\\UKBHtn_NonCancerIllness_Mapping.xlsx')%>%
+                          returned_mapping = read.xlsx_kdrive(file.path(config$cleaning$mapping,'UKBHtn_NonCancerIllness_Mapping.xlsx'))%>%
                             rename(Conditions=ComorbidityCondition))
     ,
     post_exclusion=FALSE,
@@ -1756,7 +1755,7 @@ TEU_VeI_osteo <- function(condition="Osteoarthritis"){
                paste0("VeI_NonCancerCode.0.", seq(0, 33, by=1)),
                paste0("VeI_NonCancerYear.0.", seq(0, 33, by=1))),
     mapper = FN_VI_comorb(condition=condition,
-                          returned_mapping = read_excel('K:\\TEU\\TEU_Members\\Xiaonan_Liu\\Projects\\PRSonCholstrl\\Data\\Mappings\\UKBHtn_NonCancerIllness_Mapping.xlsx')%>%
+                          returned_mapping = read.xlsx_kdrive(file.path(config$cleaning$mapping,'UKBHtn_NonCancerIllness_Mapping.xlsx'))%>%
                             rename(Conditions=ComorbidityCondition))
     ,
     post_exclusion=FALSE,
@@ -1775,7 +1774,7 @@ TEU_VeI_joint <- function(condition="Other joint disorder"){
                paste0("VeI_NonCancerCode.0.", seq(0, 33, by=1)),
                paste0("VeI_NonCancerYear.0.", seq(0, 33, by=1))),
     mapper = FN_VI_comorb(condition=condition,
-                          returned_mapping = read_excel('K:\\TEU\\TEU_Members\\Xiaonan_Liu\\Projects\\PRSonCholstrl\\Data\\Mappings\\UKBHtn_NonCancerIllness_Mapping.xlsx')%>%
+                          returned_mapping = read.xlsx_kdrive(file.path(config$cleaning$mapping,'UKBHtn_NonCancerIllness_Mapping.xlsx'))%>%
                             rename(Conditions=ComorbidityCondition))
     ,
     post_exclusion=FALSE,
@@ -1793,7 +1792,7 @@ TEU_VeI_epil <- function(condition="epilepsy"){
                paste0("VeI_NonCancerCode.0.", seq(0, 33, by=1)),
                paste0("VeI_NonCancerYear.0.", seq(0, 33, by=1))),
     mapper = FN_VI_comorb(condition=condition,
-                          returned_mapping = read_excel('K:\\TEU\\TEU_Members\\Xiaonan_Liu\\Projects\\PRSonCholstrl\\Data\\Mappings\\UKBHtn_NonCancerIllness_Mapping.xlsx')%>%
+                          returned_mapping = read.xlsx_kdrive(file.path(config$cleaning$mapping,'UKBHtn_NonCancerIllness_Mapping.xlsx'))%>%
                             rename(Conditions=ComorbidityCondition))
     ,
     post_exclusion=FALSE,
@@ -1810,7 +1809,7 @@ TEU_VeI_mig <- function(condition="migraine"){
                paste0("VeI_NonCancerCode.0.", seq(0, 33, by=1)),
                paste0("VeI_NonCancerYear.0.", seq(0, 33, by=1))),
     mapper = FN_VI_comorb(condition=condition,
-                          returned_mapping = read_excel('K:\\TEU\\TEU_Members\\Xiaonan_Liu\\Projects\\PRSonCholstrl\\Data\\Mappings\\UKBHtn_NonCancerIllness_Mapping.xlsx')%>%
+                          returned_mapping = read.xlsx_kdrive(file.path(config$cleaning$mapping,'UKBHtn_NonCancerIllness_Mapping.xlsx'))%>%
                             rename(Conditions=ComorbidityCondition))
     ,
     post_exclusion=FALSE,
@@ -1828,7 +1827,7 @@ TEU_VeI_anx <-function(condition="anxiety or stress"){
                paste0("VeI_NonCancerCode.0.", seq(0, 33, by=1)),
                paste0("VeI_NonCancerYear.0.", seq(0, 33, by=1))),
     mapper = FN_VI_comorb(condition=condition,
-                          returned_mapping = read_excel('K:\\TEU\\TEU_Members\\Xiaonan_Liu\\Projects\\PRSonCholstrl\\Data\\Mappings\\UKBHtn_NonCancerIllness_Mapping.xlsx')%>%
+                          returned_mapping = read.xlsx_kdrive(file.path(config$cleaning$mapping,'UKBHtn_NonCancerIllness_Mapping.xlsx'))%>%
                             rename(Conditions=ComorbidityCondition))
     ,
     post_exclusion=FALSE,
@@ -1845,7 +1844,7 @@ TEU_VeI_dep <-function(condition="depression or bipolar"){
                paste0("VeI_NonCancerCode.0.", seq(0, 33, by=1)),
                paste0("VeI_NonCancerYear.0.", seq(0, 33, by=1))),
     mapper = FN_VI_comorb(condition=condition,
-                          returned_mapping = read_excel('K:\\TEU\\TEU_Members\\Xiaonan_Liu\\Projects\\PRSonCholstrl\\Data\\Mappings\\UKBHtn_NonCancerIllness_Mapping.xlsx')%>%
+                          returned_mapping = read.xlsx_kdrive(file.path(config$cleaning$mapping,'UKBHtn_NonCancerIllness_Mapping.xlsx'))%>%
                             rename(Conditions=ComorbidityCondition))
     ,
     post_exclusion=FALSE,
@@ -1863,7 +1862,7 @@ TEU_VeI_asthCOPD <- function(condition="asthma or COPD"){
                paste0("VeI_NonCancerCode.0.", seq(0, 33, by=1)),
                paste0("VeI_NonCancerYear.0.", seq(0, 33, by=1))),
     mapper = FN_VI_comorb(condition=condition,
-                          returned_mapping = read_excel('K:\\TEU\\TEU_Members\\Xiaonan_Liu\\Projects\\PRSonCholstrl\\Data\\Mappings\\UKBHtn_NonCancerIllness_Mapping.xlsx')%>%
+                          returned_mapping = read.xlsx_kdrive(file.path(config$cleaning$mapping,'UKBHtn_NonCancerIllness_Mapping.xlsx'))%>%
                             rename(Conditions=ComorbidityCondition))
     ,
     post_exclusion=FALSE,
@@ -1900,6 +1899,34 @@ HTN_comorb_numcat<- function(){
     description = 'Number of comorbidities participants self-reported at baseline'
   )
 }
+
+Prosp_comorb_num<- function(){
+  list(
+    name = 'Prosp_comorb_num',
+    source = c('TEU_VeI_diab','TEU_VeI_arrhy','TEU_VeI_asthCOPD','TEU_VeI_mig','TEU_VeI_epil',
+               'TEU_VeI_anx','TEU_VeI_dep','TEU_VeI_osteo','TEU_VeI_joint'),
+    mapper = function(data){
+      rowSums(sapply(select(data,everything()),function(x) grepl("Yes",x)))
+    },
+    post_exclusion = FALSE,
+    display_name = 'Number of comorbidities',
+    description = 'Number of comorbidities self-reported at baseline (CVD not included as comorbidity)'
+  )
+}
+
+Prosp_comorb_numcat<- function(){
+  list(
+    name = 'Prosp_comorb_numcat',
+    source = c('Prosp_comorb_num'),
+    mapper = function(x){
+      factor(ifelse(x>=3,'>=3',x),levels = c('0','1','2','>=3'),ordered = FALSE)
+    },
+    post_exclusion = FALSE,
+    display_name = 'Number of comorbidities (Categorical)',
+    description = 'Number of comorbidities participants self-reported at baseline (CVD not included as comorbidity)'
+  )
+}
+
 
 # From JC: Job variable 
 TEU_Emp_CurrStat <- function() {
@@ -1942,9 +1969,9 @@ TEU_HTN_Emp_category <- function() {
     name = "TEU_Emp_category",
     source = c("Emp_JobCode.0.0", "TEU_Emp_CurrStat"),
     mapper = function(data) {
-      map <- read.csv("K:/TEU/UKB33952_Data/Data_Dictionary/Mappings/Encoding_files/coding2_flattened.csv")
-      data <- left_join(data, map[,c("Code", "meaning_TL")], by=c("Emp_JobCode.0.0" = "Code"))
-      data$TEU_EmpCat <- coalesce(as.character(data[["meaning_TL"]]), 
+      map <- read.csv_kdrive(file.path(config$cleaning$coding,"coding2_flat_Employment.csv"))
+      data <- left_join(data, map[,c("Code", "L0")], by=c("Emp_JobCode.0.0" = "Code"))
+      data$TEU_EmpCat <- coalesce(as.character(data[["L0"]]), 
                                   as.character(data[["TEU_Emp_CurrStat"]]))
       
       y <- dplyr::case_when(
@@ -1990,9 +2017,9 @@ Emp_category <- function() {
     name = "Emp_category",
     source = c("Emp_JobCode.0.0", "TEU_Emp_CurrStat"),
     mapper = function(data) {
-      map <- read.csv("K:/TEU/UKB33952_Data/Data_Dictionary/Mappings/Encoding_files/coding2_flattened.csv")
-      data <- left_join(data, map[,c("Code", "meaning_TL")], by=c("Emp_JobCode.0.0" = "Code"))
-      data$TEU_EmpCat <- coalesce(as.character(data[["meaning_TL"]]), 
+      map <- read.csv_kdrive(file.path(config$cleaning$coding,"coding2_flat_Employment.csv"))
+      data <- left_join(data, map[,c("Code", "L0")], by=c("Emp_JobCode.0.0" = "Code"))
+      data$TEU_EmpCat <- coalesce(as.character(data[["L0"]]), 
                                   as.character(data[["TEU_Emp_CurrStat"]]))
       
       y <- dplyr::case_when(
@@ -2041,8 +2068,8 @@ TEU_CountryIncome=function(){
     mapper = function(data){
       
       # Generate mapping first 
-      UKB_mapper=read.csv(file.path(config$cleaning$coding,'coding89_flattened.csv'))
-      Income_mapper=read_xlsx('K:\\TEU\\TEU_Members\\Xiaonan_Liu\\Projects\\PRSonCholstrl\\Data\\Mappings\\CountryIncomeCategory.xlsx',sheet = 'UKB_CountryNames')
+      UKB_mapper=read.csv_kdrive(file.path(config$cleaning$coding,'coding89_flat_CountryOfBirth.csv'))
+      Income_mapper=read.xlsx_kdrive(file.path(config$cleaning$mapping,'CountryIncomeCategory.xlsx'),sheet = 'UKB_CountryNames')
       
       mapper=left_join(UKB_mapper[,c('Code','meaning')],Income_mapper[,c('coding','IncomeLevel')],by=c('Code'='coding'))%>%
         mutate(TEU_Incomelevel=case_when(meaning=='United Kingdom' ~ 'UK',
@@ -2080,21 +2107,26 @@ TEU_CountryIncome=function(){
 # XL add: MACE (status) at baseline (TEU_MACE_prev) 
 
 # 1. HES source 
-TEU_HES_MACE_prev<-function(){
+TEU_HES_MACE_prev<-function(record_level=FALSE){
   list(
     name='TEU_HES_MACE_prev',
-    source=c('ID','Rec_DateAssess',
-             paste0("HES_ICD9Diag.0.", seq(0, 46, by=1)),
-             paste0("HES_ICD9DateFirst.0.",seq(0,46,by=1)),
-             paste0("HES_ICD10Diag.0.", seq(0, 212, by=1)),
-             paste0("HES_ICD10DateFirst.0.",seq(0,212,by=1)),
-             paste0("HES_OPCS4Code.0.",seq(0,116,by=1)),
-             paste0("HES_OPCS4DateFirst.0.",seq(0,116,by=1))),
-    mapper=FN_HES_First(ICD9_xlsx = read_excel(file.path(config$cleaning$mapping,'MACE/HES_ICD9_Mapping_XL_V1.1_20201222.xlsx'),col_types = c('text')),
-                        ICD10_xlsx = read_excel(file.path(config$cleaning$mapping,'MACE/HES_ICD10_Mapping_XL_V1.2_20210104.xlsx'),col_types = c('text')),
-                        OPCS4_xlsx = read_excel(file.path(config$cleaning$mapping,'MACE/HES_OPCS4_Mapping_20201217.xlsx'),col_types = c('text')),
+    source=if(record_level){
+      c("ID","Rec_DateAssess")
+    } else {
+      c("ID", "Rec_DateAssess",
+        paste0("HES_ICD9Diag.0.", seq(0, 46, by=1)),
+        paste0("HES_ICD9DateFirst.0.",seq(0,46,by=1)),
+        paste0("HES_ICD10Diag.0.", seq(0, 212, by=1)),
+        paste0("HES_ICD10DateFirst.0.",seq(0,212,by=1)),
+        paste0("HES_OPCS4Code.0.",seq(0,116,by=1)),
+        paste0("HES_OPCS4DateFirst.0.",seq(0,116,by=1)))
+    },
+    mapper=FN_HES_First(ICD9_xlsx = file.path(config$cleaning$mapping,'MACE/HES_ICD9_Mapping_20210112.xlsx'),
+                        ICD10_xlsx = file.path(config$cleaning$mapping,'MACE/HES_ICD10_Mapping_20210121.xlsx'),
+                        OPCS4_xlsx = file.path(config$cleaning$mapping,'MACE/HES_OPCS4_Mapping_XL_V1.1_20210121.xlsx'),
                         condition = 'MACE',
-                        return_label = 'baseline'),
+                        return_label = 'baseline',
+                        record_level = record_level),
     post_exclusion=FALSE,
     display_name='MACE status identified from HES data prior to or at baseline',
     description='MACE status identified from HES (ICD-9, ICD-10, OPCS-4) data prior to or at baseline'
@@ -2111,7 +2143,7 @@ TEU_VeI_MACE_nonc<-function(condition='MACE'){
       paste0("VeI_NonCancerYear.0.", seq(0, 33, by=1))),
     mapper= function(data){
       # read in analysis codings xlsx
-      mapping=read_excel(file.path(config$cleaning$mapping,'MACE/VI_NonCancerIllness_Mapping_20201215.xlsx'),col_types = c('text'))
+      mapping=read.xlsx_kdrive(file.path(config$cleaning$mapping,'MACE/VI_NonCancerIllness_Mapping_20210112.xlsx'),col_types = c('text'))
       
       dx_codes<-as.numeric(mapping[which(mapping$Conditions==condition),]$Code)
       
@@ -2119,7 +2151,7 @@ TEU_VeI_MACE_nonc<-function(condition='MACE'){
                             colname = "VeI_NonCancer",
                             instance = 0,
                             return_label = "dx",
-                            mapper = read.csv("K:/TEU/UKB33952_Data/Data_Dictionary/Mappings/Encoding_files/coding6_noncancerVI.csv"))(data)
+                            mapper = file.path(config$cleaning$coding,"coding6_flat_NonCancerIllness.csv"))(data)
       # If not blank, assign yes
       y<- factor(ifelse(is.na(y), 0, 1), levels = c(0,1), labels = c('No','Yes'))
       
@@ -2140,14 +2172,14 @@ TEU_VeI_MACE_op<-function(condition='MACE'){
                paste0("VeI_OperationYear.0.", seq(0, 31, by=1))),
     mapper = function(data){
       
-      mapping=read_excel(file.path(config$cleaning$mapping,'MACE/VI_Operations_Mapping_20201215.xlsx'),col_types = c('text'))
+      mapping=read.xlsx_kdrive(file.path(config$cleaning$mapping,'MACE/VI_Operations_Mapping_XL_V1.1_20210121.xlsx'),col_types = c('text'))
       
       dx_codes<-as.numeric(mapping[which(mapping$Conditions==condition),]$Code)
       y<- FN_VI_filtercodes(dx_codes = dx_codes,
                             colname = "VeI_Operation",
                             instance = 0,
                             return_label = "dx",
-                            mapper = read.csv("K:/TEU/UKB33952_Data/Data_Dictionary/Mappings/Encoding_files/coding5_operationsVI.csv"))(data)
+                            mapper = file.path(config$cleaning$coding,"coding5_flat_Operation.csv"))(data)
       # If not blank, assign yes
       y<- factor(ifelse(is.na(y), 0, 1), levels = c(0,1), labels = c('No','Yes'))
       
@@ -2204,66 +2236,83 @@ TEU_MACE_prev <- function(){
 ####################
 
 # MACE HES date (follow-up)
-TEU_HES_MACE_fudate<-function(){
+TEU_HES_MACE_fudate<-function(record_level=FALSE){
   list(
     name='TEU_HES_MACE_fudate',
-    source=c('ID','Rec_DateAssess',
-             paste0("HES_ICD9Diag.0.", seq(0, 46, by=1)),
-             paste0("HES_ICD9DateFirst.0.",seq(0,46,by=1)),
-             paste0("HES_ICD10Diag.0.", seq(0, 212, by=1)),
-             paste0("HES_ICD10DateFirst.0.",seq(0,212,by=1)),
-             paste0("HES_OPCS4Code.0.",seq(0,116,by=1)),
-             paste0("HES_OPCS4DateFirst.0.",seq(0,116,by=1))),
-    mapper=FN_HES_First(ICD9_xlsx = read_excel(file.path(config$cleaning$mapping,'MACE/HES_ICD9_Mapping_XL_V1.1_20201222.xlsx'),col_types = c('text')),
-                        ICD10_xlsx = read_excel(file.path(config$cleaning$mapping,'MACE/HES_ICD10_Mapping_XL_V1.2_20210104.xlsx'),col_types = c('text')),
-                        OPCS4_xlsx = read_excel(file.path(config$cleaning$mapping,'MACE/HES_OPCS4_Mapping_20201217.xlsx'),col_types = c('text')),
+    source=if(record_level){
+      c("ID","Rec_DateAssess")
+      } else {
+        c("ID", "Rec_DateAssess",
+          paste0("HES_ICD9Diag.0.", seq(0, 46, by=1)),
+          paste0("HES_ICD9DateFirst.0.",seq(0,46,by=1)),
+          paste0("HES_ICD10Diag.0.", seq(0, 212, by=1)),
+          paste0("HES_ICD10DateFirst.0.",seq(0,212,by=1)),
+          paste0("HES_OPCS4Code.0.",seq(0,116,by=1)),
+          paste0("HES_OPCS4DateFirst.0.",seq(0,116,by=1)))
+        },
+    mapper=FN_HES_First(ICD9_xlsx = file.path(config$cleaning$mapping,'MACE/HES_ICD9_Mapping_20210112.xlsx'),
+                        ICD10_xlsx = file.path(config$cleaning$mapping,'MACE/HES_ICD10_Mapping_20210121.xlsx'),
+                        OPCS4_xlsx = file.path(config$cleaning$mapping,'MACE/HES_OPCS4_Mapping_XL_V1.1_20210121.xlsx'),
                         condition = 'MACE',
-                        return_label = 'followup_date'),
+                        return_label = 'followup_date',
+                        record_level = record_level),
     post_exclusion=FALSE,
     display_name='MACE date from HES data at follow-up',
-    description='We keep first occurrence date of MACE identified from HES (ICD-9, ICD-10, OPCS-4) and this field only returns the first occurrence dates that are after baseline'
+    description=paste0('We keep first occurrence date of MACE identified from HES (ICD-9, ICD-10, OPCS-4) and this field only returns the first occurrence dates that are after baseline.',
+                       'The HES data used was ', if(record_level) {'record-level data from the UKB data portal.'} 
+                       else {'summary data from the UKB data showcase'})
   )
 }
 
+
 # MACE subtypes (from HES ONLY)
-TEU_HES_MACE_fucomp<-function(){
+TEU_HES_MACE_fucomp<-function(record_level=FALSE){
   list(
     name='TEU_HES_MACE_fucomp',
-    source=c('ID','Rec_DateAssess',
+    source=if(record_level){
+      c("ID", "Rec_DateAssess")
+      } else {
+        c('ID','Rec_DateAssess',
              paste0("HES_ICD9Diag.0.", seq(0, 46, by=1)),
              paste0("HES_ICD9DateFirst.0.",seq(0,46,by=1)),
              paste0("HES_ICD10Diag.0.", seq(0, 212, by=1)),
              paste0("HES_ICD10DateFirst.0.",seq(0,212,by=1)),
              paste0("HES_OPCS4Code.0.",seq(0,116,by=1)),
-             paste0("HES_OPCS4DateFirst.0.",seq(0,116,by=1))),
-    mapper=FN_HES_First(ICD9_xlsx = read_excel(file.path(config$cleaning$mapping,'MACE/HES_ICD9_Mapping_XL_V1.1_20201222.xlsx'),col_types = c('text')),
-                        ICD10_xlsx = read_excel(file.path(config$cleaning$mapping,'MACE/HES_ICD10_Mapping_XL_V1.2_20210104.xlsx'),col_types = c('text')),
-                        OPCS4_xlsx = read_excel(file.path(config$cleaning$mapping,'MACE/HES_OPCS4_Mapping_20201217.xlsx'),col_types = c('text')),
+             paste0("HES_OPCS4DateFirst.0.",seq(0,116,by=1)))
+        },
+    mapper=FN_HES_First(ICD9_xlsx = file.path(config$cleaning$mapping,'MACE/HES_ICD9_Mapping_20210112.xlsx'),
+                        ICD10_xlsx = file.path(config$cleaning$mapping,'MACE/HES_ICD10_Mapping_20210121.xlsx'),
+                        OPCS4_xlsx = file.path(config$cleaning$mapping,'MACE/HES_OPCS4_Mapping_XL_V1.1_20210121.xlsx'),
                         condition = 'MACE',
-                        return_label = 'followup_comp'),
+                        return_label = 'followup_comp',
+                        record_level = record_level),
     post_exclusion=FALSE,
     display_name='MACE subtypes from HES data at follow-up',
-    description='MACE subtypes (Nonfatal MI/Nonfatal Stroke) from HES data at follow-up'
+    description=paste0('MACE subtypes (Nonfatal MI/Nonfatal Stroke) from HES data at follow-up',
+                       'The HES data used was ', if(record_level) {'record-level data from the UKB data portal.'} 
+                       else {'summary data from the UKB data showcase'})
   )
 }
 
 
 # MACE Dth date
-TEU_Dth_MACE_dthdate <-function(){
+TEU_Dth_MACE_dthdate <-function(record_level=FALSE){
     list(
       name = 'TEU_Dth_MACE_dthdate',
-      source = c('ID',"Dth_ICD10Underlying.0.0","Dth_Date.0.0"),
+      source = if(record_level){c("ID")} else {c('ID',"Dth_ICD10Underlying.0.0", "Dth_ICD10Underlying.1.0","Dth_Date.0.0", "Dth_Date.1.0")},
       mapper = function(data){
-        mapping=read_excel(file.path(config$cleaning$mapping,'MACE/HES_ICD10_Mapping_XL_V1.2_20210104.xlsx'),col_types = c('text'))
+        mapping=read.xlsx_kdrive(file.path(config$cleaning$mapping,'MACE/HES_ICD10_Mapping_20210121.xlsx'),col_types = c('text'))
         ICD10_codes<-mapping[which(mapping$Conditions=='MACE'),]$Code
         
-        y<-FN_Dth_filtercodes(ICD10_codes = ICD10_codes,return_label = 'dth_date')(data)
+        y<-FN_Dth_filtercodes(ICD10_codes = ICD10_codes,return_label = 'dth_date', record_level=record_level)(data)
         
         return(y)
       },
       post_exclusion = FALSE,
       display_name = 'MACE death date',
-      description = 'Death date caused by MACE from Death Registry data'
+      description = paste0('Death date caused by MACE from Death Registry data',
+                           'The data used was ', if(record_level) {'record-level data from the UKB data portal.'} 
+                           else {'summary data from the UKB data showcase'})
     )
 }
 
@@ -2289,15 +2338,15 @@ TEU_MACE_eventdate<-function(){
 ####################
 
 # Other cause dth date
-TEU_Dth_NotMACE_dthdate <-function(){
+TEU_Dth_NotMACE_dthdate <-function(record_level=FALSE){
     list(
       name = 'TEU_Dth_NotMACE_dthdate',
-      source = c('ID', "Dth_ICD10Underlying.0.0","Dth_Date.0.0"),
+      source = if(record_level){c("ID")} else {c('ID',"Dth_ICD10Underlying.0.0", "Dth_ICD10Underlying.1.0","Dth_Date.0.0", "Dth_Date.1.0")},
       mapper = function(data){
-        mapping=read_excel(file.path(config$cleaning$mapping,'MACE/HES_ICD10_Mapping_XL_V1.2_20210104.xlsx'),col_types = c('text'))
+        mapping=read.xlsx_kdrive(file.path(config$cleaning$mapping,'MACE/HES_ICD10_Mapping_20210121.xlsx'),col_types = c('text'))
         ICD10_codes<-mapping[which(is.na(mapping$Conditions)),]$Code
         
-        y<-FN_Dth_filtercodes(ICD10_codes = ICD10_codes,return_label = 'dth_date')(data)
+        y<-FN_Dth_filtercodes(ICD10_codes = ICD10_codes,return_label = 'dth_date', record_level=record_level)(data)
         
         return(y)
       },
@@ -2311,16 +2360,24 @@ TEU_Dth_NotMACE_dthdate <-function(){
 # Admin censoring date
 #https://biobank.ndph.ox.ac.uk/showcase/exinfo.cgi?src=Data_providers_and_dates#:~:text=Censoring%20dates,that%20provider%20is%20mostly%20complete.
 # England 31/03/2017, Scotland 31/10/2016, Wales 29/02/2016
-Admin_CensorDate<-function(){
+Admin_CensorDate<-function(record_level=FALSE){
   list(
     name = 'Admin_CensorDate',
     source = 'TEU_Rec_Country',
     mapper = function(x){
-      y <- dplyr::case_when(
-        x=='England' ~ FN_toDate('2017-03-31'),
-        x=='Scotland' ~ FN_toDate('2016-10-31'),
-        x=='Wales' ~ FN_toDate('2016-02-29')
-      )
+      if(record_level){
+        HES <- read_yaml(file.path(config$data$portal$HES, "censoring.yml"))
+        deaths <- read_yaml(file.path(config$data$portal$deaths, "censoring.yml"))
+        datelist <- lapply(x, FUN = function(z) {min(FN_toDate(HES[[z]]), FN_toDate(deaths[[z]]))})
+        y <- do.call(c, datelist)
+      }
+      else {
+        y <- dplyr::case_when(
+          x=='England' ~ FN_toDate('2017-03-31'),
+          x=='Scotland' ~ FN_toDate('2016-10-31'),
+          x=='Wales' ~ FN_toDate('2016-02-29')
+        )
+      } 
       return(y)
     },
     post_exclusion = FALSE,
@@ -2386,16 +2443,16 @@ TEU_MACE_status<-function(){
 }
 
 # MACE subtypes at follow up
-# Note: If MACE dx date is the same as MACE dth date, we treat it as dx instead of dth (Only few people (about 56) had same MACE dx and dth date)
+# Note: If MACE dx date is the same as MACE dth date, we treat it as MACE dth instead of dx
 TEU_MACE_fucomp<-function(){
   list(
     name = 'TEU_MACE_fucomp',
-    source = c('TEU_MACE_status','TEU_HES_MACE_fucomp','TEU_MACE_eventdate','TEU_HES_MACE_fudate'),
+    source = c('TEU_MACE_status','TEU_HES_MACE_fucomp','TEU_MACE_eventdate','TEU_HES_MACE_fudate','TEU_Dth_MACE_dthdate'),
     mapper = function(data){
       data=data%>%
         mutate(TEU_MACE_fucomp=case_when(TEU_MACE_status==0  ~ NA_character_,
-                                         TEU_MACE_status==1 & is.na(TEU_HES_MACE_fudate) & !is.na(TEU_MACE_eventdate) ~ 'CVD death',
-                                         TRUE ~ TEU_HES_MACE_fucomp
+                                          TEU_MACE_status==1 & !is.na(TEU_MACE_eventdate) & TEU_MACE_eventdate==TEU_Dth_MACE_dthdate ~ 'CVD death',
+                                          TRUE ~ TEU_HES_MACE_fucomp
         ))
       return(data$TEU_MACE_fucomp)
     },

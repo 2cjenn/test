@@ -1,6 +1,7 @@
 # Jennifer Collister
 # 30/03/2020
 # Create functions 
+library(data.table)
 
 # Load the project config file for filepaths etc
 if (!exists("config")) {
@@ -8,6 +9,62 @@ if (!exists("config")) {
   config = yaml.load_file("config.yml")
 }
 
+read.csv_kdrive <- function(filename, maxErrors=2, sleep=20) {
+  attempts <- 0
+  retval <- NULL
+  
+  while(is.null(retval) && attempts < maxErrors) {
+    if(attempts > 0) {Sys.sleep(sleep)}
+    attempts <- attempts + 1
+    retval <- tryCatch(suppressWarnings(
+      read.csv(filename)),
+      error = function(cond) {
+        message(paste0("Error message: ", cond))
+        if(attempts < maxErrors) {message(paste0("Trying again in ", sleep, " seconds..."))}
+        return(NULL)
+      }
+    )
+  }
+  if(is.null(retval)){
+    message("Failed to read file. Either it does not exist (typo?) or you are currently disconnected from the network drives")
+  } else if (attempts>1) {
+    message("Succeeded!")
+  }
+  
+  return(retval)
+}
+
+read.xlsx_kdrive <- function(filename,col_types=NULL, sheet=NULL, maxErrors=2, sleep=20) {
+  attempts <- 0
+  retval <- NULL
+  
+  while(is.null(retval) && attempts < maxErrors) {
+    if(attempts > 0) {Sys.sleep(sleep)}
+    attempts <- attempts + 1
+    retval <- tryCatch(suppressWarnings(
+      read_excel(filename,col_types = col_types, sheet = sheet)),
+      error = function(cond) {
+        message(paste0("Error message: ", cond))
+        if(attempts < maxErrors) {message(paste0("Trying again in ", sleep, " seconds..."))}
+        return(NULL)
+      }
+    )
+  }
+  if(is.null(retval)){
+    message("Failed to read file. Either it does not exist (typo?) or you are currently disconnected from the network drives")
+  } else if (attempts>1) {
+    message("Succeeded!")
+  }
+  
+  return(retval)
+}
+
+cache.file <- function(filename, FUN, ...) {
+  file <- evalWithMemoization(
+    FUN(filename, ...),
+    key = c(filename, file.info(filename)$mtime)
+  )
+}
 # Formatting of existing UKB variables
 
 FN_id <- function(x){x}
@@ -231,13 +288,15 @@ FN_JoinPRS <- function(filepath, colname) {
 
 FN_VItoLong <- function(data, colname, instance, mapper) {
   
+  mapper_file <- read.csv_kdrive(mapper)
+  
   if (is.null(instance)) {
     pattern <- paste0(colname, "(.*)\\.(.*)")
   } else {
     pattern <- paste0(colname, "(.*)\\.", instance, "\\.(.*)")
   }
-  
-  long <- evalWithMemoization({
+
+  long <- evalWithMemoization(
     data %>% pivot_longer(
       cols = starts_with(colname),
       names_to = c(".value", "measure"),
@@ -245,14 +304,17 @@ FN_VItoLong <- function(data, colname, instance, mapper) {
     ) %>%
       drop_na(starts_with(colname)) %>%
       mutate(Code = as.numeric(Code)) %>%
-      left_join(x = ., y = mapper, by = "Code")
-  },
-  key = c(data, colname, instance, mapper))
+      left_join(x = ., y = mapper_file, by= "Code"),
+    key = c(data, colname, instance, mapper_file)
+  )
 }
 
 # XL: Below is for filtering VI diagnoses codes
 FN_VI_filtercodes <- function(dx_codes, colname, instance = 0, return_label = "dx", mapper) {
   function(data) {
+
+    mapper_file <- read.csv_kdrive(mapper)
+    
     long_dx <- evalWithMemoization(
       FN_VItoLong(
         data,
@@ -264,14 +326,14 @@ FN_VI_filtercodes <- function(dx_codes, colname, instance = 0, return_label = "d
         group_by(ID) %>%
         arrange(Year) %>%
         slice_head %>%
-        mutate(dx = factor(dx),
+        mutate(dx = factor(meaning),
                Year = ifelse(Year %in% c(-1, -3), NA, Year),
                Year_date = date_decimal(Year),
                duration = as.numeric(round(
                  difftime(Rec_DateAssess, Year_date, unit = "days") / 365.25,
                  digits = 2
                ))),
-      key = c(dx_codes, instance, mapper)
+      key = c(dx_codes, instance, mapper_file)
     )
     
     y <- long_dx[[return_label]][match(data$ID, long_dx$ID)]
@@ -283,6 +345,9 @@ FN_VI_filtercodes <- function(dx_codes, colname, instance = 0, return_label = "d
 # Can produce meds taken status and number of meds taken in that category
 FN_VImed_filtercodes <- function(med_codes, med_name= 'statin', colname, instance = 0, return_label, mapper) {
   function(data) {
+    
+    mapper_file <- read.csv_kdrive(mapper)
+
     long_med <- evalWithMemoization(
       FN_VItoLong(
         data,
@@ -297,8 +362,9 @@ FN_VImed_filtercodes <- function(med_codes, med_name= 'statin', colname, instanc
         add_count(ID)%>%
         rename(!!paste0(med_name,'_num'):=n)%>%
         #remove duplicate ID
-        distinct(ID,.keep_all = TRUE),
-      key = c(med_codes, instance, mapper)
+        distinct(ID,.keep_all = TRUE)
+      ,
+      key = c(med_codes, instance, mapper_file)
     )
     
     y <- long_med[[return_label]][match(data$ID, long_med$ID)]
@@ -318,13 +384,14 @@ FN_VImed_filtercodes <- function(med_codes, med_name= 'statin', colname, instanc
 # XL add: based on returned mapping list xlsx filter VI code
 FN_VI_comorb<-function(condition,returned_mapping){
   function(data){
+    
     # Coding list of interest
     dx_codes<-returned_mapping[which(returned_mapping$Conditions==condition),]$coding
     y<- FN_VI_filtercodes(dx_codes = dx_codes,
                           colname = "VeI_NonCancer",
                           instance = 0,
                           return_label = "dx",
-                          mapper = read.csv("K:/TEU/UKB33952_Data/Data_Dictionary/Mappings/Encoding_files/coding6_noncancerVI.csv"))(data)
+                          mapper = file.path(config$cleaning$coding,"coding6_flat_NonCancerIllness.csv"))(data)
     # If not blank, assign yes
     y<- factor(ifelse(is.na(y), 0, 1), levels = c(0,1), labels = c('No','Yes'))
     return(y)
@@ -333,16 +400,13 @@ FN_VI_comorb<-function(condition,returned_mapping){
 }
 
 
-
-FN_HES_episodes <- function(HESPath=config$data$portal$HES) {
-  
-  episodePath=file.path(HESPath, "hesin.txt")
+FN_HES_episodes <- function(episodePath=file.path(config$data$portal$HES, "hesin.txt")) {
                         
   episodes <- evalWithMemoization(
-    fread(episodePath) %>%
+    fread(episodePath,na.strings = "") %>%
       select(eid, ins_index, dsource, epistart, admidate) %>%
       rename(ID = eid) %>%
-      mutate(Date = as.Date(coalesce(epistart, admidate), format="%d/%m/%Y")) %>%
+      mutate(DateFirst = as.Date(coalesce(epistart, admidate), format="%d/%m/%Y")) %>%
       select(-epistart, -admidate),
     key = episodePath
   )
@@ -364,7 +428,7 @@ FN_HES_diagnoses <- function(icd=10, HESPath=config$data$portal$HES) {
   codecol <- glue("diag_icd{icd}")
   
   diagnoses <- evalWithMemoization(
-    fread(diagnosisPath) %>%
+    fread(diagnosisPath,na.strings = "") %>%
       rename(ID = eid,
              Code = !!codecol) %>%
       select(ID, ins_index, arr_index, level, Code) %>%
@@ -389,7 +453,7 @@ FN_HES_operations <- function(opcs=4, HESPath=config$data$portal$HES) {
   codecol <- glue("oper{opcs}")
   
   operations <- evalWithMemoization(
-    fread(operationPath) %>%
+    fread(operationPath,na.strings = "") %>%
       rename(ID = eid,
              Code = !!codecol) %>%
       select(ID, ins_index, arr_index, level, Code) %>%
@@ -405,24 +469,49 @@ FN_Death_registry <- function(deathPath=config$data$portal$deaths) {
   recordPath <- file.path(deathPath, "death.txt")
   causePath <- file.path(deathPath, "death_cause.txt")
   
+  # A few individuals have multiple differing date records, when 
+  # a second death certificate was issued after a post mortem
+  # In these cases, we want to take the updated cause of death
+  # So we are interested in the greatest instance index per individual
+  # See K:/TEU/UKB33952_Data/Data_Portal/Death_Registry/DeathLinkage.pdf
+  # Section 2. Data Cleaning
   deaths <- evalWithMemoization(
-    fread(recordPath) %>%
+    fread(recordPath,na.strings = "") %>%
       select(eid, ins_index, dsource, date_of_death) %>%
       rename(ID = eid) %>%
-      mutate(Date = as.Date(date_of_death, format="%d/%m/%Y")) %>%
+      group_by(ID) %>% 
+      top_n(1, ins_index) %>%
+      mutate(Dth_Date = as.Date(date_of_death, format="%d/%m/%Y")) %>%
       select(-date_of_death),
     key = recordPath
   )
   
   causes <- evalWithMemoization(
-    fread(causePath) %>%
+    fread(causePath,na.strings = "") %>% 
       rename(ID = eid,
-             Code = cause_icd10) %>%
+            Dth_ICD10All = cause_icd10) %>%
       inner_join(deaths, by=c("ID", "ins_index")),
     key = c(causePath, deaths)
   )
   
   return(causes)
+}
+
+FN_Death_registry_primary <- function(deathPath=config$data$portal$deaths) {
+  
+  primary <- FN_Death_registry() %>%
+    filter(arr_index==0) %>%
+    rename(Dth_ICD10Underlying = Dth_ICD10All)
+  
+  return(primary)
+}
+FN_Death_registry_secondary <- function(deathPath=config$data$portal$deaths) {
+  
+  secondary <- FN_Death_registry() %>%
+    filter(arr_index>0) %>%
+    rename(Dth_ICD10Secondary = Dth_ICD10All)
+
+  return(secondary)
 }
 
 FN_HEStoLong <- function(data, colname, removeNAfrom) {
@@ -448,32 +537,38 @@ FN_HEStoLong <- function(data, colname, removeNAfrom) {
 # First occurrence dataset within each HES source (ICD9 or ICD10 or OPCS4)
 # data should contain ID, RecDate and corresponding HES dx and date fields
 # Return dataset with ID, RecDate, Dx, DateFirst for first occurrence of condition from each HES source
-FN_eachHES_First<-function(data,HES_xlsx,condition='MACE',colname,removeNAfrom){
+FN_eachHES_First<-function(data,HES_xlsx,condition='MACE',colname,removeNAfrom, record_level=FALSE){
   
   # Produce code of interest from analysis codings xlsx
   #HES_codes=HES_xlsx[which(HES_xlsx$Conditions==condition),]$Code
+  HES_file <- read.xlsx_kdrive(HES_xlsx, col_types=c('text'))
   
   # First occurrence of condition
-  sub_long <- evalWithMemoization(
-    FN_HEStoLong(
-      data=data,
-      colname = colname,
-      removeNAfrom = removeNAfrom
-    ) %>%
-      rename_at(vars(starts_with('Diag')),~paste0('Code'))%>%
+  sub_long <- evalWithMemoization({
+    if(record_level==FALSE){
+      HESlong <- FN_HEStoLong(data = data,
+                  colname = colname,
+                  removeNAfrom = removeNAfrom)
+    } else {
+      HESlong <- switch(colname, 
+                        "HES_ICD9" = FN_HES_diagnoses(icd=9),
+                        "HES_ICD10" = FN_HES_diagnoses(icd=10),
+                        "HES_OPCS4" = FN_HES_operations(opcs=4)) %>%
+        left_join(., data, by="ID")
+    }
+    HESlong %>%
+      rename_at(vars(starts_with('Diag')), ~ paste0('Code')) %>%
       # Left join to get 'Conditions' and 'ConditionsType' column
-      left_join(x = ., y = HES_xlsx, by = "Code")%>%
+      left_join(x = ., y = HES_file, by = "Code")%>%
       # Filter based on condition of interest
       filter(Conditions==condition)%>%
-      #filter(Code %in% HES_codes) %>%
       group_by(ID) %>%
       # Select the first occurrence
       slice(which.min(DateFirst))%>%
       # Keep essential columns only
-      select(ID,Rec_DateAssess,ConditionsType,DateFirst)
-    ,
-    key = c(data,colname,removeNAfrom,HES_xlsx,condition)
-  )
+      select(ID, Rec_DateAssess, ConditionsType, DateFirst)
+  },
+  key = c(data, colname, removeNAfrom, HES_file, condition, record_level))
 }
 
 # First occurrence dataset among all HES source (ICD9 + ICD10 + OPCS4)
@@ -483,42 +578,45 @@ FN_eachHES_First<-function(data,HES_xlsx,condition='MACE',colname,removeNAfrom){
 # * return_label='followup': condition status at followup 
 # * return_label='followup_date': Date of condition at follow up (used for deriving outcome)
 # * return_label='followup_comp': condition subtype at follow up
-FN_HES_First<-function(ICD9_xlsx,ICD10_xlsx,OPCS4_xlsx,condition='MACE',return_label='baseline'){
+FN_HES_First<-function(ICD9_xlsx,ICD10_xlsx,OPCS4_xlsx,condition='MACE',return_label='baseline', record_level=FALSE){
   function(data){
     
     HES_total<-NULL
     
     # Get first occurrence dataset from each HES source and rbind together
     if (!is.null(ICD9_xlsx)){
-      HES_total<-FN_eachHES_First(data%>%select(ID,'Rec_DateAssess',
-                                                paste0("HES_ICD9Diag.0.", seq(0, 46, by=1)),
-                                                paste0("HES_ICD9DateFirst.0.",seq(0,46,by=1))),
+      HES_total<-FN_eachHES_First(data%>%select(ID,'Rec_DateAssess', 
+                                                contains("HES_ICD9Diag.0."), 
+                                                contains("HES_ICD9DateFirst.0.")),
                                   HES_xlsx = ICD9_xlsx,
                                   condition = condition,
                                   colname = 'HES_ICD9',
-                                  removeNAfrom = c('Diag','DateFirst'))
+                                  removeNAfrom = c('Diag','DateFirst'),
+                                  record_level = record_level)
     }
     
     if (!is.null(ICD10_xlsx)){
       HES_total<-HES_total%>%bind_rows(
         FN_eachHES_First(data%>%select(ID,'Rec_DateAssess',
-                                       paste0("HES_ICD10Diag.0.", seq(0, 212, by=1)),
-                                       paste0("HES_ICD10DateFirst.0.",seq(0,212,by=1))),
+                                       contains("HES_ICD10Diag.0."),
+                                       contains("HES_ICD10DateFirst.0.")),
                          HES_xlsx = ICD10_xlsx,
                          condition = condition,
                          colname = 'HES_ICD10',
-                         removeNAfrom = c('Diag','DateFirst')))
+                         removeNAfrom = c('Diag','DateFirst'),
+                         record_level = record_level))
     }
     
     if (!is.null(OPCS4_xlsx)){
       HES_total<-HES_total%>%bind_rows(
         FN_eachHES_First(data%>%select(ID,'Rec_DateAssess',
-                                       paste0("HES_OPCS4Code.0.",seq(0,116,by=1)),
-                                       paste0("HES_OPCS4DateFirst.0.",seq(0,116,by=1))),
+                                       contains("HES_OPCS4Code.0."),
+                                       contains("HES_OPCS4DateFirst.0.")),
                          HES_xlsx = OPCS4_xlsx,
                          condition = condition,
                          colname = 'HES_OPCS4',
-                         removeNAfrom = c('Code','DateFirst')))
+                         removeNAfrom = c('Code','DateFirst'),
+                         record_level = record_level))
     }
     
     # Select first occurrence among all HES source
@@ -554,15 +652,33 @@ FN_HES_First<-function(ICD9_xlsx,ICD10_xlsx,OPCS4_xlsx,condition='MACE',return_l
 # Filter death registry data based on ICD10 codes
 # * return_label='dth': return 'yes' for ones with primary cause of death by specified ICD10 codes  
 # * return_label='dth_date': return death date by specified ICD10 codes 
-FN_Dth_filtercodes <- function(ICD10_codes, return_label = "dth") {
+FN_Dth_filtercodes <- function(ICD10_codes, return_label = "dth", record_level=FALSE) {
   function(data) {
     
-    subdata <- data %>%
-      filter(Dth_ICD10Underlying.0.0 %in% ICD10_codes) %>%
-      mutate(dth = 'Yes',
-             dth_date = Dth_Date.0.0)
+    if(record_level){
+      ID <- data
+      deaths <- FN_Death_registry_primary()
+    } else {
+      ID <- data$ID
+      
+      secondPM <- data %>% filter(!is.na(Dth_ICD10Underlying.1.0)) %>%
+        select(ID, Dth_ICD10Underlying.1.0, Dth_Date.1.0) %>%
+        rename(Dth_ICD10Underlying = Dth_ICD10Underlying.1.0,
+               Dth_Date = Dth_Date.1.0)
 
-    y <- subdata[[return_label]][match(data$ID, subdata$ID)]
+      firstPM <- data %>% filter(!ID %in% secondPM$ID) %>%
+        select(ID, Dth_ICD10Underlying.0.0, Dth_Date.0.0) %>%
+        rename(Dth_ICD10Underlying = Dth_ICD10Underlying.0.0,
+               Dth_Date = Dth_Date.0.0)
+
+      deaths <- rbind(firstPM, secondPM)
+    }
+
+    subdata <- deaths %>% filter(Dth_ICD10Underlying %in% ICD10_codes) %>%
+      mutate(dth = 'Yes',
+             dth_date = Dth_Date)
+
+    y <- subdata[[return_label]][match(ID, subdata$ID)]
     return(y)
   }
 }

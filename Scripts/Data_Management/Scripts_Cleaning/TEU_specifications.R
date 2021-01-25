@@ -102,28 +102,55 @@ specs <- function() {
     BaC_Sex # Used to check for sex discordance
   )
 
-  MACE <- c(
+  MACE_summary <- c(
     TEUvars_common,
     list(
       # MACE at baseline
-      TEU_HES_MACE_prev,
+      TEU_HES_MACE_prev(record_level=FALSE),
       TEU_VeI_MACE_nonc,
       TEU_VeI_MACE_op,
       TEU_HMH_MACE_prev,
       TEU_MACE_prev,
       # MACE outcome
-      TEU_HES_MACE_fudate,
-      TEU_Dth_MACE_dthdate,
+      TEU_HES_MACE_fudate(record_level=FALSE),
+      TEU_Dth_MACE_dthdate(record_level=FALSE),
       TEU_MACE_eventdate,
-      TEU_Dth_NotMACE_dthdate,
-      Admin_CensorDate,
+      TEU_Dth_NotMACE_dthdate(record_level=FALSE),
+      Admin_CensorDate(record_level=FALSE),
       BaC_LostFUDate,
       TEU_MACE_censordate,
       TEU_MACE_status,
       TEU_MACE_time,
       TEU_MACE_time_yrs,
       # MACE subtypes 
-      TEU_HES_MACE_fucomp,
+      TEU_HES_MACE_fucomp(record_level=FALSE),
+      TEU_MACE_fucomp
+    )
+    
+  )
+  
+  MACE_recordlevel <- c(
+    TEUvars_common,
+    list(
+      # MACE at baseline
+      TEU_HES_MACE_prev(record_level=TRUE),
+      TEU_VeI_MACE_nonc,
+      TEU_VeI_MACE_op,
+      TEU_HMH_MACE_prev,
+      TEU_MACE_prev,
+      # MACE outcome
+      TEU_HES_MACE_fudate(record_level=TRUE),
+      TEU_Dth_MACE_dthdate(record_level=TRUE),
+      TEU_MACE_eventdate,
+      TEU_Dth_NotMACE_dthdate(record_level=TRUE),
+      Admin_CensorDate(record_level=TRUE),
+      BaC_LostFUDate,
+      TEU_MACE_censordate,
+      TEU_MACE_status,
+      TEU_MACE_time,
+      TEU_MACE_time_yrs,
+      # MACE subtypes 
+      TEU_HES_MACE_fucomp(record_level=TRUE),
       TEU_MACE_fucomp
     )
     
@@ -179,13 +206,30 @@ specs <- function() {
     )
   )
   
+  test2 <- list(
+    ID,
+    Rec_DateAssess,
+    TEU_HES_MACE_fudate(record_level=FALSE)
+  )
+  
+  test <- list(
+    ID,
+    Rec_DateAssess,
+    TEU_Dth_MACE_dthdate(record_level=TRUE)
+  )
+  
   HTN_control_PRS <- c(
     UKB_genetic,
     HTN_control
   )
+
+  HTN_control_MACE <- c(
+    HTN_control,
+    MACE_recordlevel
+  )
   
   Cholstrl_control<-c(
-    MACE,
+    MACE_recordlevel,
     TEU_VeI_statin(),
     HTN_control_comorb,
     list(
