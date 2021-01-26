@@ -1,0 +1,149 @@
+---
+title: "HTN PRS"
+author:  "Jennifer Collister"
+date: "`r format(Sys.time(), '%d %B %Y')`"
+output: 
+  word_document:
+      reference_docx: "K:/TEU/TEU Guides/TEU_DocStyle_Rmd_2020.dotx"
+---
+
+```{r setup, include=FALSE}
+
+library(kableExtra)
+library(knitr)
+library(yaml)
+library(glue)
+library(ggplot2)
+library(here)
+library(R.cache)
+library(data.table)
+library(dplyr)
+library(tidyr)
+
+# Specify the markdown format for knitr tables, otherwise they're not compatible with kableExtra
+options(knitr.kable.NA='', knitr.table.format = "markdown")
+options(kableExtra.auto_format = FALSE)
+# Set the root directory to the project directory (otherwise knitr works in the directory of the Rmd file by default)
+knitr::opts_knit$set(root.dir = here::here())
+
+# Load the project config file for filepaths etc
+config = yaml.load_file(here::here("./config.yml"))
+
+knitr::opts_chunk$set(include=TRUE, echo=FALSE, eval=TRUE)
+
+fig <- 1
+
+```
+
+
+```{r, include=FALSE}
+
+# Load our cholesterol data
+
+source(config$functions)
+source(file.path(config$scripts$cleaning, "dataset_generator.R"))
+
+exclusions <- function(data){
+  
+  # Exclude individuals who have withdrawn from the study
+  withdrawn <- read.csv(config$cleaning$withdrawals, header=FALSE)
+  data <- data[!data$ID %in% withdrawn$V1,]
+  
+  # Exclude those outside the 40-70 age range
+  data <- data[data$TEU_BaC_AgeAtRec >= 40 & data$TEU_BaC_AgeAtRec < 70,]
+
+  # Exclude individuals with missing BP data
+  # or missing answers to BP questions on touchscreen questionnaire
+  data <- data[!is.na(data$TEU_BlP_SBP.avg),]
+  data <- data[!is.na(data$TEU_BlP_DBP.avg),]
+  data <- data[data$TEU_HMH_prevHTN != "Unanswered",]
+  data <- data[data$TEU_HMH_Meds_BP != "Unanswered",]
+  # Exclude participants who only had BP measured once
+  data <- data[data$TEU_BlP_nSBP == 2 & data$TEU_BlP_nDBP == 2,]
+
+  # Exclude individuals with implausible BP data
+  data <- data[data$TEU_BlP_SBP.avg >= 70 & data$TEU_BlP_SBP.avg <= 270,]
+  data <- data[data$TEU_BlP_DBP.avg >= 50 & data$TEU_BlP_DBP.avg <= 150,]
+
+  # Exclude pregnant women ("Yes" or "Unsure")
+  data <- data[is.na(data$VeI_PregnantNow) | data$VeI_PregnantNow == "No",]
+
+  # Exclude individuals who have serious health conditions
+  seriouscomorbid <- readRDS(file.path(config$data$derived, "VIhypExclude.rds"))
+  data <- data[!data$ID %in% seriouscomorbid$ID[!is.na(seriouscomorbid$Yes)],]
+
+  # And individuals with cancer (except for skin cancer?)
+  cancer <- readRDS(file.path(config$data$derived, "Cancer_pts.rds"))
+  exceptskincancer <- cancer$ID[cancer$TL!="skin cancer"]
+  data <- data[!data$ID %in% exceptskincancer,]
+  
+  # Any durations less than 0 are clearly errors (only 2)
+  # Any diagnoses before the age of about 20 are probably due to other causes
+  # data$HTNdx_duration[(data$HTNdx_duration < 0 | data$HTNdx_duration > data$age-20)& !is.na(data$HTNdx_duration)] <- NA
+  
+  data <- data[!is.na(data$TEU_BP_PRS),]
+  
+  data <- data[data$TEU_treatedHTN == TRUE & !is.na(data$TEU_treatedHTN),]
+  
+  return(data)
+}
+
+data <-
+  evalWithMemoization(
+    derive_variables(
+      database = "K:/TEU/UKB33952_Data/Data_Downloads/V2_database_duckdb0.2.1/ukb_v2.db",
+      field_definitions = TEU_SPECS$HTN_control,
+      exclusions = exclusions,
+      dictionary = "HTN_PRS_Dict.html"
+    ),
+    key = c(TEU_SPECS$HTN_control, exclusions)
+  )
+
+
+```
+
+
+# Plot SBP PRS against average baseline SBP among treated hypertensives
+
+```{r}
+
+plotFile <- file.path(config$outputs$figures, "HTN_SBP_scatter.png")
+  
+if(interactive() | !file.exists(plotFile)) {
+  scatter <- ggplot(data, aes(x=TEU_SBP_PRS, y=TEU_BlP_SBP.avg)) + 
+    geom_point(aes(shape=".")) +
+    labs(x="TEU SBP PRS", y="Average baseline SBP, mmHg", 
+         title="Association between SBP PRS and baseline SBP among treated hypertensives") +
+    geom_density_2d() +
+    geom_smooth(method = "lm")
+  
+  ggsave(plotFile, plot=scatter)
+}
+
+```
+![Figure `r fig`: Association between SBP PRS and baseline SBP among treated hypertensives](Figures/HTN_SBP_scatter.png)
+`r fig <- fig + 1`
+
+
+# Plot DBP PRS against average baseline DBP among treated hypertensives
+
+```{r}
+
+plotFile <- file.path(config$outputs$figures, "HTN_DBP_scatter.png")
+  
+if(interactive() | !file.exists(plotFile)) {
+  scatter <- ggplot(data, aes(x=TEU_DBP_PRS, y=TEU_BlP_DBP.avg)) + 
+    geom_point(aes(shape=".")) +
+    labs(x="TEU DBP PRS", y="Average baseline DBP, mmHg", 
+         title="Association between DBP PRS and baseline DBP among treated hypertensives") +
+    geom_density_2d() +
+    geom_smooth(method = "lm")
+  
+  ggsave(plotFile, plot=scatter)
+}
+
+```
+![Figure `r fig`: Association between DBP PRS and baseline DBP among treated hypertensives](Figures/HTN_DBP_scatter.png)
+`r fig <- fig + 1`
+
+

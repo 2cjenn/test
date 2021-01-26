@@ -1,12 +1,17 @@
 data:
  received: "K:/TEU/UKB33952_Data/Data_Downloads/V2_TLAtables"
+ database: "K:/TEU/UKB33952_Data/Data_Downloads/V3_database_duckdb0.2.1/ukb_v3.db"
+ portal:
+  HES: "K:/TEU/UKB33952_Data/Data_Portal/HES_diagnoses/20201222"
+  deaths: "K:/TEU/UKB33952_Data/Data_Portal/Death_Registry/20210107"
  derived: "Data/Derived"
  analysed: "Data/Analysed"
- prs: "K:/TEU/UKB_Genetic_Data/bmrc-ukb-repo/prs/htn-evangelou2018/outputs"
+ prs: "K:/TEU/UKB_Genetic_Data/bmrc-ukb-repo/prs/projects/htn-evangelou2018/outputs"
 cleaning:
  withdrawals: "K:/TEU/UKB33952_Data/Data_Downloads/Withdrawals/w33952_20200204.csv"
+ renaming: "K:/TEU/UKB33952_Data/Data_Dictionary/Renaming_List_UPDATE_Nov2019_TEU.csv"
  coding: "K:/TEU/UKB33952_Data/Data_Dictionary/Mappings/Encoding_files"
- mapping: "Data/Mappings"
+ mapping: "K:/TEU/UKB33952_Data/Data_Dictionary/Mappings/Analysis_codings_xlsx"
 outputs:
  figures: "Scripts/Stats_Analysis/RMarkdown/Figures"
  flowcharts: "Scripts/Stats_Analysis/Flowcharts"

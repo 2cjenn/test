@@ -1,0 +1,441 @@
+---
+title: "Prevalence and correlates of hypertension control among almost 100,000 middle-aged adults receiving treatment for hypertension in the UK: Tables and Figures"
+author: "Jennifer Collister"
+date: "`r format(Sys.time(), '%d %B %Y')`"
+subtitle: "Commit hash: `r system('git rev-parse HEAD', intern=TRUE)`"
+output: 
+  word_document:
+      reference_docx: "K:/TEU/TEU Guides/TEU_DocStyle_Rmd_2020.dotx"
+      fig_width: 7
+---
+
+```{r setup, include=FALSE}
+
+library(kableExtra)
+library(knitr)
+library(yaml)
+library(here)
+library(survival)
+library(survminer)
+library(dplyr)
+library(dplyr)
+library(tidyr)
+
+options("scipen"=100)
+
+# Specify the markdown format for knitr tables, otherwise they're not compatible with kableExtra
+options(knitr.kable.NA='', knitr.table.format = "markdown")
+options(kableExtra.auto_format = FALSE)
+# Set the root directory to the project directory (otherwise knitr works in the directory of the Rmd file by default)
+knitr::opts_knit$set(root.dir = here::here())
+knitr::opts_chunk$set(include=TRUE, echo=FALSE)
+
+# Load the project config file for filepaths etc
+config = yaml.load_file(here::here("config.yml"))
+
+source(here::here(config$functions))
+
+#-------------------------------------------------------------------------------------------------------------------
+# Load the data 
+
+data <- readRDS(file=here::here(file.path(config$data$analysed, "HTN_trtCVD.rds")))
+
+# Continuous variables should be in more useful units for HR purposes
+data$age5 <- data$age/5 # Age in 5 year increments
+data$PhA_METsWkAllAct150 <- data$PhA_METsWkAllAct/150
+
+
+# Comorbidities of interest
+comorbs <- readRDS(here::here(file.path(config$data$derived, "VI_HTNcomorb.rds")))
+colnames(comorbs) <- c("ID", paste0("VI_", colnames(comorbs)[-1]))
+print(colnames(comorbs)[-1])
+comorbs_raw <- c("VI_CVD", "VI_diabetes", "VI_afib_or_aflutter", "VI_asthma_or_COPD", "VI_migraine", "VI_epilepsy",
+                 "VI_anxiety_or_stress", "VI_depression_or_bipolar", "VI_Osteoarthritis", "VI_Other_joint_disorder")
+comorbs_string <- paste0(comorbs_raw, "_")
+
+#-------------------------------------------------------------------------------------------------------------------
+# Pretty variable names
+
+pretty_names <- list(age = "age, years",
+                     age5 = "age, per 5 years",
+                     agegrp = "age group, years",
+                     gender = "gender",
+                     ethnicity = "ethnicity",
+                     eth_group = "ethnic group",
+                     genWhiteBrit = "genetically categorised as White British",
+                     BMIcat = "BMI (categorical)",
+                     Smo_Status = "smoking status",
+                     weekly_alcunits = "alcohol units reported per week",
+                     weekly_alccat = "alcohol units per week (categorical)",
+                     PhA_METsWkAllAct = "weekly physical activity, MET minutes",
+                     PhA_METsWkAllAct150 = "weekly physical activity, per 150 MET minutes",
+                     METs_over1200 = "weekly physical activity",
+                     townsend_quint = "Townsend Deprivation Index, quintiles",
+                     income = "household Income, GBP",
+                     employment = "occupation type",
+                     employcat = "occupation category",
+                     ISCED = "highest level of education (ISCED)",
+                     BirthCountryIncomeLevel = "country of birth, by income level",
+                     countryResidence = "UK country of residence",
+                     BowelCancerScreening = "ever screened for bowel cancer",
+                     HTNdx_duration = "reported duration of hypertension, years",
+                     HTNdx_durcat = "repoted duration of hypertension",
+                     antiHTNmedsno = "number of antihypertensive medications",
+                     FamilyHist_CVD_ = "family history of CVD",
+                     comorbNumber_ = "no. of comorbidities",
+                     VI_afib_or_aflutter_ = "arrhythmia (afib/flutter)",
+                     VI_anxiety_or_stress_ = "anxiety",
+                     VI_asthma_or_COPD_ = "asthma or COPD",
+                     VI_depression_or_bipolar_ = "depression",
+                     VI_diabetes_ = "diabetes",
+                     VI_epilepsy_ = "epilepsy",
+                     VI_CVD_ = "cardiovascular disease",
+                     VI_migraine_ = "migraines",
+                     VI_substance_use_ = "substance use",
+                     VI_Osteoarthritis_ = "osteoarthritis",
+                     VI_Other_joint_disorder_ = "other joint disorder",
+                     PRS = "polygenic risk score",
+                     PRS_quint = "polygenic risk score, quintiles",
+                     controlled_ = "HTN control status",
+                     diabetes = "Self-reported diabetes",
+                     VIchol = "Self-reported hyperlipidaemia",
+                     priorCVD = "CVD outcome prior to baseline"
+                     )
+
+#-------------------------------------------------------------------------------------------------------------------
+# Setup
+
+figure <- 1
+table <- 1
+suppfig <- 1
+footnote_no <- 1
+
+```
+
+# Description
+## Figure `r figure`. Flowchart illustrating selection of analytic dataset (n = `r nrow(treated)`).
+`r figure <- figure + 1`
+![Missing BP data was fewer than 2 BP measurements, or missing answers to the prior diagnosis and treatment questions. Hypertension was defined as self-report of hypertensive medication use, or self-report of a prior diagnosis of hypertension, or mean BP >= 140 /90 mmHg at baseline assessment. Awareness was defined as self-report of a prior diagnosis of hypertension among those who were hypertensive. Treatment was defined as self-report of hypertensive medication among those who were aware. Control was defined as mean BP < 140/90 mmHg at baseline assessment, among those who were treated.](Figures/ExclFlowchartTree.png){height=700px}
+
+## Aim
+
+To examine the effect of hypertension control on CVD events/outcomes, among treated hypertensives: is hypertension control associated with lower probability of CVD, following adjustment for multiple factors?
+
+## Exclusions
+
+Currently medical-condition exclusion criteria are applied using the self-reported non-cancer illness codes ([UKB Field 20002](https://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=20002)).
+
+It sounds like we want to update this to incorporate the HES diagnoses (UKB fields [41270](https://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=41270) and [41271](https://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=41271))? These fields record all distinct ICD codes recorded across the hospital inpatient records of the participant in either the primary or secondary position.
+
+This has not yet been implemented (and may only be implemented for awareness analyses?)
+
+## Outcomes
+
+Outcomes are taken from HES data and Death registry data.
+
+HES data uses mostly ICD-10 coding, but there is some ICD-9 coding (Scotland?).
+
+Death registry uses ICD-10 coding. We are currently only counting deaths with CVD as the underlying (primary) cause, not as a secondary cause - this could easily be changed if of interest.
+
+We are not currently using primary care data, as this is only available for ~45% of participants.
+
+**Note: Currently, for participants who had a CVD outcome in their HES (ICD) data prior to baseline assessment, we record this as "prior CVD". We then track their time until their first *post-baseline* cardiac outcome. Prior CVD is used as a covariate in our model - should we include *self-reported* prior CVD in this definition?**
+
+```{r}
+
+# Time to HES diagnosis of CVD
+data$CVDevent_time <- difftime(data$CVD_date, data$recdate, units="days") %>% as.numeric
+data$CVDevent_time[data$CVDevent_time<0] <- NA # Don't count times for prevalent events
+
+# Time to death with primary cause CVD
+data$CVDdeath_time[data$CVDdeath_primary==TRUE] <- difftime(data$deathdate[data$CVDdeath_primary==TRUE], 
+                                                            data$recdate[data$CVDdeath_primary==TRUE], units="days") %>%
+  as.numeric
+
+```
+
+
+### Current CVD outcomes for first-pass analyses:
+
+|Condition	|ICD-10	|ICD-9|
+|---|---|---|
+|**Stroke**		|   |   |
+|Haemorrhagic stroke	|I60, I61	|430, 431|
+|Ischaemic stroke	|I63	|433|
+|Stroke, not otherwise specified	|I64	|434, 436|
+|**Ischemic heart disease**	|   |   |	
+|Acute myocardial infarction	|I21|  410, 411 |	
+|Chronic ischemic heart disease	|I25	|  414 |
+
+### To be included in later analyses:
+
+|Condition	|ICD-10	|ICD-9|
+|---|---|---|
+|**Stroke**		|   |   |
+|Occlusion of pre-cerebral and cerebral arteries*	|I65, I66|  Not separated out in ICD-9 ? |
+|**Ischemic heart disease**	|   |   |
+|Angina (including unstable angina)* |I20	| 413  |
+|**Other atherosclerotic disease** |   |   |
+|Peripheral vascular disease* |I70, I73	| 440, 441  |
+
+## Censoring
+
+### Loss to follow-up
+
+Where a date of loss to follow-up is provided (and the participant hasn't experienced a CVD outcome prior to this date), administrative censoring is applied at this point.
+
+When we refresh the data I am expecting that we will be notified of more losses to follow-up.
+
+```{r}
+
+# Loss to follow up time
+data$lfu_time <- difftime(data$lfudate, data$recdate, units="days") %>% as.numeric
+
+```
+
+
+### Administrative censoring
+
+Please note in a previous iteration of this document I'd somewhat over-excitedly put the administrative censoring date as 2020 in anticipation of us getting our hands on the updated data - we haven't actually got this yet, so I've changed it back to 31st March 2017 for the time being!
+
+There are ~80 participants for whom we have death registry data reporting a CVD death after 31st March 2017, but because data beyond this point is not guaranteed to be available for all participants, and we don't have HES data beyond this point, we'll have to stick with it as the administrative censoring point for now.
+
+[UKB determines the censoring dates](https://biobank.ndph.ox.ac.uk/showcase/exinfo.cgi?src=Data_providers_and_dates) for these sources as follows:
+
+*"The censoring date is the last day of the month for which the number of records is greater than 90% of the mean of the number of records for the previous three months, except where the data for that month is known to be incomplete in which case the censoring date is the last day of the previous month."*
+
+```{r}
+
+# Administrative censoring date
+ACdate <- as.Date("31/03/2017", "%d/%m/%Y")
+
+# Administrative censoring time
+data$ac_time <- difftime(ACdate, data$recdate, units="days") %>% as.numeric
+
+# View(data[data$CVDdeath_primary==TRUE & data$deathdate > ACdate,])
+
+```
+
+
+### Death from other causes
+
+Results in censoring at time of death.
+
+```{r}
+
+# Time of death from other causes
+data$crdeath_time[data$CVDdeath_primary==FALSE] <- data$deathdate[data$CVDdeath_primary==FALSE]
+
+```
+
+
+
+```{r}
+
+data$stime <- apply(data[,c("CVDevent_time", "CVDdeath_time", "lfu_time", "ac_time", "crdeath_time")],
+                    1, FUN=min, na.rm=TRUE)
+data$status <- (data$stime==data$CVDevent_time & !is.na(data$CVDevent_time))  | 
+  (data$stime==data$CVDdeath_time & !is.na(data$CVDdeath_time))
+
+data$stime <- as.numeric(data$stime) / 365.25
+
+surv <- Surv(data$stime, data$status)
+
+```
+
+# Gratuitous Kaplan-Meier plot of our data
+
+```{r}
+
+fit1 <- survfit(surv ~ controlled_, data = data)
+ggsurvplot(fit1, data = data, ylim=c(0.8,1))
+
+
+```
+
+# Hyperlipidaemia
+
+As requested (in email from NT 04/09/20) hyperlipidaemia is currently defined using self-report verbal interview data (non-cancer illness codes, [FID 20002](https://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=20002)).
+
+Here is the cross-tab of FID 20002 vs HES (ICD-9 and ICD-10) data.
+
+Please note that the numbers here will differ from what you can see on the UKB data showcase - 
+
+* The verbal interview question re medical conditions has been repeated in a small fraction of participants at the repeat and imaging visits. Here we're only using data from the first (baseline) assessment visit.
+* The HES (ICD) data contains all available HES data for each participant - here I have filtered it to only those diagnoses prior to the baseline assessment visit.
+* In this analysis our population is treated hypertensives (`r nrow(data)` out of the total ~500k UKB participants)
+
+```{r}
+
+tab <- table(data$VIchol, !is.na(data$chol_code))
+colnames(tab) <- c("Not in HES (ICD) data", "Diagnosis of high cholesterol in HES (ICD) data")
+rownames(tab) <- c("Did not self-report high cholesterol in verbal interview", "Self-reported high cholesterol in VI")
+kable(tab)
+```
+
+
+# JC Analysis notes
+
+When changing CVD outcomes for second-pass analysis, remember to change for both HES codes and Death registry data.
+Maybe make it into functions and use knitr caching?
+
+## Formatting
+
+Haven't yet added column of n to Cox model pretty-output. Would a column of % controlled be of use too?
+
+Haven't yet converted Cox model outputs to new coefficients and levels in same column style.
+
+
+# Figure `r figure`. Flowchart illustrating selection of analytic dataset (n = `r nrow(data)`).
+`r figure <- figure + 1`
+![Missing BP data was fewer than 2 BP measurements, or missing answers to the prior diagnosis and treatment questions. Hypertension was defined as self-report of hypertensive medication use, or self-report of a prior diagnosis of hypertension, or mean BP >= 140 /90 mmHg at baseline assessment. Awareness was defined as self-report of a prior diagnosis of hypertension among those who were hypertensive. Treatment was defined as self-report of hypertensive medication among those who were aware. Control was defined as mean BP < 140/90 mmHg at baseline assessment, among those who were treated.](Figures/ExclFlowchartTree.png){height=700px}
+
+# Table `r table`. Table describing total follow up time and events, and those with missing follow up data. (n=`r nrow(data)`).
+`r table <- table + 1`
+
+```{r}
+
+varlist <- c("agegrp","gender", "eth_group",
+          "townsend_quint", "income", "employcat", "ISCED", "BirthCountryIncomeLevel", "countryResidence",
+          "BMIcat", "Smo_Status", "weekly_alccat", "METs_over1200",
+          "antiHTNmedsno",  "FamilyHist_CVD_", "priorCVD", "VIchol",
+          "BowelCancerScreening",
+          "comorbNumber_")
+
+
+followup_row <- function(df, prettyvar, level){
+  medianfu <- pretty_dp(median(df$stime),2)
+  events <- sum(df$status)
+  n <- nrow(df)
+  return(c(n, medianfu, events))
+}
+
+pct_ctrl <- c("**All participants**", followup_row(data))
+for(var in varlist){
+  prettyvar <- prettyfunc(var, pnames=pretty_names, upper=TRUE, bold=TRUE)
+  pct_ctrl <- rbind(pct_ctrl, c(prettyvar, rep("", 3)))
+  for(level in levels(data[[var]])){
+    df <- data[data[var]==level,]
+    pct_ctrl <- rbind(pct_ctrl, c(level, followup_row(df)))
+  }
+}
+colnames(pct_ctrl) <- c("Variable", "n", "Median follow-up time, years", "Number of CVD events")
+rownames(pct_ctrl) <- NULL
+
+kable(pct_ctrl)
+
+```
+
+# Model 1 (age- and sex-standardised): Age, gender, hypertension control
+
+```{r}
+
+kable(printcoxresults(df=data, surv=surv, 
+                      varlist=c("age5", "gender", "controlled_"), 
+                      pretty_names = pretty_names))
+
+```
+
+# Model 2 (basic model): age, gender, hypertension control; smoking, BMI, diabetes, prior CVD, ethnicity, education, income, Townsend
+
+Note: (NT, email 01/09/20) With regards to models to run, I'm ok with dropping Models 3 and 4 but would then adjust Model 2 in the following ways (to permit ready comparison with models in other papers):
+- add number of antihypertensives
+- add known diagnosis of hyperlipidemia (if readily coded)
+- remove Townsend
+
+**Note: we need to consider non-linear age**
+
+```{r}
+
+kable(printcoxresults(df=data, surv=surv, 
+                      varlist=c("age5", "gender", "controlled_",
+                                "Smo_Status", "BMIcat", "VI_diabetes_", "priorCVD", "VIchol",
+                                "eth_group", "ISCED", "income",
+                                "antiHTNmedsno"), 
+                      pretty_names = pretty_names))
+
+```
+
+## Stratified by prior CVD
+
+As requested in email (NT 04/09/20)
+
+```{r}
+varlist <- c("age5", "gender", "controlled_",
+                                "Smo_Status", "BMIcat", "VI_diabetes_", "priorCVD", "VIchol",
+                                "eth_group", "ISCED", "income",
+                                "antiHTNmedsno")
+
+prior <- data[data$priorCVD=="Yes",]
+noprior <- data[data$priorCVD=="No",]
+
+t1 <- printcoxresults(df=prior, surv=Surv(prior$stime, prior$status), 
+                      varlist = varlist, 
+                      pretty_names = pretty_names,
+                      IDcol=TRUE)
+t2 <- printcoxresults(df=noprior, surv=Surv(noprior$stime, noprior$status), 
+                      varlist = varlist, 
+                      pretty_names = pretty_names,
+                      IDcol=TRUE)
+tab <- inner_join(t1, t2, by=c("IDcol", "Coefficient", "Levels")) %>%
+  select(-IDcol) %>%
+  as.matrix
+colnames(tab) <- c("", "", paste0("Prior CVD, n=", nrow(prior)), "","", paste0("No prior CVD, n=", nrow(noprior)), "", "")
+tab <- rbind(c("Coefficient", "Levels", "HR", "95% CI","p", "HR", "95% CI", "p"), tab)
+kable(tab)
+
+```
+
+# Model 3: Model 2 + number of comorbidities (to explore the impact of comorbidities)
+
+See note above
+
+# Model 4: Model 2 + number of antihypertensives, hypercholesterolemia diagnosis, antihypertensive treatment (to enable comparison with many studies)
+
+See note above 
+
+(I'll remove these headings from future iterations but wanted all the initial request information available in this first output)
+
+# Model 5 (expanded model): all covariates listed above (include unadjusted coefficients in the table presenting model 4)
+
+^ I assumed you meant unadjusted covariates in table presenting model 5 - especially since we're no longer presenting model 4!
+
+**Note: where you requested "antihypertensive treatment" as a covariate I assumed you meant our estimated treatment pathway from the rubric? Please note that since our definition of "treated" was self-rep BP meds in TQ *or* reported  meds in VI that we classified as BP meds in rubric, we do have ~20k participants who self-reported BP meds in TQ but didn't in VI**
+
+```{r}
+
+varlist <- c("age5", "gender", "controlled_",
+                                "Smo_Status", "BMIcat", "VI_diabetes_", "priorCVD", "VIchol",
+                                "eth_group", "ISCED", "income", "townsend_quint",
+                                "antiHTNmedsno", "HTN_txalg", "comorbNumber_")
+
+modellist <- list()
+for (var in varlist){
+  modellist[[var]] <- printcoxresults(df=data, surv=surv, 
+                      varlist=c(var), 
+                      pretty_names = pretty_names,
+                      IDcol=TRUE)
+}
+
+uni  <- do.call(rbind, modellist)
+multi <- printcoxresults(df=data, surv=surv, 
+                      varlist=varlist, 
+                      pretty_names = pretty_names,
+                      IDcol=TRUE)
+tab <- inner_join(uni, multi, by=c("IDcol", "Coefficient", "Levels")) %>%
+  select(-IDcol) %>%
+  as.matrix
+colnames(tab) <- c("", "", "Unadjusted", "","", "Multivariable adjusted", "", "")
+tab <- rbind(c("Coefficient", "Levels", "HR", "95% CI","p", "HR", "95% CI", "p"), tab)
+kable(tab)
+
+```
+
+## For interest, here's the tabulation of rubric treatment pathway among our "treated hypertensives"
+
+The NAs are those who didn't report **any** medications at VI.
+
+```{r}
+kable(table(data$HTN_txalg, useNA='ifany'))
+```
+

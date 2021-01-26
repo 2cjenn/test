@@ -26,18 +26,18 @@ options(kableExtra.auto_format = FALSE)
 knitr::opts_knit$set(root.dir = here::here())
 knitr::opts_chunk$set(include=TRUE, echo=FALSE)
 
-# Load the project config file for filepaths etc
-config = yaml.load_file(here::here("config.yml"))
-
+# The change in root directory will apply in all subsequent chunks, but not in this chunk
+# So to load files and source code in this chunk, we need to specify the directory using here()
+config <- yaml.load_file(here::here("config.yml"))
 source(here::here(config$functions))
+source(here::here(file.path(config$scripts$processing, "Neo_exclusions.R")))
+rawdata <- readRDS(here::here(file.path(config$data$derived, "HTN_raw.rds")))
 
+data <- in_dir(here::here(), Neo_HTN_all(rawdata))
+treated <- in_dir(here::here(), Neo_HTN_trt(data))
 
-#-------------------------------------------------------------------------------------------------------------------
-# Load the data 
-
-treated <- readRDS(file=here::here(file.path(config$data$analysed, "HTN_trt.rds")))
-
-data <- readRDS(file=here::here(file.path(config$data$analysed, "HTN_excl.rds")))
+# treated <- readRDS(file=here::here(file.path(config$data$analysed, "HTN_trt.rds")))
+# data <- readRDS(file=here::here(file.path(config$data$analysed, "HTN_excl.rds")))
 
 
 # Comorbidities of interest

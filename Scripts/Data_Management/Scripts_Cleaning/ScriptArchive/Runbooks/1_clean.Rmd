@@ -35,28 +35,44 @@ eg fixing the levels of a factor
 
 ```{r}
 
-source(paste0(config$scripts$cleaning,  "BaselineRecruitment.R"))
-source(paste0(config$scripts$cleaning,  "BloodPressure.R"))
-source(paste0(config$scripts$cleaning,  "CognitiveFunction.R"))
-source(paste0(config$scripts$cleaning,  "DeathRegistry.R"))
-source(paste0(config$scripts$cleaning,  "Ethnicity.R"))
-source(paste0(config$scripts$cleaning,  "FamilyHistory.R"))
-source(paste0(config$scripts$cleaning,  "MedicalHistoryTQ.R"))
-source(paste0(config$scripts$cleaning,  "PrincipalComponents.R"))
+source(file.path(config$scripts$cleaning,  "BaselineRecruitment.R"))
+source(file.path(config$scripts$cleaning,  "BloodPressure.R"))
+source(file.path(config$scripts$cleaning,  "CognitiveFunction.R"))
+source(file.path(config$scripts$cleaning,  "DeathRegistry.R"))
+source(file.path(config$scripts$cleaning,  "Ethnicity.R"))
+source(file.path(config$scripts$cleaning,  "FamilyHistory.R"))
+source(file.path(config$scripts$cleaning,  "MedicalHistoryTQ.R"))
+source(file.path(config$scripts$cleaning,  "PrincipalComponents.R"))
 
 ```
 
-# Apply mappings from job and country codes to human-readable names
+# Apply mappings from job, country and ICD codes to human-readable names
 
 ```{r}
 
 # First, use the UKB coding to label the job categories
-source(paste0(config$scripts$cleaning,  "Mappings/JobCodes.R"))
+source(file.path(config$scripts$cleaning,  "Mappings/JobCodes.R"))
 
 # Prepare the country codes from the World Bank mapping sheet
-source(paste0(config$scripts$cleaning,  "Mappings/CountryCodes.R"))
+source(file.path(config$scripts$cleaning,  "Mappings/CountryCodes.R"))
+
+# Rearrange the UKB coding data for ICD10 and ICD9 codes to a useable structure
+source(file.path(config$scripts$cleaning,  "Mappings/ICD10.R"))
+source(file.path(config$scripts$cleaning,  "Mappings/ICD9.R"))
 
 ```
+
+# Tidy up the HES data into long format and produce columns for outcomes of interest
+
+```{r}
+
+# Rearrange HES data to long format
+source(file.path(config$scripts$cleaning,  "HESconditions/HES_dataprep.R"))
+# Produce outcomes of interest
+source(file.path(config$scripts$cleaning,  "HESconditions/HES_generalfunction.R"))
+
+```
+
 
 # Separate out the verbal interview data, then run the scripts dependent on that
 
@@ -69,17 +85,17 @@ source(paste0(config$scripts$cleaning,  "Mappings/CountryCodes.R"))
 ```{r}
 
 # Separate out the verbal interview data
-source(paste0(config$scripts$cleaning,  "VerbalInterview/VerbalInterviewData.R"))
+source(file.path(config$scripts$cleaning,  "VerbalInterview/VerbalInterviewData.R"))
 
 # Now that the diagnosis codes have been separated, we can run this script
-source(paste0(config$scripts$cleaning,  "VerbalInterview/MedicalHistoryVI.R"))
+source(file.path(config$scripts$cleaning,  "VerbalInterview/MedicalHistoryVI.R"))
 
 # And we can use the coding sheets for medical conditions and cancers
-source(paste0(config$scripts$cleaning,  "Mappings/NonCancerIllnessCodes.R"))
-source(paste0(config$scripts$cleaning,  "Mappings/CancerCodes.R"))
+source(file.path(config$scripts$cleaning,  "Mappings/NonCancerIllnessCodes.R"))
+source(file.path(config$scripts$cleaning,  "Mappings/CancerCodes.R"))
 
 # Then apply our project specific mappings to get information on conditions of interest
-source(paste0(config$scripts$cleaning,  "Mappings/MappingIllnessCategories.R"))
+source(file.path(config$scripts$cleaning,  "Mappings/MappingIllnessCategories.R"))
 
 ```
 
@@ -91,7 +107,7 @@ Need to revisit this whole structure - want to start using FUNPACK for the initi
 ```{r}
 
 # Then all dependencies are satisifed to run the general covariates script
-source(paste0(config$scripts$cleaning,  "Covariates.R"))
+source(file.path(config$scripts$cleaning,  "Covariates.R"))
 
 ```
 
