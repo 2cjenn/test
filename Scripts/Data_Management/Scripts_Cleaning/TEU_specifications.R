@@ -228,7 +228,8 @@ specs <- function() {
   HTN_control_MACE <- c(
     HTN_control,
     UKB_genetic,
-    MACE_recordlevel
+    MACE_recordlevel,
+    TEU_Emp_JobCode_v2 # When using v3 data until we grab emp_jobcode.0.0
   )
   
   Cholstrl_control<-c(
