@@ -87,7 +87,7 @@ specs <- function() {
     GeP_Outliers, # Identifies participants who are outliers for missingness and heterozygosity
     GeP_ethnic, # Identifies participants with genetic White British ancestry
     GeP_Batch, # We may wish to adjust for batch effect
-    GeP_Plate, # We may wish to adjust for plate effect
+    # GeP_Plate, # We may wish to adjust for plate effect
     GeP_PC(pc=1),
     GeP_PC(pc=2),
     GeP_PC(pc=3),
@@ -201,7 +201,9 @@ specs <- function() {
       HMH_IllDisab,
       HMH_Diabetes,
       HMH_HTNAge,
-      TEU_BlP_HTNseverity
+      TEU_BlP_HTNseverity,
+      TEU_VeI_seriouscomb,
+      TEU_VeI_cancer
       
     )
   )
@@ -225,6 +227,7 @@ specs <- function() {
 
   HTN_control_MACE <- c(
     HTN_control,
+    UKB_genetic,
     MACE_recordlevel
   )
   

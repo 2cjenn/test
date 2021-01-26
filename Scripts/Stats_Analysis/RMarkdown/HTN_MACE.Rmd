@@ -14,6 +14,14 @@ library(kableExtra)
 library(knitr)
 library(yaml)
 library(here)
+library(Publish)
+library(DiagrammeR)
+library(DiagrammeRsvg)
+library(magrittr)
+library(svglite)
+library(rsvg)
+library(png)
+
 
 # Specify the markdown format for knitr tables, otherwise they're not compatible with kableExtra
 options(knitr.kable.NA='', knitr.table.format = "markdown")
@@ -30,16 +38,111 @@ config = yaml.load_file(here::here("./config.yml"))
 
 source(file.path(config$scripts$cleaning, "dataset_generator.R"))
 
+exclusions <- function(data){
+  
+  excl$initial <<- nrow(data)
+  
+  # Exclude those outside the 40-70 age range
+  data <- data[data$TEU_BaC_AgeAtRec >= 40 & data$TEU_BaC_AgeAtRec < 70,]
+  
+  excl$agerange <<- nrow(data)
+
+  # Exclude individuals with missing BP data
+  # or missing answers to BP questions on touchscreen questionnaire
+  data <- data[!is.na(data$TEU_BlP_SBP.avg),]
+  data <- data[!is.na(data$TEU_BlP_DBP.avg),]
+  data <- data[data$TEU_HMH_prevHTN != "Unanswered",]
+  data <- data[data$TEU_HMH_Meds_BP != "Unanswered",]
+  # Exclude participants who only had BP measured once
+  data <- data[data$TEU_BlP_nSBP == 2 & data$TEU_BlP_nDBP == 2,]
+  
+  excl$BPmiss <<- nrow(data)
+
+  # Exclude individuals with implausible BP data
+  data <- data[data$TEU_BlP_SBP.avg >= 70 & data$TEU_BlP_SBP.avg <= 270,]
+  data <- data[data$TEU_BlP_DBP.avg >= 50 & data$TEU_BlP_DBP.avg <= 150,]
+  
+  excl$BPimp <<- nrow(data)
+  
+  # Only keep those with genetic data
+  data <- data[!is.na(data$TEU_BP_PRS),]
+  
+  excl$PRSmiss <<- nrow(data)
+
+  # Exclude pregnant women ("Yes" or "Unsure")
+  data <- data[is.na(data$VeI_PregnantNow) | data$VeI_PregnantNow == "No",]
+  
+  excl$pregnant <<- nrow(data)
+
+  # Exclude individuals who have serious health conditions
+  data <- data[is.na(data$TEU_VeI_seriouscomb),]
+
+  # And individuals with cancer (except for skin cancer?)
+  data <- data[is.na(data$TEU_VeI_cancer),]
+  
+  excl$seriouscomorb <<- nrow(data)
+  
+  # Any durations less than 0 are clearly errors (only 2)
+  # Any diagnoses before the age of about 20 are probably due to other causes
+  data$TEU_VeI_HTN_dur[data$TEU_VeI_HTN_dur < 0] <- NA
+  # data[data$TEU_VeI_HTN_dur > data$TEU_BaC_AgeAtRec-20,]
+  
+  # Exclude those who were not hypertensive
+  data <- data[data$TEU_evidenceHTN == TRUE & !is.na(data$TEU_evidenceHTN),]
+  
+  excl$evidenceHTN <<- nrow(data)
+  
+  # Exclude those who were not aware
+  data <- data[data$TEU_awareHTN == TRUE & !is.na(data$TEU_awareHTN),]
+  
+  excl$aware <<- nrow(data)
+  
+  # Only interested in treated hypertensives
+  data <- data[data$TEU_treatedHTN == TRUE & !is.na(data$TEU_treatedHTN),]
+  
+  excl$treated <<- nrow(data)
+  
+  # Exclude MACE at baseline
+  data <- data[!data$TEU_MACE_prev=="Yes",]
+  
+  excl$MACE <<- nrow(data)
+  
+  # Restrict to genetically white British
+  data <- data[!is.na(data$GeP_ethnic),]
+  
+  excl$whiteBrit <<- nrow(data)
+  
+  return(data)
+}
+
+excl <- list(initial=0)
 data <-
   evalWithMemoization(
     derive_variables(
       database = "K:/TEU/UKB33952_Data/Data_Downloads/V2_database_duckdb0.2.1/ukb_v2.db",
       field_definitions = TEU_SPECS$HTN_control_MACE,
-      exclusions = function(x){x},
-      dictionary = "HTN_MACE_Dict.html"
+      exclusions = exclusions
     ),
-    key = c(TEU_SPECS$HTN_MACE)
+    key = c(TEU_SPECS$HTN_MACE, exclusions)
   )
 
+
+pretty_names <- pretty_switch(field_definitions=TEU_SPECS$HTN_control_MACE)
+
+export_svg(DiagrammeR::grViz(here::here(file.path(config$outputs$flowcharts, "HTN_PRS_MACE.gv")))
+           ) %>% charToRaw %>% rsvg %>% 
+  png::writePNG(here::here(file.path(config$outputs$figures, "HTN_PRS_MACE.png")))
+
+
 ```
+
+# MACE outcome
+
+Primary outcome is MACE composite outcome at follow-up. MACE is defined as a composite of the following:
+
+* Non-fatal Myocardial Infraction (MI)
+* MI prevention procedure
+* Non-fatal Stroke
+* Stroke prevention procedure
+* Cardiovascular Death
 
