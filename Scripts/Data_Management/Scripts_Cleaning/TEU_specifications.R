@@ -203,7 +203,8 @@ specs <- function() {
       HMH_HTNAge,
       TEU_BlP_HTNseverity,
       TEU_VeI_seriouscomb,
-      TEU_VeI_cancer
+      TEU_VeI_cancer,
+      HTN_comorb_num
       
     )
   )
@@ -227,6 +228,7 @@ specs <- function() {
 
   HTN_control_MACE <- c(
     HTN_control,
+    HTN_control_comorb,
     UKB_genetic,
     MACE_recordlevel,
     TEU_Emp_JobCode_v2 # When using v3 data until we grab emp_jobcode.0.0

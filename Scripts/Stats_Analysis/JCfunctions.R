@@ -73,7 +73,7 @@ descriptivetable <- function(df, varlist, contavg='mean', assocvar=NULL, pretty_
     if(is.factor(df[[var]])){ # Categorical variables (factors) need a row per level, n's and %'s
       n <- table(df[[var]], useNA='ifany')
       pct <- pretty_dp(prop.table(n), dp=1, pct=TRUE)
-      variable <- c(prettyfunc(var, pnames=pretty_names, upper=TRUE, flist=footnote_list), rep(NA, dim(n)-1))
+      variable <- c(prettyfunc(var, pnames=pretty_names, upper=TRUE, flist=footnote_list))
       levels <- names(n)
       if(!is.null(assocvar)){
         tab <- table(df[[assocvar]], df[[var]])

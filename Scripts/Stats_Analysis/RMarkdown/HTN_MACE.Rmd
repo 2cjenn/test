@@ -4,7 +4,7 @@ author: "Jennifer Collister (JC)"
 date: "`r format(Sys.time(), '%d %B %Y')`"
 output: 
   word_document:
-      reference_docx: "K:/TEU/TEU Guides/TEU_DocStyle_2020.dotx"
+      reference_docx: "K:/TEU/TEU Guides/TEU_DocStyle_Rmd_2020.dotx"
 ---
 
 ```{r setup, include=FALSE}
@@ -21,6 +21,8 @@ library(magrittr)
 library(svglite)
 library(rsvg)
 library(png)
+library(dplyr)
+library(ggplot2)
 
 
 # Specify the markdown format for knitr tables, otherwise they're not compatible with kableExtra
@@ -28,13 +30,23 @@ options(knitr.kable.NA='', knitr.table.format = "markdown")
 options(kableExtra.auto_format = FALSE)
 # Set the root directory to the project directory (otherwise knitr works in the directory of the Rmd file by default)
 knitr::opts_knit$set(root.dir = here::here())
+knitr::opts_chunk$set(include=TRUE, echo=FALSE)
 
 # Load the project config file for filepaths etc
 config = yaml.load_file(here::here("./config.yml"))
+source(here::here(config$functions))
+
+#-------------------------------------------------------------------------------------------------------------------
+# Setup
+
+figure <- 1
+table <- 1
+suppfig <- 1
+footnote_no <- 1
 
 ```
 
-```{r}
+```{r, include=FALSE, cache=TRUE}
 
 source(file.path(config$scripts$cleaning, "dataset_generator.R"))
 
@@ -116,16 +128,16 @@ exclusions <- function(data){
 }
 
 excl <- list(initial=0)
+
 data <-
   evalWithMemoization(
     derive_variables(
-      database = "K:/TEU/UKB33952_Data/Data_Downloads/V2_database_duckdb0.2.1/ukb_v2.db",
+      database = "K:/TEU/UKB33952_Data/Data_Downloads/V3_database_duckdb0.2.1/ukb_v3.db",
       field_definitions = TEU_SPECS$HTN_control_MACE,
       exclusions = exclusions
     ),
     key = c(TEU_SPECS$HTN_MACE, exclusions)
   )
-
 
 pretty_names <- pretty_switch(field_definitions=TEU_SPECS$HTN_control_MACE)
 
@@ -136,6 +148,11 @@ export_svg(DiagrammeR::grViz(here::here(file.path(config$outputs$flowcharts, "HT
 
 ```
 
+
+# Figure `r figure`. Flowchart illustrating selection of analytic dataset (n = `r nrow(data)`).
+`r figure <- figure + 1`
+![Missing BP data was fewer than 2 BP measurements, or missing answers to the prior diagnosis and treatment questions. Hypertension was defined as self-report of hypertensive medication use, or self-report of a prior diagnosis of hypertension, or mean BP >= 140 /90 mmHg at baseline assessment. Awareness was defined as self-report of a prior diagnosis of hypertension among those who were hypertensive. Treatment was defined as self-report of hypertensive medication among those who were aware. Control was defined as mean BP < 140/90 mmHg at baseline assessment, among those who were treated.](Figures/HTN_PRS_MACE.png){height=700px}
+
 # MACE outcome
 
 Primary outcome is MACE composite outcome at follow-up. MACE is defined as a composite of the following:
@@ -145,4 +162,65 @@ Primary outcome is MACE composite outcome at follow-up. MACE is defined as a com
 * Non-fatal Stroke
 * Stroke prevention procedure
 * Cardiovascular Death
+
+## Note final MACE definition is still pending so all results below are preliminary!
+
+```{r MACE incidence,echo=FALSE}
+
+MACE_n=table(data$TEU_MACE_status)[2]
+Censored_n=table(data$TEU_MACE_status)[1]
+
+# Total number of incidence
+MACE_tab=propped(table(data$TEU_MACE_status))
+
+# Median Follow-up (MACE cases)
+MACE_fu=data%>%filter(TEU_MACE_status==1)%>%summarise(median=median(TEU_MACE_time_yrs),IQR=IQR(TEU_MACE_time_yrs))
+
+# Incidence rate whole analysis pop
+MACE_inc<-round((sum(data$TEU_MACE_status)/sum(data$TEU_MACE_time_yrs))*1000,2)
+
+```
+
+**Among our analysis population of `r nrow(data)` participants, we identified `r MACE_tab[2]` incident MACE events.**
+
+# Table `r table`. Incidence rates per 1000 person-years by BP PRS quintile group
+
+```{r}
+
+# Incidence rate per PRS quintile group
+MACE_inc_byPRS=data%>%
+  group_by(TEU_BP_PRS_quintiles)%>%
+  summarise(`Incidence Rate`=round((sum(TEU_MACE_status)/sum(TEU_MACE_time_yrs))*1000,2))%>%
+  rename(`PRS quintiles`=TEU_BP_PRS_quintiles)
+
+kable(MACE_inc_byPRS)
+
+```
+
+# Descriptive stats of the population
+
+## Preliminary results pending final definitions
+
+```{r}
+
+# number of antihypertensive medications?
+data <- data %>% mutate(TEU_Smo_Status=factor(TEU_Smo_Status,levels = c('Never','Previous','Current','Unanswered')),
+         TEU_Pha_METsover1200=factor(TEU_Pha_METsover1200,levels = c("Low (MET minutes <= 1200)","High (MET minutes > 1200)","Unanswered")))
+
+varlist=c("TEU_BaC_AgeCat", "BaC_Sex",
+          "TEU_BSM_BMIcat", "TEU_Smo_Status", "TEU_Alc_WeeklyAlcUnits", "TEU_Pha_METsover1200",
+          "TEU_FaH_CVD", "HTN_comorb_num",
+          "TEU_TownsendDepInd_Quint", "TEU_HoH_PreTaxInc", "TEU_Emp_category", "TEU_Edu_ISCED", "TEU_Rec_Country"
+          )
+pnames <- lapply(varlist, pretty_names)
+names(pnames) <- varlist
+
+tab1 <- descriptivetable(df=data, 
+                         varlist=varlist,
+                         contavg='median',
+                         pretty_names=pnames)
+
+kable(tab1%>%select(-IDcol))
+
+```
 
