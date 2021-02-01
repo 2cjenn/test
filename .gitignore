@@ -40,3 +40,7 @@ ICD10.csv
 # Ignore archived stuff #
 ##############################
 **/archive/
+
+# Ignore R Markdown chunk caches #
+##################################
+Scripts/Stats_Analysis/RMarkdown/**_Cache/
