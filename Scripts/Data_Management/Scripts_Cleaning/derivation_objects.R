@@ -2153,9 +2153,9 @@ TEU_HES_MACE_prev<-function(record_level=FALSE){
         paste0("HES_OPCS4Code.0.",seq(0,116,by=1)),
         paste0("HES_OPCS4DateFirst.0.",seq(0,116,by=1)))
     },
-    mapper=FN_HES_First(ICD9_xlsx = file.path(config$cleaning$mapping,'MACE/HES_ICD9_Mapping_20210112.xlsx'),
-                        ICD10_xlsx = file.path(config$cleaning$mapping,'MACE/HES_ICD10_Mapping_20210121.xlsx'),
-                        OPCS4_xlsx = file.path(config$cleaning$mapping,'MACE/HES_OPCS4_Mapping_XL_V1.1_20210121.xlsx'),
+    mapper=FN_HES_First(ICD9_xlsx = file.path(config$cleaning$mapping,'MACE/HES_ICD9_Mapping_20210128.xlsx'),
+                        ICD10_xlsx = file.path(config$cleaning$mapping,'MACE/HES_ICD10_Mapping_20210128.xlsx'),
+                        OPCS4_xlsx = file.path(config$cleaning$mapping,'MACE/HES_OPCS4_Mapping_20210128.xlsx'),
                         condition = 'MACE',
                         return_label = 'baseline',
                         record_level = record_level),
@@ -2175,7 +2175,7 @@ TEU_VeI_MACE_nonc<-function(condition='MACE'){
       paste0("VeI_NonCancerYear.0.", seq(0, 33, by=1))),
     mapper= function(data){
       # read in analysis codings xlsx
-      mapping=read.xlsx_kdrive(file.path(config$cleaning$mapping,'MACE/VI_NonCancerIllness_Mapping_20210112.xlsx'),col_types = c('text'))
+      mapping=read.xlsx_kdrive(file.path(config$cleaning$mapping,'MACE/VI_NonCancerIllness_Mapping_20210128.xlsx'),col_types = c('text'))
       
       dx_codes<-as.numeric(mapping[which(mapping$Conditions==condition),]$Code)
       
@@ -2204,7 +2204,7 @@ TEU_VeI_MACE_op<-function(condition='MACE'){
                paste0("VeI_OperationYear.0.", seq(0, 31, by=1))),
     mapper = function(data){
       
-      mapping=read.xlsx_kdrive(file.path(config$cleaning$mapping,'MACE/VI_Operations_Mapping_XL_V1.1_20210121.xlsx'),col_types = c('text'))
+      mapping=read.xlsx_kdrive(file.path(config$cleaning$mapping,'MACE/VI_Operations_Mapping_20210128.xlsx'),col_types = c('text'))
       
       dx_codes<-as.numeric(mapping[which(mapping$Conditions==condition),]$Code)
       y<- FN_VI_filtercodes(dx_codes = dx_codes,
@@ -2282,9 +2282,9 @@ TEU_HES_MACE_fudate<-function(record_level=FALSE){
           paste0("HES_OPCS4Code.0.",seq(0,116,by=1)),
           paste0("HES_OPCS4DateFirst.0.",seq(0,116,by=1)))
         },
-    mapper=FN_HES_First(ICD9_xlsx = file.path(config$cleaning$mapping,'MACE/HES_ICD9_Mapping_20210112.xlsx'),
-                        ICD10_xlsx = file.path(config$cleaning$mapping,'MACE/HES_ICD10_Mapping_20210121.xlsx'),
-                        OPCS4_xlsx = file.path(config$cleaning$mapping,'MACE/HES_OPCS4_Mapping_XL_V1.1_20210121.xlsx'),
+    mapper=FN_HES_First(ICD9_xlsx = file.path(config$cleaning$mapping,'MACE/HES_ICD9_Mapping_20210128.xlsx'),
+                        ICD10_xlsx = file.path(config$cleaning$mapping,'MACE/HES_ICD10_Mapping_20210128.xlsx'),
+                        OPCS4_xlsx = file.path(config$cleaning$mapping,'MACE/HES_OPCS4_Mapping_20210128.xlsx'),
                         condition = 'MACE',
                         return_label = 'followup_date',
                         record_level = record_level),
@@ -2312,9 +2312,9 @@ TEU_HES_MACE_fucomp<-function(record_level=FALSE){
              paste0("HES_OPCS4Code.0.",seq(0,116,by=1)),
              paste0("HES_OPCS4DateFirst.0.",seq(0,116,by=1)))
         },
-    mapper=FN_HES_First(ICD9_xlsx = file.path(config$cleaning$mapping,'MACE/HES_ICD9_Mapping_20210112.xlsx'),
-                        ICD10_xlsx = file.path(config$cleaning$mapping,'MACE/HES_ICD10_Mapping_20210121.xlsx'),
-                        OPCS4_xlsx = file.path(config$cleaning$mapping,'MACE/HES_OPCS4_Mapping_XL_V1.1_20210121.xlsx'),
+    mapper=FN_HES_First(ICD9_xlsx = file.path(config$cleaning$mapping,'MACE/HES_ICD9_Mapping_20210128.xlsx'),
+                        ICD10_xlsx = file.path(config$cleaning$mapping,'MACE/HES_ICD10_Mapping_20210128.xlsx'),
+                        OPCS4_xlsx = file.path(config$cleaning$mapping,'MACE/HES_OPCS4_Mapping_20210128.xlsx'),
                         condition = 'MACE',
                         return_label = 'followup_comp',
                         record_level = record_level),
@@ -2333,7 +2333,7 @@ TEU_Dth_MACE_dthdate <-function(record_level=FALSE){
       name = 'TEU_Dth_MACE_dthdate',
       source = if(record_level){c("ID")} else {c('ID',"Dth_ICD10Underlying.0.0", "Dth_ICD10Underlying.1.0","Dth_Date.0.0", "Dth_Date.1.0")},
       mapper = function(data){
-        mapping=read.xlsx_kdrive(file.path(config$cleaning$mapping,'MACE/HES_ICD10_Mapping_20210121.xlsx'),col_types = c('text'))
+        mapping=read.xlsx_kdrive(file.path(config$cleaning$mapping,'MACE/HES_ICD10_Mapping_20210128.xlsx'),col_types = c('text'))
         ICD10_codes<-mapping[which(mapping$Conditions=='MACE'),]$Code
         
         y<-FN_Dth_filtercodes(ICD10_codes = ICD10_codes,return_label = 'dth_date', record_level=record_level)(data)
@@ -2375,7 +2375,7 @@ TEU_Dth_NotMACE_dthdate <-function(record_level=FALSE){
       name = 'TEU_Dth_NotMACE_dthdate',
       source = if(record_level){c("ID")} else {c('ID',"Dth_ICD10Underlying.0.0", "Dth_ICD10Underlying.1.0","Dth_Date.0.0", "Dth_Date.1.0")},
       mapper = function(data){
-        mapping=read.xlsx_kdrive(file.path(config$cleaning$mapping,'MACE/HES_ICD10_Mapping_20210121.xlsx'),col_types = c('text'))
+        mapping=read.xlsx_kdrive(file.path(config$cleaning$mapping,'MACE/HES_ICD10_Mapping_20210128.xlsx'),col_types = c('text'))
         ICD10_codes<-mapping[which(is.na(mapping$Conditions)),]$Code
         
         y<-FN_Dth_filtercodes(ICD10_codes = ICD10_codes,return_label = 'dth_date', record_level=record_level)(data)

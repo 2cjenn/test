@@ -566,7 +566,7 @@ FN_eachHES_First<-function(data,HES_xlsx,condition='MACE',colname,removeNAfrom, 
       # Select the first occurrence
       slice(which.min(DateFirst))%>%
       # Keep essential columns only
-      select(ID, Rec_DateAssess, ConditionsType, DateFirst)
+      select(ID, Rec_DateAssess, ConditionsType_TL, ConditionsType, DateFirst)
   },
   key = c(data, colname, removeNAfrom, HES_file, condition, record_level))
 }
@@ -660,18 +660,9 @@ FN_Dth_filtercodes <- function(ICD10_codes, return_label = "dth", record_level=F
       deaths <- FN_Death_registry_primary()
     } else {
       ID <- data$ID
-      
-      secondPM <- data %>% filter(!is.na(Dth_ICD10Underlying.1.0)) %>%
-        select(ID, Dth_ICD10Underlying.1.0, Dth_Date.1.0) %>%
-        rename(Dth_ICD10Underlying = Dth_ICD10Underlying.1.0,
-               Dth_Date = Dth_Date.1.0)
-
-      firstPM <- data %>% filter(!ID %in% secondPM$ID) %>%
-        select(ID, Dth_ICD10Underlying.0.0, Dth_Date.0.0) %>%
-        rename(Dth_ICD10Underlying = Dth_ICD10Underlying.0.0,
-               Dth_Date = Dth_Date.0.0)
-
-      deaths <- rbind(firstPM, secondPM)
+      deaths <- data %>%
+        mutate(Dth_ICD10Underlying = coalesce(Dth_ICD10Underlying.1.0, Dth_ICD10Underlying.0.0),
+              Dth_Date = coalesce(Dth_Date.1.0, Dth_Date.0.0))
     }
 
     subdata <- deaths %>% filter(Dth_ICD10Underlying %in% ICD10_codes) %>%

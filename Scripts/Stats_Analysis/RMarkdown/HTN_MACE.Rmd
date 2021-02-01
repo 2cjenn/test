@@ -4,7 +4,7 @@ author: "Jennifer Collister (JC)"
 date: "`r format(Sys.time(), '%d %B %Y')`"
 output: 
   word_document:
-      reference_docx: "K:/TEU/TEU Guides/TEU_DocStyle_Rmd_2020.dotx"
+      reference_docx: "K:/TEU/TEU_Guides/TEU_DocStyle_Rmd_2020.dotx"
 ---
 
 ```{r setup, include=FALSE}
@@ -136,7 +136,7 @@ data <-
       field_definitions = TEU_SPECS$HTN_control_MACE,
       exclusions = exclusions
     ),
-    key = c(TEU_SPECS$HTN_MACE, exclusions)
+    key = c(TEU_SPECS$HTN_control_MACE, exclusions)
   )
 
 pretty_names <- pretty_switch(field_definitions=TEU_SPECS$HTN_control_MACE)
