@@ -203,13 +203,9 @@ kable(MACE_inc_byPRS)
 
 ```{r}
 
-# number of antihypertensive medications?
-data <- data %>% mutate(TEU_Smo_Status=factor(TEU_Smo_Status,levels = c('Never','Previous','Current','Unanswered')),
-         TEU_Pha_METsover1200=factor(TEU_Pha_METsover1200,levels = c("Low (MET minutes <= 1200)","High (MET minutes > 1200)","Unanswered")))
-
 varlist=c("TEU_BaC_AgeCat", "BaC_Sex",
           "TEU_BSM_BMIcat", "TEU_Smo_Status", "TEU_Alc_WeeklyAlcUnits", "TEU_Pha_METsover1200",
-          "TEU_FaH_CVD", "HTN_comorb_num",
+          "TEU_FaH_CVD", "HTN_comorb_num", "TEU_VeI_numHTNmedscat",
           "TEU_TownsendDepInd_Quint", "TEU_HoH_PreTaxInc", "TEU_Emp_category", "TEU_Edu_ISCED", "TEU_Rec_Country"
           )
 pnames <- lapply(varlist, pretty_names)

@@ -204,7 +204,9 @@ specs <- function() {
       TEU_BlP_HTNseverity,
       TEU_VeI_seriouscomb,
       TEU_VeI_cancer,
-      HTN_comorb_num
+      HTN_comorb_num,
+      TEU_VeI_numHTNmeds,
+      TEU_VeI_numHTNmedscat
       
     )
   )

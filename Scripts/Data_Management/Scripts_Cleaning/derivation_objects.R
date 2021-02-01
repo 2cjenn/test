@@ -772,10 +772,10 @@ TEU_Alc_Status <- function() {
   list(
     name = "TEU_Alc_Status",
     source = "Alc_Status.0.0",
-    mapper = FN_MissingCategory(
-      missingvals = c("Prefer not to answer"),
-      categ_name = "Unanswered"
-    ),
+    mapper = function(x) {
+      y <- FN_MissingCategory(missingvals = c("Prefer not to answer"), categ_name = "Unanswered")(x)
+      y <- FN_factor(levelorder = c("Never", "Previous", "Current", "Prefer not to answer"))(y)
+      },
     post_exclusion = FALSE,
     display_name = "AlcoholStatus",
     description = "Self-reported alcohol drinking status"
@@ -786,10 +786,10 @@ TEU_Smo_Status <- function() {
   list(
     name = "TEU_Smo_Status",
     source = "Smo_Status.0.0",
-    mapper = FN_MissingCategory(
-      missingvals = c("Prefer not to answer"),
-      categ_name = "Unanswered"
-    ),
+    mapper = function(x) {
+      y <- FN_MissingCategory(missingvals = c("Prefer not to answer"), categ_name = "Unanswered")(x)
+      y <- FN_factor(levelorder = c("Never", "Previous", "Current", "Prefer not to answer"))(y)
+      },
     post_exclusion = FALSE,
     display_name = "SmokingStatus",
     description = "Self-reported smoking status"
@@ -902,9 +902,7 @@ TEU_Pha_METsover1200 <- function() {
         x <= 1200 ~ "Low (MET minutes <= 1200)",
         TRUE ~ "Other"
       )
-      y <-
-        factor(y,
-               levels = c("High (MET minutes > 1200)", "Low (MET minutes <= 1200)", "Unanswered"))
+      y <- factor(y, levels = c("Low (MET minutes <= 1200)", "High (MET minutes > 1200)", "Unanswered"))
       return(y)
     },
     post_exclusion = FALSE,
@@ -1416,6 +1414,40 @@ TEU_VeI_HTNmeds_rubric <- function() {
     post_exclusion = FALSE,
     display_name = "Self-reported BP meds in VI",
     description = "Self-reported medications that correspond to a hypertension treatment pathway under our rubric"
+  )
+}
+
+TEU_VeI_numHTNmeds <- function() {
+  list(
+    name = "TEU_VeI_numHTNmeds", 
+    source = c("ID"), 
+    mapper = function(x) {
+      rubric <- readRDS(file.path(config$data$derived, "HTNMedsRubric.rds"))
+      y <- rubric[["hypmedsno"]][match(x, rubric$ID)]
+    },
+    post_exclusion = FALSE,
+    display_name = "Number of hypertensive medications",
+    description = "Number of classes of hypertension medication (under our rubric) self-reported by the participant at verbal interview"
+  )
+}
+
+
+TEU_VeI_numHTNmedscat <- function() {
+  list(
+    name = "TEU_VeI_numHTNmedscat", 
+    source = c("TEU_VeI_numHTNmeds"), 
+    mapper = function(x) {
+      y <- dplyr::case_when(
+        x == 0 ~ "None reported",
+        x == 1 ~ "1",
+        x == 2 ~ "2",
+        x >= 3 ~ "3 or more",
+        TRUE ~ as.character(x)
+      )
+    },
+    post_exclusion = FALSE,
+    display_name = "Number of hypertensive medications",
+    description = "Number of classes of hypertension medication (under our rubric) self-reported by the participant at verbal interview, categorised"
   )
 }
 
