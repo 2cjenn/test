@@ -1,0 +1,431 @@
+---
+title: "High Cholesterol (HCL) Prospective Analysis"
+author: "Xiaonan Liu, Lei Clifton"
+date: "`r format(Sys.time(), '%d %B %Y')`"
+output: rmdformats::robobook
+
+---
+
+# 1. Summary
+
+This report provides statistical details to explore the association of LDL PRS with MACE risk among treated population (i.e. statin users at baseline) using <span style="color:red">record-level data downloaded on 29Jan2021.</span> 
+
+The analyses results presented below are based on 'Prospective_StudyDesign_20210128.docx'. Content will be amended accordingly if study design document changes.
+
+Content marked in <span style="color:red">red</span> indicates details to be confirmed or requires attention. 
+
+```{r setup,include=FALSE}
+knitr::opts_chunk$set(echo = FALSE,fig.pos = 'H')
+#options(knitr.table.format = "pdf") 
+#rmarkdown::render(input = "HCLProsp.Rmd", output_file = paste0("HCLProsp_XL_",format(Sys.time(), '%Y%m%d'),".html"))
+
+library(tidyr)
+library(reshape2)
+library(dplyr)
+library(yaml)
+library(purrr)
+library(tidyverse)
+library(ggplot2)
+library(naniar)
+library(ggpubr)
+library(knitr)
+library(kableExtra)
+library(DT)
+library(readxl)
+library(limma)
+library(VennDiagram)
+library(gtools)
+library(survival)
+library(survminer)
+library(shiny)
+library(grid)
+library(png)
+library(Publish)
+
+
+setwd('K:/TEU/TEU_Members/Xiaonan_Liu/Projects/PRSonCholstrl')
+config = yaml.load_file("config.yml")
+source(config$functions$general)
+source(config$functions$descriptive)
+
+
+# Read in UKB Showcase data
+sum_data=readRDS(file.path(config$data$derived,'MACE_explore.rds'))
+
+# Read in UKB record-level data
+data=readRDS(file.path(config$data$derived,'CholProsp_raw.rds'))
+
+# Read in analysis data
+analysis_data=readRDS(file.path(config$data$analysed,'CholProsp_analysis.rds'))
+
+```
+
+
+# 2. Methods
+
+## 2.1 MACE Derivation
+
+<span style="color:red">
+MACE is defined as a composite of the following:
+
+* Nonfatal myocardial infraction (MI) (including unstable angina)
+* MI prevention procedure
+* Nonfatal Stroke -- Ischaemic (including TIA)
+* Nonfatal Stroke -- Haemorrhagic
+* Nonfatal Stroke -- Type unspecified
+* Stroke prevention procedure
+* Cardiovascular death</span>
+
+
+MACE VS CVD: (NT, 11Jan2021) MACE is basically CVD (MI or Stroke) + Death caused by CVD.
+
+For each participant, we would like to derive their status of having prevalent MACE at baseline (**MACE status at baseline**); status of having MACE event at follow-up (**MACE status at follow-up**) and follow-up time (**Follow-up time**).
+
+Figure.1 shows the data source used to derive these 3 variables mentioned in bold from above:
+```{r dpi=70, echo=FALSE,fig.cap='Figure.1 MACE Derivation',fig.align='center',fig.width=10,fig.height=10}
+img1<-png::readPNG("K:/TEU/PRSonCholstrl/Stats_Outputs/Meeting_Updates/Figures/MACE Derivation.png")
+grid::grid.raster(img1)
+```
+
+Note on Hospital Inpatient: The hospital inpatient data we used are record-level data from UKB data portal.
+
+
+Here are more details on how each variable was derived:
+
+1. **MACE status at baseline**: The status of having prevalent MACE at baseline was defined using hospital inpatient data ([ICD-9](https://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=41271), [ICD-10](https://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=41270), [OPCS-4](https://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=41272)), Verbal interview ([Noncancer illness](https://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=20002), [Operations](https://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=20004)) and [Touchscreen question](https://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=6150) with date of MACE preceding or on the date of baseline. Participants identified for having MACE at baseline from either source would be counted as having prevalent MACE at baseline.
+
+2. **MACE status at follow-up**: The status of having MACE event at follow-up was defined from hospital inpatient data ([ICD-9](https://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=41271), [ICD-10](https://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=41270), [OPCS-4](https://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=41272)) and death registry data ([Underlying (primary) cause of death](https://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=40001)) with date of MACE diagnosed after baseline. Note: Hospital inpatient does not have any death data so death date was solely from death registry data.
+
+3. **Follow-up time**: Follow-up time for each participant was computed as number of days (or years) from baseline date until the earliest of the following:
+
+   * <ins>MACE event date:</ins> Date of first diagnosis of MACE (in either main or secondary position), date of first operative procedure for MACE (in either main or secondary position) or date of death caused by MACE (primary cause only) is considered as MACE event date.
+Note: For individuals with multiple MACE hospitalizations (e.g. having both date of first diagnosis and date of first operative procedure for MACE available in dataset), we regarded the earliest date as date of event.
+   
+   * <ins>Death date by non-MACE cause:</ins> Date of death caused by non-MACE (primary cause only) is considered as date of death by non-MACE. 
+   
+   * <ins>Current UKB administrative censoring date:</ins> Current administrative censoring date is based on origin of hospital inpatient data <span style="color:red">(England: 30 November 2020; Scotland: 31 October 2020; Wales: 28 February 2018).</span> we currently used [UKB assessment centre](https://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=54) at baseline to estimate the origin.
+Note: The censoring dates above are corresponding to hospital inpatient data from UKB data portal, which are different from censoring dates from UKB showcase!  For more information, please check [censoring dates in UKB website](https://biobank.ndph.ox.ac.uk/ukb/exinfo.cgi?src=Data_providers_and_dates#:~:text=Censoring%20dates&text=The%20censoring%20date%20is%20the,day%20of%20the%20previous%20month.)
+   
+    * <ins>Lost to follow-up date:</ins> Date from which a participant is believed to be lost to follow-up is considered as lost to follow-up date, which is obtained from [UKB field 191](https://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=191). Related information on reasons of lost to follow-up is recorded in [UKB Field 190](https://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=190).
+
+
+The corresponding code list for MACE (ICD-9, ICD-10, OPCS-4 and relevant codes for self-reported diagnoses and operations) are recorded in [‘DefMACE_XL_20210128.html’](./DefMACE_XL_20210128.html).
+
+For exploration of the overlapping between prevalent MACE cases detected at baseline across different sources, please see Figure.A1 in Appendix.
+
+## 2.2 Analysis Population
+
+Continued from cholesterol control (HCL) analysis, our analysis population is **treated population (i.e. statin users at baseline)**. 
+
+In this HCL prospective analysis, we continued from treated population and **further excluded prevalent MACE cases at baseline and restricted to White ethnicity group only**. Figure.2 shows the prospective analysis population flowchart. 
+
+```{r dpi=70, echo=FALSE,fig.cap='Figure.2 HCL Prospective analysis population flowchart',fig.align='center',fig.width=13,fig.height=15}
+img3<-readPNG('K:\\TEU\\PRSonCholstrl\\Stats_Outputs\\Analysis_Outputs\\HCL_Prosp\\FC_prospop_20210130.png')
+grid.raster(img3,width=0.8,height=1)
+```
+
+## 2.3 Outcome measure
+
+Primary outcome measure is MACE composite outcome at follow-up. Please refer to Section 2.1 for more details of derivation process.
+
+```{r MACE incidence,echo=FALSE}
+
+MACE_n=table(analysis_data$TEU_MACE_status)[2]
+Censored_n=table(analysis_data$TEU_MACE_status)[1]
+
+# Total number of incidence
+MACE_tab=propped(table(analysis_data$TEU_MACE_status))
+
+# Median Follow-up (MACE cases)
+MACE_fu=analysis_data%>%filter(TEU_MACE_status==1)%>%summarise(median=median(TEU_MACE_time_yrs),IQR=IQR(TEU_MACE_time_yrs))
+
+# Incidence rate whole analysis pop
+MACE_inc<-round((sum(analysis_data$TEU_MACE_status)/sum(analysis_data$TEU_MACE_time_yrs))*1000,2)
+
+```
+
+```{r MACE incidence Showcase,echo=FALSE}
+
+sum_aftexcl=sum_data%>%
+# age out of range
+  filter(!(!is.na(TEU_BaC_AgeAtRec) & TEU_BaC_AgeAtRec<40 | TEU_BaC_AgeAtRec>=70))%>%
+# missing on core variables
+  filter(!is.na(TEU_BaC_AgeAtRec) & !is.na(BaC_Sex) & !is.na(TEU_LDL_C_PRS) & !is.na(BBC_LDL_Result))%>%
+# possible pregnant
+  filter(!(VeI_PregnantNow %in% c('Unsure','Yes')))%>%
+# serious comorb
+  filter(is.na(TEU_VeI_seriouscomb))%>%
+# cancer (except skin)
+  filter(is.na(TEU_VeI_cancer))%>%
+# Treated population
+  filter(TEU_VeI_statin=='Yes')%>%
+# Further exclude MACE at baseline (Within treated pop) 
+  filter(!TEU_MACE_prev=='Yes')%>%
+# Further restrict to White ethnicity group only
+  filter(!is.na(GeP_ethnic))
+
+
+
+```
+
+**Among our analysis population of `r nrow(analysis_data)` participants, we identified `r MACE_tab[2]` incident MACE events.** <span style="color:red">(That is `r MACE_n-sum_aftexcl%>%filter(TEU_MACE_status==1)%>%nrow()` more MACE incident cases compared to using Showcase data) 
+
+Table.1 shows the distribution of MACE subtypes among incident MACE events:
+```{r MACE subtypes,echo=FALSE}
+
+# Freq of MACE subtypes
+MACE_subtypes=data.frame(propped(table(analysis_data$TEU_MACE_fucomp)))
+colnames(MACE_subtypes)[1]='MACE subtypes'
+
+kable(MACE_subtypes[-nrow(MACE_subtypes),],caption=paste0('Table.1 Frequency of MACE subtypes (N=',MACE_subtypes[nrow(MACE_subtypes),2],')'),
+      table.attr="style='width:80%;'")%>%
+  kable_styling(bootstrap_options = c("striped", "hover"))
+
+  
+```
+
+Note: In the event that a participant had non-fatal MI/Stroke and CVD death on the same day, we would categorise this participant as CVD death. 
+
+In the event that a participant had non-fatal MI/Stroke diagnosed on the same day as MI/Stroke prevention procedure, we would categorise this case as MI/Stroke.
+
+
+<p>&nbsp;</p>
+
+The incidence rate of MACE was `r MACE_inc` cases per 1000 person-years. Table.2 shows the incidence rates of MACE per 1000 person-years by LDL PRS quintiles groups:
+```{r MACE incidence by PRS,echo=FALSE,warning=FALSE,message=FALSE}
+# Incidence rate per PRS quintile group
+MACE_inc_byPRS=analysis_data%>%
+  group_by(TEU_LDL_C_PRS_Quint)%>%
+  summarise(`Incidence Rate`=round((sum(TEU_MACE_status)/sum(TEU_MACE_time_yrs))*1000,2))%>%
+  rename(`PRS quintiles`=TEU_LDL_C_PRS_Quint)
+
+kable(MACE_inc_byPRS,caption = 'Table.2 Incidence rates per 1000 person-years by LDL PRS quintile groups',
+      table.attr="style='width:80%;'")%>%
+  kable_styling(bootstrap_options = c("striped", "hover"))
+
+```
+
+
+**The median follow-up of our analysis population was `r round(median(analysis_data$TEU_MACE_time_yrs),1)` years (interquartile range, `r round(IQR(analysis_data$TEU_MACE_time_yrs),1)`).** The median follow-up for MACE cases was `r round(MACE_fu$median,1)` years (interquartile range, `r round(MACE_fu$IQR,1)`).
+
+
+Below shows the distribution of follow-up time in our analysis population:
+```{r Follow up time, echo=FALSE}
+# Distribution of follow-up time 
+ggplot(analysis_data, aes(x=TEU_MACE_time_yrs, fill=as.factor(TEU_MACE_status))) +
+  geom_histogram(binwidth=.5, alpha=.5)+
+  #geom_vline(xintercept=median(analysis_data$TEU_MACE_time_yrs),linetype='dotted')+
+  scale_fill_manual(values = c("blue", "red"), labels = c(paste0("Censored (n=",Censored_n,')'), paste0("MACE Event (n=",MACE_n,')'))) +
+  labs(title = paste0('Distribution of follow-up time (N=',nrow(analysis_data),')'))+
+  scale_x_continuous(name = 'Follow-up time (in years)',breaks = seq(0,14,by=1))+
+  theme(legend.title = element_blank())
+  
+
+```
+
+## 2.4 Models
+
+2 Cox regression models of incident MACE were conducted to explore the association of LDL PRS with MACE risk:
+
+* Model 1 Multivariable with covariates in Table.3 below 
+* Model 2 Multibariable with covariates in Table.3 below and baseline LDL (quintiles) 
+
+Table.3 Covariates in HCL prospective analysis
+
+Demographic          | CV Risk Factors & potential confounders|  Socioeconomic | Others
+ -----------------|-------------------------|----------------------------------|---------
+Age, Gender| BMI, smoking, alcohol, weekly physical activity, family history CVD, number of comorbidities, <span style="color:red">baseline SBP, baseline DBP</span>| Education, townsend, Household income,occupation category, UK country of residence | <span style="color:red">First 4 genetic PCs (prinicipal component scores)</span>
+
+Notes: comorbidities do not include CVD. <span style="color:red"> Baseline SBP and DBP were adjusted in quintiles format.</span>
+
+# 3. Results
+
+## 3.1 Descriptive characteristics
+
+* Descriptive characteristics of whole Analysis population: Please see ['DescrpStats_20210130.html'](./DescrpStats_20210130.html).
+
+
+* Descriptive characteristics by LDL PRS quintiles: Please see ['DescrpStats_byPRS_20210130.html'](./DescrpStats_byPRS_20210130.html).
+
+
+* Descriptive characteristics by gender: Please see ['DescrpStats_bygender_20210130.html'](./DescrpStats_bygender_20210130.html)
+
+## 3.2 Model Outputs
+
+### Model 1
+
+Model 1: Cox regression with covariates in Table 3. However, there was evidence that proportional hazard assumption (PHA) was violated. <span style="color:red">Covariates that violated PHA are: UK Country of residence, gender and 4th genetic PC. </span> 
+
+The simplest fix is to exclude those 3 variables from the model. So we proposed:
+
+<span style="color:red"> Reduced Model 1: Multivariable cox regression with covariates in Table.3 excluding gender, UK Country of residence and 4th genetic PC. </span> This would mean this reduced model did not adjust for UK Country of residence, gender and 4th genetic PC. Model outputs are shown in Table. 4 below.
+
+
+Note: Analyses outputs presented below are based on complete case of the variables fitted. Therefore, number of observations in our model (Please see N in table caption) is slightly less than the analysis population shown in Figure.2 due to missing data in townsend variable, household income variable, SBP and DBP.
+
+```{r Reduced model 1, echo=FALSE}
+
+# Reduced model 1: Multivariable model excluding gender, TEU_Rec_Country, and PC 4
+
+# Complete case data
+rmodel1_data<-analysis_data%>%
+  select(TEU_MACE_status,TEU_MACE_time_yrs,TEU_BaC_AgeCat,#BaC_Sex,
+         TEU_LDL_C_PRS_Quint,
+         TEU_BSM_BMIcat,TEU_Smo_Status,TEU_Alc_WeeklyCat,
+         TEU_Pha_METsover1200,TEU_FaH_CVD,#TEU_HMH_BowelCancerScreen,HTN_comorb_numcat,
+         Prosp_comorb_numcat, TEU_BlP_SBP_Quint, TEU_BlP_DBP_Quint,
+         TEU_TownsendDepInd_Quint, TEU_HoH_PreTaxInc,TEU_Emp_category,TEU_Edu_ISCED,#TEU_CountryIncome,
+         #TEU_Rec_Country,
+         paste0('GeP_PC_',1:3))%>%na.omit
+
+rmodel1<-coxph(Surv(TEU_MACE_time_yrs,TEU_MACE_status)~ .,data=rmodel1_data)
+
+
+routput1=publish(rmodel1, ci.digits=2, ci.handler="sprintf", pvalue.eps=0.01,
+              pvalue.digits=2,pvalue.stars=TRUE, ci.trim=FALSE,print=FALSE)$regressionTable
+
+# Change pretty variable names
+routput1$Variable=sapply(1:nrow(routput1),function(i) my_labels[[routput1[i,'Variable']]])
+
+# Replace NULL as NA
+routput1[routput1=='NULL']=""
+
+
+kable(routput1,caption=paste0('Table.4 Analysis ouput of Reduced model 1 (N=',nrow(rmodel1_data),')'),
+      table.attr="style='width:100%;'")%>%
+  kable_styling(bootstrap_options = c("striped", "hover"))
+
+
+```
+
+Please see ['ForestRModel1_20210202.pdf'](./ForestRModel1_20210202.pdf) for forest plot.
+
+<span style="color:red">(XL comment: Not sure why high DBP is associated with low MACE risk, is this normal?) </span>
+
+<span style="color:red"> Discussions: Removing covariates that violated PHA is not the ideal solution because this way fails to adjust for potential confounders (in this case, confounders include UK Country of residence, gender and 4th PC). There are better ways to solve violation of PHA issue, here are potential methods we can follow: </span>
+
+* Stratified Cox (SC) model: SC is a modification of Cox model that allows for control by 'stratification' of a predictor that does not satisfy the PHA [(Nurarif & Kusuma, 2013)](https://web.njit.edu/~wguo/Math%20659_2010/Chapters%205%20and%206%20%20from%20%5BSurvival%20Analysis_A%20Self%20Learning%20Text_Book%5D.pdf). The advantage is that it's easy to implement, straightforward to interpret and done by others [(Inouye et al., 2018)](https://www.biorxiv.org/content/10.1101/250712v1.full.pdf) The downside is one needs to decide which stratification variable to use and there is no way to carry out inference for stratification variable.
+
+* Accelerated Failure Time (AFT) model
+
+* Including time varying covariates
+
+XL will do some research on the latter 2 methods and provide insights in the meeting.
+
+### Model 2: Additionally adjust for baseline LDL
+
+Continued from model 1, we additionally adjusted for baseline LDL (quintiles). However, there was evidence that this covariate violated PHA therefore I do not further present the model output.
+
+
+## 3.3 Model Diagnosis
+
+For reduced model 1, we tested:
+
+* Multicollinearity: Correlation matrix among covariates and VIF computed from ‘rms’ package indicate no evidence of multicollinearity among covariates.
+
+* Proportional hazard assumption (PHA): PHA was tested by plotting Schoenfeld residuals against time and testing the significance of relationship between residuals and time. 
+
+
+# Appendix 
+
+
+```{r dpi=70, echo=FALSE,fig.cap='Figure.A1 Number of prevalent MACE cases identified at baseline from each source among whole UKB population',fig.align='center',fig.width=8,fig.height=8}
+img2<-readPNG("K:/TEU/PRSonCholstrl/Stats_Outputs/Meeting_Updates/Figures/MACE_baseline.png")
+grid.raster(img2)
+```
+
+
+```{r KM,echo=FALSE,warning=FALSE,fig.cap='Figure.A2 Crude KM plot by LDL PRS Quintiles'}
+
+ggsurvplot(
+  fit = survfit(Surv(TEU_MACE_time_yrs,TEU_MACE_status)~  TEU_LDL_C_PRS_Quint, data = analysis_data), 
+  #data=analysis_data,
+  xlab = "Time (Years)", 
+  #ylab = "Survival probability",
+  risk.table = TRUE,
+  tables.height=0.4,
+  legend = "bottom",
+  pval = TRUE,
+ legend.title = "LDL PRS Quintiles",
+ legend.labs = c("Q1: Lowest score", "Q2", "Q3","Q4","Q5: Highest score"))
+
+
+```
+
+
+
+```{r model 1 alt, echo=FALSE,eval=FALSE}
+
+# Model 1.2: Multivariable model (Stratified by gender and remove TEU_Rec_Country, and PC 4)
+
+model1.2_data<-analysis_data%>%
+  select(TEU_MACE_status,TEU_MACE_time_yrs,TEU_BaC_AgeCat,BaC_Sex,TEU_LDL_C_PRS_Quint,
+         TEU_BSM_BMIcat,TEU_Smo_Status,TEU_Alc_WeeklyCat,
+         TEU_Pha_METsover1200,TEU_FaH_CVD,#TEU_HMH_BowelCancerScreen,HTN_comorb_numcat,
+         Prosp_comorb_numcat, TEU_BlP_SBP_Quint, TEU_BlP_DBP_Quint,
+         TEU_TownsendDepInd_Quint, TEU_HoH_PreTaxInc,TEU_Emp_category,TEU_Edu_ISCED,#TEU_CountryIncome,
+         #TEU_Rec_Country,
+         paste0('GeP_PC_',1:3))%>%na.omit
+
+model1.2<-coxph(Surv(TEU_MACE_time_yrs,TEU_MACE_status)~ strata(BaC_Sex)+ .-BaC_Sex ,data=model1.2_data)
+
+
+output1.2=publish(model1.2, ci.digits=2, ci.handler="sprintf", pvalue.eps=0.01,
+              pvalue.digits=2,pvalue.stars=TRUE, ci.trim=FALSE,print=FALSE)$regressionTable
+
+# Change pretty variable names
+output1.2$Variable=sapply(1:nrow(output1.2),function(i) my_labels[[output1.2[i,'Variable']]])
+
+# Replace NULL as NA
+output1.2[output1.2=='NULL']=""
+
+
+kable(output1.2,caption=paste0('Table.4 Analysis ouput of Alternative model 1 (N=',nrow(model1.2_data),')'),
+      table.attr="style='width:100%;'")%>%
+  kable_styling(bootstrap_options = c("striped", "hover"))
+
+
+```
+
+
+```{r Model 1 alt Forest,echo=FALSE,eval=FALSE}
+
+pretty_covnames=sapply(3:ncol(model1.2_data),function(i) my_labels[[names(model1.2_data)[i]]])
+
+model1.2_data<-model1.2_data%>%
+  `colnames<-`(c("TEU_MACE_status","TEU_MACE_time_yrs",pretty_covnames))
+
+
+model1.2<-coxph(Surv(TEU_MACE_time_yrs,TEU_MACE_status)~ strata(Gender)+ ., data=model1.2_data)
+
+
+
+# Using shiny app to avoid clustering all together
+
+shinyApp(ui = fluidPage(
+  mainPanel(
+    plotOutput("main_plot",height = "3000px",width = "1000px")
+  )),
+  server = function(input, output) {
+    
+    output$main_plot <- renderPlot({
+      
+      ggforest2(model1.2,model1.2_data,fontsize = 1) }, height = 5000, width = 1000 )
+  })
+
+
+* No-interaction assumption [(Nurarif & Kusuma, 2013)](https://web.njit.edu/~wguo/Math%20659_2010/Chapters%205%20and%206%20%20from%20%5BSurvival%20Analysis_A%20Self%20Learning%20Text_Book%5D.pdf): No-interaction assumption is based on model coefficients (betas) do not vary over strata (in our case, this means betas in our alternative model 1 do not vary across female and male.) This assumption was tested via likelihood ratio test^+^ and there was no evidence of violation of this assumption.
+
+(Note^+^: Basically there are two types of stratified cox regression one can choose: One is based on the assumption of different baseline hazard over strata (e.g. gender in this case) but model coefficients do not vary over strata. This is what we did for alternative model 1.
+
+The other type is slightly more complex, it assumes both varying baseline hazard and model coefficients over strata. One example of such model is QRISK3 model. This one means building separate cox regression for each level of strata (i.e. separate cox regression for female and male) So we would have different model coefficients for female and male.
+
+In terms of which one to choose, one can perform likelihood ratio test because the first type is nested within the latter type.)
+
+
+```
+
+
+
+
+

@@ -1,5 +1,4 @@
 data:
- received: "K:/TEU/UKB33952_Data/Data_Downloads/V2_TLAtables"
  database: "K:/TEU/UKB33952_Data/Data_Downloads/V3_database_duckdb0.2.1/ukb_v3.db"
  portal:
   HES: "K:/TEU/UKB33952_Data/Data_Portal/HES_diagnoses/20210129"
@@ -8,14 +7,18 @@ data:
  analysed: "Data/Analysed"
  prs: "K:/TEU/UKB_Genetic_Data/bmrc-ukb-repo/prs/projects/htn-evangelou2018/outputs"
 cleaning:
- withdrawals: "K:/TEU/UKB33952_Data/Data_Downloads/Withdrawals/w33952_20200204.csv"
- renaming: "K:/TEU/UKB33952_Data/Data_Dictionary/Renaming_List_UPDATE_Nov2019_TEU.csv"
+ withdrawals: "K:/TEU/UKB33952_Data/Data_Downloads/Withdrawals/w33952_20210201.csv"
+ renaming: "K:/TEU/UKB33952_Data/Data_Dictionary/Renaming_List_UPDATE_Sep2020_TEU.csv"
  coding: "K:/TEU/UKB33952_Data/Data_Dictionary/Mappings/Encoding_files"
  mapping: "K:/TEU/UKB33952_Data/Data_Dictionary/Mappings/Analysis_codings_xlsx"
 outputs:
  figures: "Scripts/Stats_Analysis/RMarkdown/Figures"
  flowcharts: "Scripts/Stats_Analysis/Flowcharts"
-functions: "Scripts/Stats_Analysis/JCfunctions.R"
+explore: "K:/TEU/TEU_Members/Xiaonan_Liu/Projects/PRSonCholstrl/Scripts/Initial_Exploration/"
+functions: 
+ general: "K:/TEU/TEU_Members/Xiaonan_Liu/Projects/PRSonCholstrl/Scripts/Stats_Analysis/General_Func/JCfunctions_XL.R"
+ flowchart: "K:/TEU/TEU_Members/Xiaonan_Liu/Projects/PRSonCholstrl/Scripts/Stats_Analysis/General_Func/FlowChart_pop.R"
+ descriptive: "K:/TEU/TEU_Members/Xiaonan_Liu/Projects/PRSonCholstrl/Scripts/Stats_Analysis/General_Func/DescrpStats.R"
 scripts:
  cleaning: "Scripts/Data_Management/Scripts_Cleaning"
  processing: "Scripts/Data_Management/Scripts_Processing"
