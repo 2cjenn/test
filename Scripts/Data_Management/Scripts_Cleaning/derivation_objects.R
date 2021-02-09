@@ -788,7 +788,7 @@ TEU_Smo_Status <- function() {
     source = "Smo_Status.0.0",
     mapper = function(x) {
       y <- FN_MissingCategory(missingvals = c("Prefer not to answer"), categ_name = "Unanswered")(x)
-      y <- FN_factor(levelorder = c("Never", "Previous", "Current", "Prefer not to answer"))(y)
+      y <- FN_factor(levelorder = c("Never", "Previous", "Current", "Unanswered"))(y)
       },
     post_exclusion = FALSE,
     display_name = "SmokingStatus",
@@ -850,14 +850,21 @@ TEU_Alc_WeeklyAlcUnits <- function() {
 TEU_Alc_WeeklyCat <- function() {
   list(
     name = "TEU_Alc_WeeklyCat", 
-    source = c("TEU_Alc_WeeklyAlcUnits"), 
-    mapper = FN_buckets(breaks=c(-1, 0, 5, 10, 20, 30, 100),
-                        labels=c("None reported", "Less than 5 units", "5 to 10 units", 
-                                 "10 to 20 units", "20 to 30 units", "30 units or more"),
-                        right=FALSE),
+    source = c("Alc_Freq.0.0",
+               "TEU_Alc_WeeklyAlcUnits"), 
+    mapper = function(data) {
+      cat <- cut(x=data[["TEU_Alc_WeeklyAlcUnits"]],
+                 breaks=c(-1, 0, 5, 10, 20, 30, 100),
+                 labels=c("None reported", "Less than 5 units", "5 to 10 units", 
+                          "10 to 20 units", "20 to 30 units", "30 units or more"),
+                 right=FALSE)
+      cat[is.na(data[["Alc_Freq.0.0"]])] <- "None reported"
+      cat[data[["Alc_Freq.0.0"]] %in% c("Never", "Special occasions only", "Prefer not to answer")] <- "None reported"
+      return(cat)
+      },
     post_exclusion = FALSE,
     display_name = "Weekly alcohol, categorical",
-    description = "Categorised weekly alcohol intake, derived from self-reported average weekly consumption of different types of alcohol. This data was available for participants who said they drank alcohol more than once or twice a week."
+    description = "Categorised weekly alcohol intake, derived from self-reported average weekly consumption of different types of alcohol. This data was available for participants who said they drank alcohol more than once or twice a week, and categorised as 'None reported' otherwise."
   )
 }
 
@@ -1258,6 +1265,20 @@ BBC_LDL_Result <- function() {
   )
 }
 
+TEU_LDL_Quintiles <- function() {
+  list(
+    name = "TEU_LDL_Quintiles",
+    source = c("BBC_LDL_Result"),
+    mapper = FN_quantiles(
+      quant = 5,
+      labels = c("Q1: lowest", "Q2", "Q3", "Q4", "Q5: highest")
+    ),
+    post_exclusion = TRUE,
+    display_name = "baseline LDL-C quintiles",
+    description = "Quintiles of measured LDL cholesterol assay from baseline blood serum"
+  )
+}
+
 
 GeP_PC <- function(pc=1) {
   list(
@@ -1444,6 +1465,7 @@ TEU_VeI_numHTNmedscat <- function() {
         x >= 3 ~ "3 or more",
         TRUE ~ as.character(x)
       )
+      y <- factor(y, levels=c("None reported", "1", "2", "3 or more"))
     },
     post_exclusion = FALSE,
     display_name = "Number of hypertensive medications",
@@ -1492,6 +1514,21 @@ TEU_treatedHTN <- function() {
     post_exclusion = FALSE,
     display_name = "Treated hypertension",
     description = "Was the participant taking treatment for their hypertension, defined as self-reported HTN meds among those who were aware of their hypertension"
+  )
+}
+
+TEU_controlledHTN <- function() {
+  list(
+    name = "TEU_controlledHTN", 
+    source = c("TEU_BlP_measuredHTN", "TEU_treatedHTN"), 
+    mapper = function(data) {
+      y <- data[["TEU_BlP_measuredHTN"]]
+      y[(data[["TEU_treatedHTN"]] == FALSE | is.na(data[["TEU_treatedHTN"]]))] <- NA
+      return(y)
+    },
+    post_exclusion = FALSE,
+    display_name = "Controlled hypertension",
+    description = "Was the participant's BP below 140/90 while on medication for their hypertension"
   )
 }
 

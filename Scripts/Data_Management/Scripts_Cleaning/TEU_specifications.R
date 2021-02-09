@@ -170,6 +170,7 @@ specs <- function() {
       TEU_evidenceHTN,
       TEU_awareHTN,
       TEU_treatedHTN,
+      TEU_controlledHTN,
       TEU_HMH_BowelCancerScreen,
       TEU_Edu_HighestQual,
       TEU_Edu_ISCED,
@@ -181,10 +182,12 @@ specs <- function() {
       TEU_Emp_JobCode_v2,
       TEU_HTN_Emp_category,
       TEU_TownsendDepInd_Quint,
+      TEU_CountryIncome,
       TEU_HMH_Meds_BP,
       TEU_Smo_Status,
       TEU_Alc_Status,
       TEU_Alc_WeeklyAlcUnits,
+      TEU_Alc_WeeklyCat,
       TEU_Alc_Binge,
       TEU_Pha_METsover1200,
       TEU_FaH_CVD,
@@ -231,8 +234,13 @@ specs <- function() {
   HTN_control_MACE <- c(
     HTN_control,
     HTN_control_comorb,
+    Prosp_comorb_num,
+    Prosp_comorb_numcat,
     UKB_genetic,
     MACE_recordlevel,
+    BBC_LDL_Result,
+    TEU_LDL_Quintiles,
+    TEU_LDLctrl_v1,
     TEU_Emp_JobCode_v2 # When using v3 data until we grab emp_jobcode.0.0
   )
   

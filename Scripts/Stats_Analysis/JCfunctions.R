@@ -172,7 +172,7 @@ printlogresults <- function(model, coeffnames=NULL, IDcol=FALSE){
   coeff <- summ$coefficients
   # NOMVAR <- rownames(coeff)
   regression <- data.frame(
-    coeffname=(rownames(coeff)),
+    IDcol=(rownames(coeff)),
     OR=pretty_dp(exp(coeff[,1]), dp=2), # OR
     CI=pretty_confint(exp(coeff[,1]-(1.96*coeff[,2])),
                       exp(coeff[,1]+(1.96*coeff[,2])),
@@ -186,7 +186,7 @@ printlogresults <- function(model, coeffnames=NULL, IDcol=FALSE){
   } else {
     results <- merge(coeffnames, regression, all.x=TRUE)
     results$OR[is.na(results$OR)] <- "1"
-    results <- results[match(coeffnames$coeffname, results$coeffname),]
+    results <- results[match(coeffnames$IDcol, results$IDcol),]
     
     coeffcols <- colnames(coeffnames)
     if(IDcol==FALSE){

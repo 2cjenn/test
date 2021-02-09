@@ -15,7 +15,8 @@ outputs:
  figures: "Scripts/Stats_Analysis/RMarkdown/Figures"
  flowcharts: "Scripts/Stats_Analysis/Flowcharts"
 explore: "K:/TEU/TEU_Members/Xiaonan_Liu/Projects/PRSonCholstrl/Scripts/Initial_Exploration/"
-functions: 
+functions:
+ JC: "Scripts/Stats_Analysis/JCfunctions.R"
  general: "K:/TEU/TEU_Members/Xiaonan_Liu/Projects/PRSonCholstrl/Scripts/Stats_Analysis/General_Func/JCfunctions_XL.R"
  flowchart: "K:/TEU/TEU_Members/Xiaonan_Liu/Projects/PRSonCholstrl/Scripts/Stats_Analysis/General_Func/FlowChart_pop.R"
  descriptive: "K:/TEU/TEU_Members/Xiaonan_Liu/Projects/PRSonCholstrl/Scripts/Stats_Analysis/General_Func/DescrpStats.R"
