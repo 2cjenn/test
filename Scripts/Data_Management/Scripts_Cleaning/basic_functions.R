@@ -667,7 +667,8 @@ FN_Dth_filtercodes <- function(ICD10_codes, return_label = "dth", record_level=F
 
     subdata <- deaths %>% filter(Dth_ICD10Underlying %in% ICD10_codes) %>%
       mutate(dth = 'Yes',
-             dth_date = Dth_Date)
+             dth_date = Dth_Date,
+             dth_code = Dth_ICD10Underlying)
 
     y <- subdata[[return_label]][match(ID, subdata$ID)]
     return(y)

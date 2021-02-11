@@ -151,7 +151,8 @@ specs <- function() {
       TEU_MACE_time_yrs,
       # MACE subtypes 
       TEU_HES_MACE_fucomp(record_level=TRUE),
-      TEU_MACE_fucomp
+      TEU_MACE_fucomp,
+      TEU_Dth_MACE_dthtype(record_level=TRUE)
     )
     
   )
@@ -178,6 +179,7 @@ specs <- function() {
       TEU_Emp_JobCode_v2,
       TEU_HTN_Emp_category,
       TEU_HoH_PreTaxInc,
+      TEU_HouseholdIncome,
       TEU_Emp_CurrStat,
       TEU_Emp_JobCode_v2,
       TEU_HTN_Emp_category,
@@ -241,7 +243,8 @@ specs <- function() {
     BBC_LDL_Result,
     TEU_LDL_Quintiles,
     TEU_LDLctrl_v1,
-    TEU_Emp_JobCode_v2 # When using v3 data until we grab emp_jobcode.0.0
+    TEU_Emp_JobCode_v2, # When using v3 data until we grab emp_jobcode.0.0
+    TEU_MACE_Stroke
   )
   
   Cholstrl_control<-c(

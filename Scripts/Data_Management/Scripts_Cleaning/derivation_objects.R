@@ -2385,6 +2385,30 @@ TEU_Dth_MACE_dthdate <-function(record_level=FALSE){
     )
 }
 
+# MACE Dth type
+TEU_Dth_MACE_dthtype <-function(record_level=FALSE){
+  list(
+    name = 'TEU_Dth_MACE_dthtype',
+    source = if(record_level){c("ID")} else {c('ID',"Dth_ICD10Underlying.0.0", "Dth_ICD10Underlying.1.0","Dth_Date.0.0", "Dth_Date.1.0")},
+    mapper = function(data){
+      mapping=read.xlsx_kdrive(file.path(config$cleaning$mapping,'MACE/HES_ICD10_Mapping_20210128.xlsx'),col_types = c('text'))
+      ICD10_codes<-mapping$Code[!is.na(mapping$ConditionsType)]
+      
+      y<-FN_Dth_filtercodes(ICD10_codes = ICD10_codes,return_label = 'dth_code', record_level=record_level)(data)
+
+      y <- as.character(sapply(y, function(i) { if(!is.na(i)){mapping$ConditionsType[mapping$Code==i]}}))
+      y <- str_remove(y, "Nonfatal ")
+      
+      return(y)
+    },
+    post_exclusion = FALSE,
+    display_name = 'MACE death date',
+    description = paste0('Death date caused by MACE from Death Registry data',
+                         'The data used was ', if(record_level) {'record-level data from the UKB data portal.'} 
+                         else {'summary data from the UKB data showcase'})
+  )
+}
+
 
 # MACE event date (Based on MACE HES date (fu) + MACE Dth date)
 TEU_MACE_eventdate<-function(){
@@ -2531,6 +2555,25 @@ TEU_MACE_fucomp<-function(){
   )
 }
 
+# Haemorrhagic Stroke status (Secondary outcome)
+TEU_MACE_Stroke<-function(){
+  list(
+    name = 'TEU_MACE_Stroke',
+    source = c('TEU_MACE_fucomp', "TEU_Dth_MACE_dthtype"),
+    mapper = function(data){
+      
+      HES <- ifelse(data[["TEU_MACE_fucomp"]] %in% c("Nonfatal Stroke - Haemorrhagic"), 1,0)
+      death <- ifelse((data[["TEU_MACE_fucomp"]]=="CVD death" & !is.na(data[["TEU_MACE_fucomp"]])) & 
+                         data[["TEU_Dth_MACE_dthtype"]] %in% c("Stroke - Haemorrhagic"), 1,0)
+      y <- as.numeric(HES|death)
+      
+    },
+    post_exclusion = FALSE,
+    display_name = 'Haemorrhagic stroke status',
+    description = 'Haemorrhagic stroke status (0=censored, 1=haemorrhagic stroke)'
+    
+  )
+}
 
 
 # MACE follow-up time
