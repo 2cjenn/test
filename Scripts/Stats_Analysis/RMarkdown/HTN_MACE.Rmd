@@ -164,11 +164,10 @@ export_svg(DiagrammeR::grViz(here::here(file.path(config$outputs$flowcharts, "HT
 varlist=c("TEU_BaC_AgeAtRec", "TEU_BaC_AgeCat", "BaC_Sex",
           "TEU_BSM_BMIcat", "TEU_Smo_Status", "TEU_Alc_WeeklyCat", "TEU_Pha_METsover1200",
           "TEU_FaH_CVD", "Prosp_comorb_numcat", "TEU_VeI_numHTNmedscat", "TEU_LDL_Quintiles",
-          "TEU_TownsendDepInd_Quint", "TEU_HouseholdIncome", "TEU_Emp_category", "TEU_Edu_ISCED", 
-          "TEU_Rec_Country"
+          "TEU_TownsendDepInd_Quint", "TEU_HouseholdIncome", "TEU_Emp_category", "TEU_Edu_ISCED", "TEU_Rec_Country"
           )
 
-footnote_list <- c("TEU_Emp_category", "TEU_Edu_ISCED", "TEU_Rec_Country", "TEU_BSM_BMIcat", "HTN_comorb_num")
+footnote_list <- c("TEU_Emp_category", "TEU_Edu_ISCED", "TEU_Rec_Country", "TEU_BSM_BMIcat", "Prosp_comorb_numcat")
 footnote_no <- 1
 
 tab_all <- descriptivetable(df=data, 
@@ -223,7 +222,8 @@ add_footnote(kable(tab[,-1]), label=c("Occupation categories have been condensed
 varlist=c("TEU_BaC_AgeCat", "BaC_Sex", "TEU_BP_PRS_quintiles",
           "TEU_BSM_BMIcat", "TEU_Smo_Status", "TEU_Alc_WeeklyCat", "TEU_Pha_METsover1200",
           "TEU_FaH_CVD", "Prosp_comorb_numcat", "TEU_VeI_numHTNmedscat", "TEU_LDL_Quintiles",
-          "TEU_TownsendDepInd_Quint", "TEU_HouseholdIncome", "TEU_Emp_category", "TEU_Edu_ISCED", "TEU_Rec_Country"
+          "TEU_TownsendDepInd_Quint", "TEU_HouseholdIncome", "TEU_Emp_category", "TEU_Edu_ISCED", "TEU_Rec_Country",
+          "GeP_PC_1", "GeP_PC_2", "GeP_PC_3", "GeP_PC_4"
           )
 
 
@@ -278,26 +278,11 @@ add_footnote(kable(tab3), label=c("Number of individuals in levels of a categori
                                   "The Townsend index is a measure of material deprivation calculated at the level of census output areas.", 
                                   "Occupation categories have been condensed from those recorded in UKB. Professional and Administrative: Managers and Senior Officials, Professional Occupations, Associate Professional and Technical Occupations, Administrative and Secretarial Occupations. Skilled trades: Skilled Trades Occupations. Services: Personal Service Occupations, Sales and Customer Service Occupations. Manual and Industrial: Process, Plant and Machine Operatives, Elementary Occupations. Other employment: free text entry that was not coded by UKB.", 
                                   "Self-reported highest education achieved was mapped to the International Standard Classification of Education (ISCED) categories",
-                                  "Self-reported country of birth was mapped to the World Bank Analytical Classifications for calendar year 2010.",
                                   "The assessment centre the participant attended was used as a proxy for country of residence",
                                   "BMI has been categorised as: Underweight < 18.5 kg/m^2^; Normal 18.5 - 24.9 kg/m^2^; Overweight 25.0 - 29.9 kg/m^2^; Obese >= 30.0 kg/m^2^.", 
-                                  "The total Metabolic Equivalent Task (MET) minutes per week is based on self-reported frequency and duration of walking, moderate and vigorous activity, and was then dichotomized based on WHO physical activity guideline thresholds."
+                                  "The total Metabolic Equivalent Task (MET) minutes per week is based on self-reported frequency and duration of walking, moderate and vigorous activity, and was then dichotomized based on WHO physical activity guideline thresholds.",
+                                  "The number of comorbidities considered to be of interest - diabetes, arrhythmia (afib/flutter), asthma or COPD, migraines, epilepsy, anxiety, depression, osteoarthritis, other joint disorder."
                                   ), notation="number")
-
-```
-
-## ROC curve
-
-```{r}
-#https://daviddalpiaz.github.io/r4sl/logistic-regression.html
-
-data_roc <- data %>% mutate(TEU_controlledHTN = as.numeric(TEU_controlledHTN))
-formula <- paste0("TEU_controlledHTN ~ ", paste(varlist, collapse=" + "))
-model <- glm(formula, data=data_roc, family="binomial")
-
-test_prob = predict(model, newdata = data_roc, type = "response")
-test_roc = roc(data_roc$TEU_controlledHTN ~ test_prob, plot = TRUE, print.auc = TRUE, 
-               levels=c(0,1), direction="<", main="ROC curve: control status under multivariable model")
 
 ```
 
@@ -325,7 +310,8 @@ kable(MACE_subtypes[-nrow(MACE_subtypes),],caption=paste0('Table.1 Frequency of 
 varlist=c("TEU_BaC_AgeCat", "BaC_Sex", "TEU_BP_PRS_quintiles",
           "TEU_BSM_BMIcat", "TEU_Smo_Status", "TEU_Alc_WeeklyCat", "TEU_Pha_METsover1200",
           "TEU_FaH_CVD", "Prosp_comorb_numcat", "TEU_VeI_numHTNmedscat", "TEU_LDL_Quintiles",
-          "TEU_TownsendDepInd_Quint", "TEU_HouseholdIncome", "TEU_Emp_category", "TEU_Edu_ISCED", "TEU_Rec_Country"
+          "TEU_TownsendDepInd_Quint", "TEU_HouseholdIncome", "TEU_Emp_category", "TEU_Edu_ISCED", "TEU_Rec_Country",
+          "GeP_PC_1", "GeP_PC_2", "GeP_PC_3", "GeP_PC_4"
           )
 
 # age- and sex-adjusted
@@ -372,12 +358,15 @@ kable(tab4)
 
 ## Cox regression of the time until haemorrhagic stroke event (`r nrow(data[data$TEU_MACE_Stroke==1,])` events)
 
+Haemorrhagic stroke event defined as diagnosis of haemorrhagic stroke in HES data or haemorrhagic stroke recorded as primary cause of death (censoring at first MACE event applied).
+
 ```{r Cox model stroke, echo=FALSE}
 
 varlist=c("TEU_BaC_AgeCat", "BaC_Sex", "TEU_BP_PRS_quintiles",
           "TEU_BSM_BMIcat", "TEU_Smo_Status", "TEU_Alc_WeeklyCat", "TEU_Pha_METsover1200",
           "TEU_FaH_CVD", "Prosp_comorb_numcat", "TEU_VeI_numHTNmedscat", "TEU_LDL_Quintiles",
-          "TEU_TownsendDepInd_Quint", "TEU_HouseholdIncome", "TEU_Emp_category", "TEU_Edu_ISCED", "TEU_Rec_Country"
+          "TEU_TownsendDepInd_Quint", "TEU_HouseholdIncome", "TEU_Emp_category", "TEU_Edu_ISCED", "TEU_Rec_Country",
+          "GeP_PC_1", "GeP_PC_2", "GeP_PC_3", "GeP_PC_4"
           )
 
 # age- and sex-adjusted
