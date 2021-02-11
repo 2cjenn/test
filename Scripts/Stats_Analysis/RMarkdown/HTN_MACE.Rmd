@@ -1,6 +1,6 @@
 ---
-title: "HTN Prospective"
-author: "Jennifer Collister (JC)"
+title: "HTN PRS MACE prospective"
+author:  "Jennifer Collister"
 date: "`r format(Sys.time(), '%d %B %Y')`"
 output: 
   word_document:
@@ -23,7 +23,8 @@ library(rsvg)
 library(png)
 library(dplyr)
 library(ggplot2)
-
+library(survival)
+library(pROC)
 
 # Specify the markdown format for knitr tables, otherwise they're not compatible with kableExtra
 options(knitr.kable.NA='', knitr.table.format = "markdown")
@@ -34,7 +35,7 @@ knitr::opts_chunk$set(include=TRUE, echo=FALSE)
 
 # Load the project config file for filepaths etc
 config = yaml.load_file(here::here("./config.yml"))
-source(here::here(config$functions))
+source(here::here(config$functions$JC))
 
 #-------------------------------------------------------------------------------------------------------------------
 # Setup
@@ -46,8 +47,8 @@ footnote_no <- 1
 
 ```
 
-```{r, include=FALSE, cache=TRUE}
-
+```{r data-derivation, include=FALSE, cache=TRUE}
+ 
 source(file.path(config$scripts$cleaning, "dataset_generator.R"))
 
 exclusions <- function(data){
@@ -139,7 +140,8 @@ data <-
     key = c(TEU_SPECS$HTN_control_MACE, exclusions)
   )
 
-pretty_names <- pretty_switch(field_definitions=TEU_SPECS$HTN_control_MACE)
+pretty_func <- pretty_switch(field_definitions=TEU_SPECS$HTN_control_MACE, return_type = "function")
+pretty_names <- pretty_switch(field_definitions=TEU_SPECS$HTN_control_MACE, return_type = "list")
 
 export_svg(DiagrammeR::grViz(here::here(file.path(config$outputs$flowcharts, "HTN_PRS_MACE.gv")))
            ) %>% charToRaw %>% rsvg %>% 
@@ -148,75 +150,274 @@ export_svg(DiagrammeR::grViz(here::here(file.path(config$outputs$flowcharts, "HT
 
 ```
 
+# Analysis Population
 
-# Figure `r figure`. Flowchart illustrating selection of analytic dataset (n = `r nrow(data)`).
+## Figure `r figure`. Flowchart illustrating selection of analytic dataset (n = `r nrow(data)`).
 `r figure <- figure + 1`
 ![Missing BP data was fewer than 2 BP measurements, or missing answers to the prior diagnosis and treatment questions. Hypertension was defined as self-report of hypertensive medication use, or self-report of a prior diagnosis of hypertension, or mean BP >= 140 /90 mmHg at baseline assessment. Awareness was defined as self-report of a prior diagnosis of hypertension among those who were hypertensive. Treatment was defined as self-report of hypertensive medication among those who were aware. Control was defined as mean BP < 140/90 mmHg at baseline assessment, among those who were treated.](Figures/HTN_PRS_MACE.png){height=700px}
 
-# MACE outcome
+# Hypertension PRS cross-sectional analysis
 
-Primary outcome is MACE composite outcome at follow-up. MACE is defined as a composite of the following:
-
-* Non-fatal Myocardial Infraction (MI)
-* MI prevention procedure
-* Non-fatal Stroke
-* Stroke prevention procedure
-* Cardiovascular Death
-
-## Note final MACE definition is still pending so all results below are preliminary!
-
-```{r MACE incidence,echo=FALSE}
-
-MACE_n=table(data$TEU_MACE_status)[2]
-Censored_n=table(data$TEU_MACE_status)[1]
-
-# Total number of incidence
-MACE_tab=propped(table(data$TEU_MACE_status))
-
-# Median Follow-up (MACE cases)
-MACE_fu=data%>%filter(TEU_MACE_status==1)%>%summarise(median=median(TEU_MACE_time_yrs),IQR=IQR(TEU_MACE_time_yrs))
-
-# Incidence rate whole analysis pop
-MACE_inc<-round((sum(data$TEU_MACE_status)/sum(data$TEU_MACE_time_yrs))*1000,2)
-
-```
-
-**Among our analysis population of `r nrow(data)` participants, we identified `r MACE_tab[2]` incident MACE events.**
-
-# Table `r table`. Incidence rates per 1000 person-years by BP PRS quintile group
-
-```{r}
-
-# Incidence rate per PRS quintile group
-MACE_inc_byPRS=data%>%
-  group_by(TEU_BP_PRS_quintiles)%>%
-  summarise(`Incidence Rate`=round((sum(TEU_MACE_status)/sum(TEU_MACE_time_yrs))*1000,2))%>%
-  rename(`PRS quintiles`=TEU_BP_PRS_quintiles)
-
-kable(MACE_inc_byPRS)
-
-```
-
-# Descriptive stats of the population
-
-## Preliminary results pending final definitions
-
-```{r}
-
-varlist=c("TEU_BaC_AgeCat", "BaC_Sex",
-          "TEU_BSM_BMIcat", "TEU_Smo_Status", "TEU_Alc_WeeklyAlcUnits", "TEU_Pha_METsover1200",
-          "TEU_FaH_CVD", "HTN_comorb_num", "TEU_VeI_numHTNmedscat",
-          "TEU_TownsendDepInd_Quint", "TEU_HoH_PreTaxInc", "TEU_Emp_category", "TEU_Edu_ISCED", "TEU_Rec_Country"
+## Table `r table`. Characteristics of participants included in the analysis, by BP PRS quintile (treated hypertensives, n = `r nrow(data)`).
+`r table <- table + 1`
+```{r descriptive-table, include=TRUE, echo=FALSE}
+varlist=c("TEU_BaC_AgeAtRec", "TEU_BaC_AgeCat", "BaC_Sex",
+          "TEU_BSM_BMIcat", "TEU_Smo_Status", "TEU_Alc_WeeklyCat", "TEU_Pha_METsover1200",
+          "TEU_FaH_CVD", "Prosp_comorb_numcat", "TEU_VeI_numHTNmedscat", "TEU_LDL_Quintiles",
+          "TEU_TownsendDepInd_Quint", "TEU_HouseholdIncome", "TEU_Emp_category", "TEU_Edu_ISCED", 
+          "TEU_Rec_Country"
           )
-pnames <- lapply(varlist, pretty_names)
-names(pnames) <- varlist
 
-tab1 <- descriptivetable(df=data, 
+footnote_list <- c("TEU_Emp_category", "TEU_Edu_ISCED", "TEU_Rec_Country", "TEU_BSM_BMIcat", "HTN_comorb_num")
+footnote_no <- 1
+
+tab_all <- descriptivetable(df=data, 
                          varlist=varlist,
                          contavg='median',
-                         pretty_names=pnames)
+                         pretty_names=pretty_names,
+                         footnote_list=footnote_list)
 
-kable(tab1%>%select(-IDcol))
+tab_1 <- descriptivetable(df=data[data$TEU_BP_PRS_quintiles=="Q1: lowest",], 
+                         varlist=varlist,
+                         contavg='median',
+                         pretty_names=pretty_names,
+                         footnote_list=footnote_list)
+
+tab_3 <- descriptivetable(df=data[data$TEU_BP_PRS_quintiles=="Q3",], 
+                         varlist=varlist,
+                         contavg='median',
+                         pretty_names=pretty_names,
+                         footnote_list=footnote_list)
+
+tab_5 <- descriptivetable(df=data[data$TEU_BP_PRS_quintiles=="Q5: highest",], 
+                         varlist=varlist,
+                         contavg='median',
+                         pretty_names=pretty_names,
+                         footnote_list=footnote_list)
+
+tab <- inner_join(tab_all, tab_1%>%select(-Variable), by="IDcol")
+tab <- inner_join(tab, tab_3%>%select(-Variable), by="IDcol")
+tab <- inner_join(tab, tab_5%>%select(-Variable), by="IDcol")
+
+rownames(tab) <- NULL
+tab <- rbind(c("", "Variable", "n", "%", "n", "%", "n", "%", "n", "%"),
+              as.matrix(tab))
+colnames(tab) <- c("", "", "Overall", "", "Q1: lowest", "", "Q3", "", "Q5: highest", "")
+
+# Output the resulting table
+add_footnote(kable(tab[,-1]), label=c("Occupation categories have been condensed from those recorded in UKB. Professional and Administrative: Managers and Senior Officials, Professional Occupations, Associate Professional and Technical Occupations, Administrative and Secretarial Occupations. Skilled trades: Skilled Trades Occupations. Services: Personal Service Occupations, Sales and Customer Service Occupations. Manual and Industrial: Process, Plant and Machine Operatives, Elementary Occupations. Other employment: free text entry that was not coded by UKB.", 
+                                  "Self-reported highest education achieved was mapped to the International Standard Classification of Education (ISCED) categories",
+                                  "The assessment centre the participant attended was used as a proxy for country of residence",
+                                  "BMI has been categorised as: Underweight < 18.5 kg/m^2^; Normal 18.5 - 24.9 kg/m^2^; Overweight 25.0 - 29.9 kg/m^2^; Obese >= 30.0 kg/m^2^.", 
+                                  "The number of comorbidities considered to be of interest - diabetes, arrhythmia (afib/flutter), asthma or COPD, migraines, epilepsy, anxiety, depression, osteoarthritis, other joint disorder."), notation="number")
 
 ```
 
+
+## Table `r table`: Multivariable logistic regression identifying factors associated with hypertension control, among middle-aged UK adults on anti-hypertensive treatment (n=`r nrow(data)`)
+`r table <- table + 1`
+<div custom-style="Todo">Reminder: Manually re-order BMI categories</div>
+
+```{r logistic-regression, include=TRUE, echo=FALSE}
+
+varlist=c("TEU_BaC_AgeCat", "BaC_Sex", "TEU_BP_PRS_quintiles",
+          "TEU_BSM_BMIcat", "TEU_Smo_Status", "TEU_Alc_WeeklyCat", "TEU_Pha_METsover1200",
+          "TEU_FaH_CVD", "Prosp_comorb_numcat", "TEU_VeI_numHTNmedscat", "TEU_LDL_Quintiles",
+          "TEU_TownsendDepInd_Quint", "TEU_HouseholdIncome", "TEU_Emp_category", "TEU_Edu_ISCED", "TEU_Rec_Country"
+          )
+
+
+footnote_list <- c("TEU_TownsendDepInd_Quint", "TEU_Emp_category", "TEU_Edu_ISCED", "TEU_Rec_Country", "TEU_BSM_BMIcat", "TEU_Pha_METsover1200", "Prosp_comorb_numcat")
+footnote_no <- 3
+
+desctable2 <- function(df){
+  n <- nrow(df)
+  control <- prop.test(x=nrow(df[df$TEU_controlledHTN==TRUE & !is.na(df$TEU_controlledHTN),]),
+                           n=nrow(df), alternative="two.sided", conf.level=0.95)
+  pct_control <- pretty_dp(control$estimate, dp=1, pct=TRUE)
+  
+  table <- cbind(n, pct_control)
+  return(table)
+}
+
+pct_ctrl <- c()
+for(var in varlist){
+  header <- c(var, paste0("**", pretty_func(var), "**"), NA, NA)
+  pct_ctrl <- rbind(pct_ctrl, header)
+  for(level in levels(data[[var]])){
+    newrow <- desctable2(data[data[var]==level,])
+    IDcol <- paste0(var, level)
+    pct_ctrl <- rbind(pct_ctrl, cbind(IDcol, level, newrow))
+  }
+}
+pct_ctrl <- data.frame(pct_ctrl)
+
+adj <- regressiontable(df=data, outcome="TEU_controlledHTN", varlist=varlist, 
+                       regresstype="adjusted", adjvarlist=c("TEU_BaC_AgeCat", "BaC_Sex"))
+multi <- regressiontable(df=data, outcome="TEU_controlledHTN", varlist=varlist, 
+                         regresstype="multivariable")
+
+tab3 <- merge(adj, multi, by=c("IDcol", "Coefficient", "Levels"), sort=FALSE) %>% select(-Coefficient, -Levels)
+# Add n column
+
+tab3 <- left_join(pct_ctrl, tab3, by=c("IDcol")) %>% select(-IDcol)
+
+# Hide "unanswered"/"unknown"/"do not know" categories
+tab3 <- tab3[-which(tab3$level %in% c("Unknown", "Unanswered", "Do not know", "Prefer not to answer")),]
+rownames(tab3) <- NULL
+
+tab3 <- rbind(c("Coefficient", "n^1^", "% Controlled^2^", "OR", "95% CI", "p", "OR", "95% CI", "p"),
+              as.matrix(tab3))
+colnames(tab3) <- c("","","", 
+                    "Age- and sex-adjusted", "", "", 
+                    "Multivariable- adjusted", "", "")
+
+# Output the resulting table
+add_footnote(kable(tab3), label=c("Number of individuals in levels of a categorical variable may not add up to total n because 'Do not know' and 'Prefer not to answer' categories have been removed from results table",
+                                  "Hypertension control is defined as mean systolic BP >= 140 mmHg or mean diastolic BP >= 90 mmHg at baseline assessment, among treated hypertensives.",
+                                  "The Townsend index is a measure of material deprivation calculated at the level of census output areas.", 
+                                  "Occupation categories have been condensed from those recorded in UKB. Professional and Administrative: Managers and Senior Officials, Professional Occupations, Associate Professional and Technical Occupations, Administrative and Secretarial Occupations. Skilled trades: Skilled Trades Occupations. Services: Personal Service Occupations, Sales and Customer Service Occupations. Manual and Industrial: Process, Plant and Machine Operatives, Elementary Occupations. Other employment: free text entry that was not coded by UKB.", 
+                                  "Self-reported highest education achieved was mapped to the International Standard Classification of Education (ISCED) categories",
+                                  "Self-reported country of birth was mapped to the World Bank Analytical Classifications for calendar year 2010.",
+                                  "The assessment centre the participant attended was used as a proxy for country of residence",
+                                  "BMI has been categorised as: Underweight < 18.5 kg/m^2^; Normal 18.5 - 24.9 kg/m^2^; Overweight 25.0 - 29.9 kg/m^2^; Obese >= 30.0 kg/m^2^.", 
+                                  "The total Metabolic Equivalent Task (MET) minutes per week is based on self-reported frequency and duration of walking, moderate and vigorous activity, and was then dichotomized based on WHO physical activity guideline thresholds."
+                                  ), notation="number")
+
+```
+
+## ROC curve
+
+```{r}
+#https://daviddalpiaz.github.io/r4sl/logistic-regression.html
+
+data_roc <- data %>% mutate(TEU_controlledHTN = as.numeric(TEU_controlledHTN))
+formula <- paste0("TEU_controlledHTN ~ ", paste(varlist, collapse=" + "))
+model <- glm(formula, data=data_roc, family="binomial")
+
+test_prob = predict(model, newdata = data_roc, type = "response")
+test_roc = roc(data_roc$TEU_controlledHTN ~ test_prob, plot = TRUE, print.auc = TRUE, 
+               levels=c(0,1), direction="<", main="ROC curve: control status under multivariable model")
+
+```
+
+
+# Hypertension PRS prospective analysis
+
+## Total MACE outcomes by subtype
+
+```{r MACE subtypes,echo=FALSE}
+
+# Freq of MACE subtypes
+MACE_subtypes <- data.frame(propped(table(data$TEU_MACE_fucomp)))
+colnames(MACE_subtypes)[1] <- 'MACE subtypes'
+
+kable(MACE_subtypes[-nrow(MACE_subtypes),],caption=paste0('Table.1 Frequency of MACE subtypes (N=',MACE_subtypes[nrow(MACE_subtypes),2],')'))
+
+  
+```
+
+## Cox regression of time until MACE event (`r nrow(data[!is.na(data$TEU_MACE_fucomp),])` events)
+
+
+```{r Cox model mace, echo=FALSE}
+
+varlist=c("TEU_BaC_AgeCat", "BaC_Sex", "TEU_BP_PRS_quintiles",
+          "TEU_BSM_BMIcat", "TEU_Smo_Status", "TEU_Alc_WeeklyCat", "TEU_Pha_METsover1200",
+          "TEU_FaH_CVD", "Prosp_comorb_numcat", "TEU_VeI_numHTNmedscat", "TEU_LDL_Quintiles",
+          "TEU_TownsendDepInd_Quint", "TEU_HouseholdIncome", "TEU_Emp_category", "TEU_Edu_ISCED", "TEU_Rec_Country"
+          )
+
+# age- and sex-adjusted
+agesex <- coxph(Surv(TEU_MACE_time_yrs,TEU_MACE_status) ~ TEU_BaC_AgeCat + BaC_Sex, data=data)
+adj <- publish(agesex, ci.digits=2, ci.handler="sprintf", pvalue.eps=0.01,
+              pvalue.digits=2,pvalue.stars=TRUE, ci.trim=FALSE,print=FALSE)$regressionTable
+for(var in varlist){
+  if(! var %in% c("TEU_BaC_AgeCat", "BaC_Sex")){
+  formula <- as.formula(paste0("Surv(TEU_MACE_time_yrs,TEU_MACE_status) ~ TEU_BaC_AgeCat + BaC_Sex + ", var))
+  model <- coxph(formula, data=data)
+  output <- publish(model, ci.digits=2, ci.handler="sprintf", pvalue.eps=0.01,
+              pvalue.digits=2,pvalue.stars=TRUE, ci.trim=FALSE,print=FALSE)$regressionTable
+  output <- output[-c(1:5),] %>% select(-any_of("Missing"))
+  adj <- rbind(adj, output)
+  }
+}
+
+# Complete case data
+formula <- as.formula(paste0("Surv(TEU_MACE_time_yrs,TEU_MACE_status) ~ ", paste(varlist, collapse="+")))
+
+rmodel1<-coxph(formula,data=data)
+
+
+routput1 <- publish(rmodel1, ci.digits=2, ci.handler="sprintf", pvalue.eps=0.01,
+              pvalue.digits=2,pvalue.stars=TRUE, ci.trim=FALSE,print=FALSE)$regressionTable  %>%
+  select(-any_of("Missing"))
+
+tab4 <- cbind(adj%>%select(-signif), routput1%>%select(-Variable, -Units, -signif))
+
+# Change pretty variable names
+tab4$Variable <-  sapply(tab4$Variable,function(i) if(i!=""){pretty_func(i)}else{i})
+
+rownames(tab4) <- NULL
+tab4 <- rbind(c("Coefficient", "Level", "OR", "95% CI", "p", "OR", "95% CI", "p"),
+              as.matrix(tab4))
+colnames(tab4) <- c("","", 
+                    "Age- and sex-adjusted", "", "", 
+                    "Multivariable- adjusted", "", "")
+
+kable(tab4)
+
+
+```
+
+## Cox regression of the time until haemorrhagic stroke event (`r nrow(data[data$TEU_MACE_Stroke==1,])` events)
+
+```{r Cox model stroke, echo=FALSE}
+
+varlist=c("TEU_BaC_AgeCat", "BaC_Sex", "TEU_BP_PRS_quintiles",
+          "TEU_BSM_BMIcat", "TEU_Smo_Status", "TEU_Alc_WeeklyCat", "TEU_Pha_METsover1200",
+          "TEU_FaH_CVD", "Prosp_comorb_numcat", "TEU_VeI_numHTNmedscat", "TEU_LDL_Quintiles",
+          "TEU_TownsendDepInd_Quint", "TEU_HouseholdIncome", "TEU_Emp_category", "TEU_Edu_ISCED", "TEU_Rec_Country"
+          )
+
+# age- and sex-adjusted
+agesex <- coxph(Surv(TEU_MACE_time_yrs,TEU_MACE_Stroke) ~ TEU_BaC_AgeCat + BaC_Sex, data=data)
+adj <- publish(agesex, ci.digits=2, ci.handler="sprintf", pvalue.eps=0.01,
+              pvalue.digits=2,pvalue.stars=TRUE, ci.trim=FALSE,print=FALSE)$regressionTable
+for(var in varlist){
+  if(! var %in% c("TEU_BaC_AgeCat", "BaC_Sex")){
+  formula <- as.formula(paste0("Surv(TEU_MACE_time_yrs,TEU_MACE_Stroke) ~ TEU_BaC_AgeCat + BaC_Sex + ", var))
+  model <- coxph(formula, data=data)
+  output <- publish(model, ci.digits=2, ci.handler="sprintf", pvalue.eps=0.01,
+              pvalue.digits=2,pvalue.stars=TRUE, ci.trim=FALSE,print=FALSE)$regressionTable
+  output <- output[-c(1:5),] %>% select(-any_of("Missing"))
+  adj <- rbind(adj, output)
+  }
+}
+
+# Complete case data
+formula <- as.formula(paste0("Surv(TEU_MACE_time_yrs,TEU_MACE_Stroke) ~ ", paste(varlist, collapse="+")))
+
+rmodel1<-coxph(formula,data=data)
+
+
+routput1 <- publish(rmodel1, ci.digits=2, ci.handler="sprintf", pvalue.eps=0.01,
+              pvalue.digits=2,pvalue.stars=TRUE, ci.trim=FALSE,print=FALSE)$regressionTable  %>%
+  select(-any_of("Missing"))
+
+tab4 <- cbind(adj%>%select(-signif), routput1%>%select(-Variable, -Units, -signif))
+
+# Change pretty variable names
+tab4$Variable <-  sapply(tab4$Variable,function(i) if(i!=""){pretty_func(i)}else{i})
+
+rownames(tab4) <- NULL
+tab4 <- rbind(c("Coefficient", "Level", "OR", "95% CI", "p", "OR", "95% CI", "p"),
+              as.matrix(tab4))
+colnames(tab4) <- c("","", 
+                    "Age- and sex-adjusted", "", "", 
+                    "Multivariable- adjusted", "", "")
+
+kable(tab4)
+
+
+```
