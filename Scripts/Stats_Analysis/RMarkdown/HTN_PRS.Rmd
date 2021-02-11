@@ -220,7 +220,7 @@ add_footnote(kable(tab[,-1]), label=c("Occupation categories have been condensed
 
 ```{r logistic-regression, include=TRUE, echo=FALSE}
 
-varlist=c("TEU_BaC_AgeCat", "BaC_Sex", #"TEU_BP_PRS_quintiles",
+varlist=c("TEU_BaC_AgeCat", "BaC_Sex", "TEU_BP_PRS_quintiles",
           "TEU_TownsendDepInd_Quint", "TEU_HouseholdIncome", "TEU_Emp_category", "TEU_Edu_ISCED", "TEU_Rec_Country",
           "TEU_BSM_BMIcat", "TEU_Smo_Status", "TEU_Alc_WeeklyCat", "TEU_Pha_METsover1200",
           "TEU_VeI_numHTNmedscat",  "TEU_FaH_CVD", "TEU_LDL_Quintiles",
