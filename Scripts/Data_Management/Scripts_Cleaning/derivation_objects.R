@@ -61,7 +61,7 @@ BaC_Sex <- function() {
     source = "BaC_Sex.0.0",
     mapper = FN_unorder,
     post_exclusion = FALSE,
-    display_name = "gender",
+    display_name = "Gender",
     description = "Participant's self-reported gender"
   )
 }
@@ -72,7 +72,7 @@ Rec_DateAssess <- function() {
     source = c("Rec_DateAssess.0.0"),
     mapper = FN_toDate,
     post_exclusion = FALSE,
-    display_name = "DateBaselineAssess",
+    display_name = "Date of baseline assessment",
     description = "Date of baseline assessment"
   )
 }
@@ -108,7 +108,7 @@ Eth_Ethnicity <- function() {
       )
     ),
     post_exclusion = FALSE,
-    display_name = "ethnicity",
+    display_name = "Ethnic group",
     description = "The participant's self-reported ethnicity (raw UKB categories)"
   )
 }
@@ -119,7 +119,7 @@ BaC_RsnLostFU <- function() {
     source = "BaC_RsnLostFU.0.0",
     mapper = FN_unorder,
     post_exclusion = FALSE,
-    display_name = "lfu_reason",
+    display_name = "Reason lost to follow-up",
     description = "The reported reason for loss to follow-up"
   )
 }
@@ -134,7 +134,7 @@ TEU_BaC_DateOfBirth <- function() {
       yearField = "BaC_BirthYear.0.0"
     ),
     post_exclusion = FALSE,
-    display_name = "DateOfBirth",
+    display_name = "Date of Birth",
     description = "The participant's approximate date of birth, derived from self-reported month and year with date estimated as 15th"
   )
 }
@@ -149,7 +149,7 @@ TEU_BaC_AgeAtRec <- function() {
                        digits = 2))
     },
     post_exclusion = FALSE,
-    display_name = "AgeAtRecruitment",
+    display_name = "Age at recruitment, years",
     description = "The participant's approximate age at recruitment, derived from date of assessment centre visit and self-reported month and year of birth (date of birth estimated as 15th of the month)"
   )
 }
@@ -267,7 +267,7 @@ TEU_BlP_measuredHTN <- function(SBPthreshold = 140, DBPthreshold = 90) {
         data[["TEU_BlP_DBP.avg"]] >= DBPthreshold
     },
     post_exclusion = FALSE,
-    display_name = "measuredHTN",
+    display_name = paste0("BP>=", SBPthreshold, "/", DBPthreshold, " at baseline"),
     description = paste0(
       "Whether the participant had hypertensive BP (>=",
       SBPthreshold,
@@ -286,7 +286,7 @@ Alc_Status <- function() {
       levelorder = c("Never", "Previous", "Current", "Prefer not to answer")
     ),
     post_exclusion = FALSE,
-    display_name = "Alc_Status",
+    display_name = "Alcohol status",
     description = "Self-reported alcohol status"
   )
 }
@@ -299,7 +299,7 @@ Smo_Status <- function() {
       levelorder = c("Never", "Previous", "Current", "Prefer not to answer")
     ),
     post_exclusion = FALSE,
-    display_name = "Smo_Status",
+    display_name = "Smoking status",
     description = "Self-reported smoking status"
   )
 }
@@ -338,8 +338,19 @@ TEU_HoH_PreTaxInc <- function() {
       return(y)
     },
     post_exclusion = FALSE,
-    display_name = "HouseholdIncome",
+    display_name = "Household Income, GBP",
     description = "Participant's pre-tax household income"
+  )
+}
+
+TEU_HouseholdIncome <- function() {
+  list(
+    name = "TEU_HouseholdIncome", 
+    source = c("TEU_HoH_PreTaxInc"), 
+    mapper = FN_MissingCategory(missingvals=c("Do not know"), categ_name="Unanswered"),
+    post_exclusion = FALSE,
+    display_name = "Household Income, GBP",
+    description = "Participant's pre-tax houshold income, self-reported. The 'do not know' and 'prefer not to answer' categories have been combined with NAs into 'unanswered'"
   )
 }
 
@@ -349,7 +360,7 @@ Sle_Duration <- function() {
     source = "Sle_Duration.0.0",
     mapper = FN_id,
     post_exclusion = FALSE,
-    display_name = "SleepDuration_h",
+    display_name = "Sleep Duration, hours",
     description = "Participant's self-reported average sleep duration in hours"
   )
 }
@@ -382,7 +393,7 @@ TEU_BSM_BMIcat <- function() {
       return(y)
     },
     post_exclusion = FALSE,
-    display_name = "BMIcat",
+    display_name = "BMI (categorical)",
     description = "BMI below 18.5 was considered “underweight”, between 18.5 and 25 was “normal”, between 25 and 30 was “overweight” and above 30 was “obese”"
   )
 }
@@ -406,7 +417,7 @@ TEU_BSM_WaistCircCat <- function() {
       return(y)
     },
     post_exclusion = FALSE,
-    display_name = "WaistCirc",
+    display_name = "Waist Circumference",
     description = "Categorised waist circumference.\nFemales with a waist circumference between 80 and 88cm were considered overweight, greater than 88cm was considered obese.\nMales with a waist circumference between 94 and 102cm were considered overweight, greater than 102cm was considered obese."
   )
 }
@@ -417,7 +428,7 @@ PhA_METsWkAllAct <- function() {
     source = "PhA_METsWkAllAct.0.0",
     mapper = FN_id,
     post_exclusion = FALSE,
-    display_name = "WeeklyMETs",
+    display_name = "Weekly METs",
     description = paste0("Summed MET minutes per week for all activity, derived from participant self-reported weekly exercise. This variable was generated as part of ",
                          text_spec("UKB application 12184", link = "http://bmjopen.bmj.com/content/6/3/e010038"), 
                          " and made available on the Data Showcase.")
@@ -430,7 +441,7 @@ CoF_RTTTimeID <- function() {
     source = "CoF_RTTTimeID.0.0",
     mapper = FN_id,
     post_exclusion = FALSE,
-    display_name = "ReactionTime",
+    display_name = "Reaction Time, s",
     description = "Reaction time in a game of snap, in seconds"
   )
 }
@@ -464,7 +475,7 @@ Edu_HighestQual<-function(){
       return(y)
     },
     post_exclusion = FALSE,
-    display_name = 'HighestQualification',
+    display_name = 'Highest Qualification',
     description = "Highest of a participant's self-reported educational qualidications"
   )
 }
@@ -497,7 +508,7 @@ TEU_Edu_HighestQual <- function() {
       return(y)
     },
     post_exclusion = FALSE,
-    display_name = "HighestQualification",
+    display_name = "Highest Qualification",
     description = "Highest of a participant's self-reported educational qualifications"
   )
 }
@@ -574,7 +585,7 @@ TEU_Rec_Country <- function() {
       return(y)
     },
     post_exclusion = FALSE,
-    display_name = "CountryResidence",
+    display_name = "UK country of residence",
     description = "Which country does the participant live in"
   )
 }
@@ -614,7 +625,7 @@ TEU_BaC_AgeCat <- function() {
       right = FALSE
     ),
     post_exclusion = FALSE,
-    display_name = "AgeCategory",
+    display_name = "Age group, years",
     description = "Categorised age in years"
   )
 }
@@ -715,7 +726,7 @@ TEU_ethnicgrp <- function() {
       return(y)
     },
     post_exclusion = FALSE,
-    display_name = "ethnic_group",
+    display_name = "Ethnic group",
     description = "The participant's self-reported ethnicity, condensed into categories.\n'White', 'British', 'Irish' and 'Any other white background' were coded as 'White'.\n'Indian', 'Pakinstani' and 'Bangladeshi' were coded as 'S. Asian'.\n'Black or Black British', 'Carribean', 'African' and 'Any other Black background' were coded as 'Black'.\n'Mixed', 'White and Black Caribbean', 'White and Black African', 'White and Asian' and 'Any other mixed background' were coded as 'Mixed'.\n'Other ethnic group', 'Asian or Asian British', 'Any other Asian background' and 'Chinese' were coded as 'Other'"
   )
 }
@@ -777,7 +788,7 @@ TEU_Alc_Status <- function() {
       y <- FN_factor(levelorder = c("Never", "Previous", "Current", "Prefer not to answer"))(y)
       },
     post_exclusion = FALSE,
-    display_name = "AlcoholStatus",
+    display_name = "Alcohol status",
     description = "Self-reported alcohol drinking status"
   )
 }
@@ -791,7 +802,7 @@ TEU_Smo_Status <- function() {
       y <- FN_factor(levelorder = c("Never", "Previous", "Current", "Unanswered"))(y)
       },
     post_exclusion = FALSE,
-    display_name = "SmokingStatus",
+    display_name = "Smoking status",
     description = "Self-reported smoking status"
   )
 }
@@ -842,7 +853,7 @@ TEU_Alc_WeeklyAlcUnits <- function() {
       return(weekly_alcunits)
     },
     post_exclusion = FALSE,
-    display_name = "WeeklyAlcUnits",
+    display_name = "Alcohol units per week",
     description = "Total weekly units of alcohol, derived from self-reported average weekly consumption of each different type alcohol and truncated at the upper 95th percentile. This data was available for participants who said they drank alcohol more than once or twice a week."
   )
 }
@@ -863,7 +874,7 @@ TEU_Alc_WeeklyCat <- function() {
       return(cat)
       },
     post_exclusion = FALSE,
-    display_name = "Weekly alcohol, categorical",
+    display_name = "Alcohol units per week",
     description = "Categorised weekly alcohol intake, derived from self-reported average weekly consumption of different types of alcohol. This data was available for participants who said they drank alcohol more than once or twice a week, and categorised as 'None reported' otherwise."
   )
 }
@@ -880,7 +891,7 @@ TEU_Alc_Binge <- function() {
                             TRUE ~ FALSE)
     },
     post_exclusion = FALSE,
-    display_name = "HarmfulAlcohol",
+    display_name = "Harmful alcohol consumption",
     description = "Does the patient's self-reported weekly alcohol consumption exceed the threshold for binge drinking. Data on weekly alcohol consumption was available for participants who said they drank alcohol more than once or twice a week, those who drank less frequently were not considered to have harmful alcohol consumption."
   )
 }
@@ -913,7 +924,7 @@ TEU_Pha_METsover1200 <- function() {
       return(y)
     },
     post_exclusion = FALSE,
-    display_name = "Sufficient_METs",
+    display_name = "Weekly physical activity",
     description = paste0("Indicates whether the participant is exceeding 1200 MET minutes per week. The source variable (summed MET minutes per week for all activity, derived from participant self-reported weekly exercise) was generated as part of ",
                          text_spec("UKB application 12184", link = "http://bmjopen.bmj.com/content/6/3/e010038"), 
                          " and made available on the Data Showcase.")
@@ -951,7 +962,7 @@ TEU_Edu_ISCED <- function() {
       return(y)
     },
     post_exclusion = FALSE,
-    display_name = "ISCED",
+    display_name = "Highest level of education (ISCED)",
     description = "ISCED category of participant's highest attained qualification"
   )
 }
@@ -1004,7 +1015,7 @@ TEU_HMH_BowelCancerScreen <- function() {
       return(y)
     },
     post_exclusion = FALSE,
-    display_name = "BowelCancerScreen",
+    display_name = "Ever screened for bowel cancer",
     description = "Whether the individual has been screened for bowel cancer - used as a proxy for engagement with healthcare"
   )
 }
@@ -1022,7 +1033,7 @@ TEU_FaH_CVD <- function() {
       label = "CVD"
     ),
     post_exclusion = FALSE,
-    display_name = "FamilyHistoryCVD",
+    display_name = "Family history of CVD",
     description = "Family history of CVD (Heart disease, high blood pressure, stroke), derived by combining reported medical history of father, mother and siblings (adopted relatives were not included)"
   )
 }
@@ -1269,12 +1280,14 @@ TEU_LDL_Quintiles <- function() {
   list(
     name = "TEU_LDL_Quintiles",
     source = c("BBC_LDL_Result"),
-    mapper = FN_quantiles(
-      quant = 5,
-      labels = c("Q1: lowest", "Q2", "Q3", "Q4", "Q5: highest")
-    ),
+    mapper = function(x){
+      y <- FN_quantiles(quant = 5,labels = c("Q1: lowest", "Q2", "Q3", "Q4", "Q5: highest"))(x)
+      levels(y) <- c(levels(y), "Unavailable")
+      y[is.na(y)] <- "Unavailable"
+      return(y)
+    },
     post_exclusion = TRUE,
-    display_name = "baseline LDL-C quintiles",
+    display_name = "Baseline LDL-C quintiles",
     description = "Quintiles of measured LDL cholesterol assay from baseline blood serum"
   )
 }
@@ -1447,7 +1460,7 @@ TEU_VeI_numHTNmeds <- function() {
       y <- rubric[["hypmedsno"]][match(x, rubric$ID)]
     },
     post_exclusion = FALSE,
-    display_name = "Number of hypertensive medications",
+    display_name = "Number of antihypertensive medications",
     description = "Number of classes of hypertension medication (under our rubric) self-reported by the participant at verbal interview"
   )
 }
@@ -1459,6 +1472,7 @@ TEU_VeI_numHTNmedscat <- function() {
     source = c("TEU_VeI_numHTNmeds"), 
     mapper = function(x) {
       y <- dplyr::case_when(
+        is.na(x) ~ "None reported",
         x == 0 ~ "None reported",
         x == 1 ~ "1",
         x == 2 ~ "2",
@@ -1522,7 +1536,7 @@ TEU_controlledHTN <- function() {
     name = "TEU_controlledHTN", 
     source = c("TEU_BlP_measuredHTN", "TEU_treatedHTN"), 
     mapper = function(data) {
-      y <- data[["TEU_BlP_measuredHTN"]]
+      y <- !data[["TEU_BlP_measuredHTN"]]
       y[(data[["TEU_treatedHTN"]] == FALSE | is.na(data[["TEU_treatedHTN"]]))] <- NA
       return(y)
     },
@@ -1964,7 +1978,7 @@ HTN_comorb_numcat<- function(){
       factor(ifelse(x>=3,'>=3',x),levels = c('0','1','2','>=3'),ordered = FALSE)
     },
     post_exclusion = FALSE,
-    display_name = 'Number of comorbidities (Categorical)',
+    display_name = 'Number of comorbidities',
     description = 'Number of comorbidities participants self-reported at baseline'
   )
 }
