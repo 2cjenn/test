@@ -235,77 +235,36 @@ multi <- glm(formula, data=data, family="binomial")
 
 summ <- summary(agesex)
 conf <- summ$coeff
-conf[,3] <- conf[,1] - (1.96*conf[,2])
-conf[,4] <- conf[,1] + (1.96*conf[,2])
-unctrl <- data.frame(hr = c(0, conf[rownames(conf) %in% c("TEU_BP_PRS_quintilesQ2", "TEU_BP_PRS_quintilesQ3", 
-                                      "TEU_BP_PRS_quintilesQ4", "TEU_BP_PRS_quintilesQ5: highest"),1]),
-lci = c(0, conf[rownames(conf) %in% c("TEU_BP_PRS_quintilesQ2", "TEU_BP_PRS_quintilesQ3", 
-                                      "TEU_BP_PRS_quintilesQ4", "TEU_BP_PRS_quintilesQ5: highest"),3]),
-uci = c(0, conf[rownames(conf) %in% c("TEU_BP_PRS_quintilesQ2", "TEU_BP_PRS_quintilesQ3", 
-                                      "TEU_BP_PRS_quintilesQ4", "TEU_BP_PRS_quintilesQ5: highest"),4])
-)
+conf[,3] <- exp(conf[,1] - (1.96*conf[,2]))
+conf[,4] <- exp(conf[,1] + (1.96*conf[,2]))
+conf[,1] <- exp(conf[,1])
+unctrl <-
+  data.frame(
+    hr = c(1, conf[rownames(conf) %in% c(
+      "TEU_BP_PRS_quintilesQ2",
+      "TEU_BP_PRS_quintilesQ3",
+      "TEU_BP_PRS_quintilesQ4",
+      "TEU_BP_PRS_quintilesQ5: highest"
+    ), 1]),
+    lci = c(1, conf[rownames(conf) %in% c(
+      "TEU_BP_PRS_quintilesQ2",
+      "TEU_BP_PRS_quintilesQ3",
+      "TEU_BP_PRS_quintilesQ4",
+      "TEU_BP_PRS_quintilesQ5: highest"
+    ), 3]),
+    uci = c(1, conf[rownames(conf) %in% c(
+      "TEU_BP_PRS_quintilesQ2",
+      "TEU_BP_PRS_quintilesQ3",
+      "TEU_BP_PRS_quintilesQ4",
+      "TEU_BP_PRS_quintilesQ5: highest"
+    ), 4])
+  )
 
 summ <- summary(multi)
 conf <- summ$coeff
-conf[,3] <- conf[,1] - (1.96*conf[,2])
-conf[,4] <- conf[,1] + (1.96*conf[,2])
-ctrl <- data.frame(hr = c(0, conf[rownames(conf) %in% c("TEU_BP_PRS_quintilesQ2", "TEU_BP_PRS_quintilesQ3", 
-                                      "TEU_BP_PRS_quintilesQ4", "TEU_BP_PRS_quintilesQ5: highest"),1]),
-lci = c(0, conf[rownames(conf) %in% c("TEU_BP_PRS_quintilesQ2", "TEU_BP_PRS_quintilesQ3", 
-                                      "TEU_BP_PRS_quintilesQ4", "TEU_BP_PRS_quintilesQ5: highest"),3]),
-uci = c(0, conf[rownames(conf) %in% c("TEU_BP_PRS_quintilesQ2", "TEU_BP_PRS_quintilesQ3", 
-                                      "TEU_BP_PRS_quintilesQ4", "TEU_BP_PRS_quintilesQ5: highest"),4])
-)
-
-# tabletext <- 
-tabletext <- c("Age- and sex-adjusted", "Multivariate")
-
-forestplot(tabletext,
-           legend = c("Q1 (lowest)", "Q2", "Q3", "Q4", "Q5 (highest)"),
-           legend_args = fpLegend(title="Quintiles of BP PRS",
-                                  gp = gpar(col = "#CCCCCC", fill = "#F9F9F9")),
-           mean = t(cbind(unctrl$hr, ctrl$hr)),
-           lower = t(cbind(unctrl$lci, ctrl$lci)),
-           upper = t(cbind(unctrl$uci, ctrl$uci)),
-           col = fpColors(box = c("green", "blue", "purple", "red", "orange")),
-           xlab = "OR for hypertension control",
-           vertices=TRUE
-           )
-
-```
-
-```{r logistic-regression, include=TRUE, echo=FALSE}
-library(forestplot)
-varlist=c("TEU_BaC_AgeCat", "BaC_Sex", "TEU_BP_PRS_quintiles",
-          "TEU_BSM_BMIcat", "TEU_Smo_Status", "TEU_Alc_WeeklyCat", "TEU_Pha_METsover1200",
-          "TEU_FaH_CVD", "Prosp_comorb_numcat", "TEU_VeI_numHTNmedscat", "TEU_LDL_Quintiles",
-          "TEU_TownsendDepInd_Quint", "TEU_HouseholdIncome", "TEU_Emp_category", "TEU_Edu_ISCED", "TEU_Rec_Country",
-          "GeP_PC_1", "GeP_PC_2", "GeP_PC_3", "GeP_PC_4"
-          )
-
-# formula <- paste0("TEU_controlledHTN ~ ", paste(varlist, collapse=" + "))
-formula <- as.formula(paste0("Surv(TEU_MACE_time_yrs,TEU_MACE_status) ~ ", paste(varlist, collapse="+")))
-
-uncontrol <- coxph(formula, data=data[data$TEU_controlledHTN==FALSE,])
-control <- coxph(formula, data=data[data$TEU_controlledHTN==TRUE,])
-all <- coxph(formula, data=data)
-# all <- glm(formula, data=data, family="binomial")
-
-# tabletext <- c("1st quintile", "2nd", "3rd quintile", "4th", "5th quintile")
-tabletext <- c("Uncontrolled", "Controlled", "Overall")
-
-summ <- summary(uncontrol)
-conf <- summ$conf.int
-unctrl <- data.frame(hr = c(1, conf[rownames(conf) %in% c("TEU_BP_PRS_quintilesQ2", "TEU_BP_PRS_quintilesQ3", 
-                                      "TEU_BP_PRS_quintilesQ4", "TEU_BP_PRS_quintilesQ5: highest"),1]),
-lci = c(1, conf[rownames(conf) %in% c("TEU_BP_PRS_quintilesQ2", "TEU_BP_PRS_quintilesQ3", 
-                                      "TEU_BP_PRS_quintilesQ4", "TEU_BP_PRS_quintilesQ5: highest"),3]),
-uci = c(1, conf[rownames(conf) %in% c("TEU_BP_PRS_quintilesQ2", "TEU_BP_PRS_quintilesQ3", 
-                                      "TEU_BP_PRS_quintilesQ4", "TEU_BP_PRS_quintilesQ5: highest"),4])
-)
-
-summ <- summary(control)
-conf <- summ$conf.int
+conf[,3] <- exp(conf[,1] - (1.96*conf[,2]))
+conf[,4] <- exp(conf[,1] + (1.96*conf[,2]))
+conf[,1] <- exp(conf[,1])
 ctrl <- data.frame(hr = c(1, conf[rownames(conf) %in% c("TEU_BP_PRS_quintilesQ2", "TEU_BP_PRS_quintilesQ3", 
                                       "TEU_BP_PRS_quintilesQ4", "TEU_BP_PRS_quintilesQ5: highest"),1]),
 lci = c(1, conf[rownames(conf) %in% c("TEU_BP_PRS_quintilesQ2", "TEU_BP_PRS_quintilesQ3", 
@@ -314,28 +273,35 @@ uci = c(1, conf[rownames(conf) %in% c("TEU_BP_PRS_quintilesQ2", "TEU_BP_PRS_quin
                                       "TEU_BP_PRS_quintilesQ4", "TEU_BP_PRS_quintilesQ5: highest"),4])
 )
 
-summ <- summary(all)
-conf <- summ$conf.int
-all <- data.frame(hr = c(1, conf[rownames(conf) %in% c("TEU_BP_PRS_quintilesQ2", "TEU_BP_PRS_quintilesQ3", 
-                                      "TEU_BP_PRS_quintilesQ4", "TEU_BP_PRS_quintilesQ5: highest"),1]),
-lci = c(1, conf[rownames(conf) %in% c("TEU_BP_PRS_quintilesQ2", "TEU_BP_PRS_quintilesQ3", 
-                                      "TEU_BP_PRS_quintilesQ4", "TEU_BP_PRS_quintilesQ5: highest"),3]),
-uci = c(1, conf[rownames(conf) %in% c("TEU_BP_PRS_quintilesQ2", "TEU_BP_PRS_quintilesQ3", 
-                                      "TEU_BP_PRS_quintilesQ4", "TEU_BP_PRS_quintilesQ5: highest"),4])
+# tabletext <- 
+tabletext <- cbind(c("Model", "Age- and sex-adjusted", "Q1 (lowest)", "Q2", "Q3", "Q4", "Q5 (highest)",
+               "Multivariate", "Q1 (lowest)", "Q2", "Q3", "Q4", "Q5 (highest)"),
+               c("OR", NA, round(unctrl$hr,2), NA, round(ctrl$hr,2))
 )
 
 forestplot(tabletext,
-       mean = t(cbind(unctrl$hr, ctrl$hr,all$hr)),
-       lower = t(cbind(unctrl$lci, ctrl$lci, all$lci)),
-       upper = t(cbind(unctrl$uci, ctrl$uci, all$uci)),
-       )
-
-# ggforest(model)
-
-
+           hrzl_lines = list("1" = gpar(lty = 1), 
+                             "2" = gpar(lty = 1),
+                             "3" = gpar(lty = 1, columns = 1), 
+                             "8" = gpar(lty = 1),
+                             "9" = gpar(lty = 1, columns = 1) 
+                             #"14" = gpar(lwd = 1, columns = 1)
+                             ),
+           mean = c(NA, NA, unctrl$hr, NA, ctrl$hr),
+           lower = c(NA, NA, unctrl$lci, NA, ctrl$lci),
+           upper = c(NA, NA, unctrl$uci, NA, ctrl$uci),
+           col = fpColors(box = c("navy")),
+           xlab = "OR for hypertension control",
+           vertices=TRUE,
+           is.summary = c(TRUE,TRUE,rep(FALSE,5),TRUE,rep(FALSE,5)),
+           zero=1,
+           graph.pos=2,
+           xticks = c(0.6, 0.7, 0.8, 0.9, 1.0, 1.1),
+           boxsize=0.6,
+           title="Odds ratios for hypertension control by quintile of BP PRS"
+           )
 
 ```
-
 
 # Hypertension PRS prospective analysis
 
