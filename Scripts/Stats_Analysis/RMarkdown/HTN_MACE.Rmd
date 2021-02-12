@@ -218,7 +218,7 @@ add_footnote(kable(tab[,-1]), label=c("Occupation categories have been condensed
 <div custom-style="Todo">Reminder: Manually re-order BMI categories</div>
 
 ```{r logistic-regression, include=TRUE, echo=FALSE}
-
+library(forestplot)
 varlist=c("TEU_BaC_AgeCat", "BaC_Sex", "TEU_BP_PRS_quintiles",
           "TEU_BSM_BMIcat", "TEU_Smo_Status", "TEU_Alc_WeeklyCat", "TEU_Pha_METsover1200",
           "TEU_FaH_CVD", "Prosp_comorb_numcat", "TEU_VeI_numHTNmedscat", "TEU_LDL_Quintiles",
@@ -226,63 +226,111 @@ varlist=c("TEU_BaC_AgeCat", "BaC_Sex", "TEU_BP_PRS_quintiles",
           "GeP_PC_1", "GeP_PC_2", "GeP_PC_3", "GeP_PC_4"
           )
 
+# formula <- paste0("TEU_controlledHTN ~ ", paste(varlist, collapse=" + "))
+formula <- as.formula(paste0("TEU_controlledHTN ~ ", paste(varlist, collapse="+")))
 
-footnote_list <- c("TEU_TownsendDepInd_Quint", "TEU_Emp_category", "TEU_Edu_ISCED", "TEU_Rec_Country", "TEU_BSM_BMIcat", "TEU_Pha_METsover1200", "Prosp_comorb_numcat")
-footnote_no <- 3
+agesex <- glm("TEU_controlledHTN ~ TEU_BaC_AgeCat + BaC_Sex + TEU_BP_PRS_quintiles", data=data, family="binomial")
+multi <- glm(formula, data=data, family="binomial")
 
-desctable2 <- function(df){
-  n <- nrow(df)
-  control <- prop.test(x=nrow(df[df$TEU_controlledHTN==TRUE & !is.na(df$TEU_controlledHTN),]),
-                           n=nrow(df), alternative="two.sided", conf.level=0.95)
-  pct_control <- pretty_dp(control$estimate, dp=1, pct=TRUE)
-  
-  table <- cbind(n, pct_control)
-  return(table)
-}
 
-pct_ctrl <- c()
-for(var in varlist){
-  header <- c(var, paste0("**", pretty_func(var), "**"), NA, NA)
-  pct_ctrl <- rbind(pct_ctrl, header)
-  for(level in levels(data[[var]])){
-    newrow <- desctable2(data[data[var]==level,])
-    IDcol <- paste0(var, level)
-    pct_ctrl <- rbind(pct_ctrl, cbind(IDcol, level, newrow))
-  }
-}
-pct_ctrl <- data.frame(pct_ctrl)
+summ <- summary(agesex)
+conf <- summ$coeff
+conf[,3] <- conf[,1] - (1.96*conf[,2])
+conf[,4] <- conf[,1] + (1.96*conf[,2])
+unctrl <- data.frame(hr = c(0, conf[rownames(conf) %in% c("TEU_BP_PRS_quintilesQ2", "TEU_BP_PRS_quintilesQ3", 
+                                      "TEU_BP_PRS_quintilesQ4", "TEU_BP_PRS_quintilesQ5: highest"),1]),
+lci = c(0, conf[rownames(conf) %in% c("TEU_BP_PRS_quintilesQ2", "TEU_BP_PRS_quintilesQ3", 
+                                      "TEU_BP_PRS_quintilesQ4", "TEU_BP_PRS_quintilesQ5: highest"),3]),
+uci = c(0, conf[rownames(conf) %in% c("TEU_BP_PRS_quintilesQ2", "TEU_BP_PRS_quintilesQ3", 
+                                      "TEU_BP_PRS_quintilesQ4", "TEU_BP_PRS_quintilesQ5: highest"),4])
+)
 
-adj <- regressiontable(df=data, outcome="TEU_controlledHTN", varlist=varlist, 
-                       regresstype="adjusted", adjvarlist=c("TEU_BaC_AgeCat", "BaC_Sex"))
-multi <- regressiontable(df=data, outcome="TEU_controlledHTN", varlist=varlist, 
-                         regresstype="multivariable")
+summ <- summary(multi)
+conf <- summ$coeff
+conf[,3] <- conf[,1] - (1.96*conf[,2])
+conf[,4] <- conf[,1] + (1.96*conf[,2])
+ctrl <- data.frame(hr = c(0, conf[rownames(conf) %in% c("TEU_BP_PRS_quintilesQ2", "TEU_BP_PRS_quintilesQ3", 
+                                      "TEU_BP_PRS_quintilesQ4", "TEU_BP_PRS_quintilesQ5: highest"),1]),
+lci = c(0, conf[rownames(conf) %in% c("TEU_BP_PRS_quintilesQ2", "TEU_BP_PRS_quintilesQ3", 
+                                      "TEU_BP_PRS_quintilesQ4", "TEU_BP_PRS_quintilesQ5: highest"),3]),
+uci = c(0, conf[rownames(conf) %in% c("TEU_BP_PRS_quintilesQ2", "TEU_BP_PRS_quintilesQ3", 
+                                      "TEU_BP_PRS_quintilesQ4", "TEU_BP_PRS_quintilesQ5: highest"),4])
+)
 
-tab3 <- merge(adj, multi, by=c("IDcol", "Coefficient", "Levels"), sort=FALSE) %>% select(-Coefficient, -Levels)
-# Add n column
+# tabletext <- c("1st quintile", "2nd", "3rd quintile", "4th", "5th quintile")
+tabletext <- c("Age- and sex-adjusted", "Multivariate")
 
-tab3 <- left_join(pct_ctrl, tab3, by=c("IDcol")) %>% select(-IDcol)
+forestplot(tabletext,
+       mean = t(cbind(unctrl$hr, ctrl$hr)),
+       lower = t(cbind(unctrl$lci, ctrl$lci)),
+       upper = t(cbind(unctrl$uci, ctrl$uci)),
+       )
 
-# Hide "unanswered"/"unknown"/"do not know" categories
-tab3 <- tab3[-which(tab3$level %in% c("Unknown", "Unanswered", "Do not know", "Prefer not to answer")),]
-rownames(tab3) <- NULL
+# ggforest(model)
 
-tab3 <- rbind(c("Coefficient", "n^1^", "% Controlled^2^", "OR", "95% CI", "p", "OR", "95% CI", "p"),
-              as.matrix(tab3))
-colnames(tab3) <- c("","","", 
-                    "Age- and sex-adjusted", "", "", 
-                    "Multivariable- adjusted", "", "")
 
-# Output the resulting table
-add_footnote(kable(tab3), label=c("Number of individuals in levels of a categorical variable may not add up to total n because 'Do not know' and 'Prefer not to answer' categories have been removed from results table",
-                                  "Hypertension control is defined as mean systolic BP >= 140 mmHg or mean diastolic BP >= 90 mmHg at baseline assessment, among treated hypertensives.",
-                                  "The Townsend index is a measure of material deprivation calculated at the level of census output areas.", 
-                                  "Occupation categories have been condensed from those recorded in UKB. Professional and Administrative: Managers and Senior Officials, Professional Occupations, Associate Professional and Technical Occupations, Administrative and Secretarial Occupations. Skilled trades: Skilled Trades Occupations. Services: Personal Service Occupations, Sales and Customer Service Occupations. Manual and Industrial: Process, Plant and Machine Operatives, Elementary Occupations. Other employment: free text entry that was not coded by UKB.", 
-                                  "Self-reported highest education achieved was mapped to the International Standard Classification of Education (ISCED) categories",
-                                  "The assessment centre the participant attended was used as a proxy for country of residence",
-                                  "BMI has been categorised as: Underweight < 18.5 kg/m^2^; Normal 18.5 - 24.9 kg/m^2^; Overweight 25.0 - 29.9 kg/m^2^; Obese >= 30.0 kg/m^2^.", 
-                                  "The total Metabolic Equivalent Task (MET) minutes per week is based on self-reported frequency and duration of walking, moderate and vigorous activity, and was then dichotomized based on WHO physical activity guideline thresholds.",
-                                  "The number of comorbidities considered to be of interest - diabetes, arrhythmia (afib/flutter), asthma or COPD, migraines, epilepsy, anxiety, depression, osteoarthritis, other joint disorder."
-                                  ), notation="number")
+
+```
+
+```{r logistic-regression, include=TRUE, echo=FALSE}
+library(forestplot)
+varlist=c("TEU_BaC_AgeCat", "BaC_Sex", "TEU_BP_PRS_quintiles",
+          "TEU_BSM_BMIcat", "TEU_Smo_Status", "TEU_Alc_WeeklyCat", "TEU_Pha_METsover1200",
+          "TEU_FaH_CVD", "Prosp_comorb_numcat", "TEU_VeI_numHTNmedscat", "TEU_LDL_Quintiles",
+          "TEU_TownsendDepInd_Quint", "TEU_HouseholdIncome", "TEU_Emp_category", "TEU_Edu_ISCED", "TEU_Rec_Country",
+          "GeP_PC_1", "GeP_PC_2", "GeP_PC_3", "GeP_PC_4"
+          )
+
+# formula <- paste0("TEU_controlledHTN ~ ", paste(varlist, collapse=" + "))
+formula <- as.formula(paste0("Surv(TEU_MACE_time_yrs,TEU_MACE_status) ~ ", paste(varlist, collapse="+")))
+
+uncontrol <- coxph(formula, data=data[data$TEU_controlledHTN==FALSE,])
+control <- coxph(formula, data=data[data$TEU_controlledHTN==TRUE,])
+all <- coxph(formula, data=data)
+# all <- glm(formula, data=data, family="binomial")
+
+# tabletext <- c("1st quintile", "2nd", "3rd quintile", "4th", "5th quintile")
+tabletext <- c("Uncontrolled", "Controlled", "Overall")
+
+summ <- summary(uncontrol)
+conf <- summ$conf.int
+unctrl <- data.frame(hr = c(1, conf[rownames(conf) %in% c("TEU_BP_PRS_quintilesQ2", "TEU_BP_PRS_quintilesQ3", 
+                                      "TEU_BP_PRS_quintilesQ4", "TEU_BP_PRS_quintilesQ5: highest"),1]),
+lci = c(1, conf[rownames(conf) %in% c("TEU_BP_PRS_quintilesQ2", "TEU_BP_PRS_quintilesQ3", 
+                                      "TEU_BP_PRS_quintilesQ4", "TEU_BP_PRS_quintilesQ5: highest"),3]),
+uci = c(1, conf[rownames(conf) %in% c("TEU_BP_PRS_quintilesQ2", "TEU_BP_PRS_quintilesQ3", 
+                                      "TEU_BP_PRS_quintilesQ4", "TEU_BP_PRS_quintilesQ5: highest"),4])
+)
+
+summ <- summary(control)
+conf <- summ$conf.int
+ctrl <- data.frame(hr = c(1, conf[rownames(conf) %in% c("TEU_BP_PRS_quintilesQ2", "TEU_BP_PRS_quintilesQ3", 
+                                      "TEU_BP_PRS_quintilesQ4", "TEU_BP_PRS_quintilesQ5: highest"),1]),
+lci = c(1, conf[rownames(conf) %in% c("TEU_BP_PRS_quintilesQ2", "TEU_BP_PRS_quintilesQ3", 
+                                      "TEU_BP_PRS_quintilesQ4", "TEU_BP_PRS_quintilesQ5: highest"),3]),
+uci = c(1, conf[rownames(conf) %in% c("TEU_BP_PRS_quintilesQ2", "TEU_BP_PRS_quintilesQ3", 
+                                      "TEU_BP_PRS_quintilesQ4", "TEU_BP_PRS_quintilesQ5: highest"),4])
+)
+
+summ <- summary(all)
+conf <- summ$conf.int
+all <- data.frame(hr = c(1, conf[rownames(conf) %in% c("TEU_BP_PRS_quintilesQ2", "TEU_BP_PRS_quintilesQ3", 
+                                      "TEU_BP_PRS_quintilesQ4", "TEU_BP_PRS_quintilesQ5: highest"),1]),
+lci = c(1, conf[rownames(conf) %in% c("TEU_BP_PRS_quintilesQ2", "TEU_BP_PRS_quintilesQ3", 
+                                      "TEU_BP_PRS_quintilesQ4", "TEU_BP_PRS_quintilesQ5: highest"),3]),
+uci = c(1, conf[rownames(conf) %in% c("TEU_BP_PRS_quintilesQ2", "TEU_BP_PRS_quintilesQ3", 
+                                      "TEU_BP_PRS_quintilesQ4", "TEU_BP_PRS_quintilesQ5: highest"),4])
+)
+
+forestplot(tabletext,
+       mean = t(cbind(unctrl$hr, ctrl$hr,all$hr)),
+       lower = t(cbind(unctrl$lci, ctrl$lci, all$lci)),
+       upper = t(cbind(unctrl$uci, ctrl$uci, all$uci)),
+       )
+
+# ggforest(model)
+
+
 
 ```
 
