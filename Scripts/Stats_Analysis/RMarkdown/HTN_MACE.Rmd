@@ -150,60 +150,18 @@ export_svg(DiagrammeR::grViz(here::here(file.path(config$outputs$flowcharts, "HT
 
 ```
 
-# Hypertension PRS cross-sectional analysis
+# Hypertension PRS prospective analysis
 
-## Table `r table`. Characteristics of participants included in the analysis, by Systolic BP PRS quintile (treated hypertensives, n = `r nrow(data)`).
-`r table <- table + 1`
-```{r descriptive-table, include=TRUE, echo=FALSE}
-varlist=c("TEU_BaC_AgeAtRec", "TEU_BaC_AgeCat", "BaC_Sex", "TEU_BlP_SBP_quintiles",
-          "TEU_BSM_BMIcat", "TEU_Smo_Status", "TEU_Alc_WeeklyCat", "TEU_Pha_METsover1200",
-          "TEU_FaH_CVD", "Prosp_comorb_numcat", "TEU_VeI_numHTNmedscat", "TEU_LDL_Quintiles",
-          "TEU_TownsendDepInd_Quint", "TEU_HouseholdIncome", "TEU_Emp_category", "TEU_Edu_ISCED", "TEU_Rec_Country"
-          )
+Including measured SBP at baseline (quintiles) and SBP PRS (quintiles)
 
+## Cox regression of time until MI event (`r nrow(data[data$TEU_MACE_MI==1,])` events)
 
-tab_all <- descriptivetable(df=data, 
-                         varlist=varlist,
-                         contavg='median',
-                         pretty_names=pretty_names)
-
-tab_1 <- descriptivetable(df=data[data$TEU_SBP_PRS_quintiles=="Q1: lowest",], 
-                         varlist=varlist,
-                         contavg='median',
-                         pretty_names=pretty_names)
-
-tab_3 <- descriptivetable(df=data[data$TEU_SBP_PRS_quintiles=="Q3",], 
-                         varlist=varlist,
-                         contavg='median',
-                         pretty_names=pretty_names)
-
-tab_5 <- descriptivetable(df=data[data$TEU_SBP_PRS_quintiles=="Q5: highest",], 
-                         varlist=varlist,
-                         contavg='median',
-                         pretty_names=pretty_names)
-
-tab <- inner_join(tab_all, tab_1%>%select(-Variable), by="IDcol")
-tab <- inner_join(tab, tab_3%>%select(-Variable), by="IDcol")
-tab <- inner_join(tab, tab_5%>%select(-Variable), by="IDcol")
-
-rownames(tab) <- NULL
-tab <- rbind(c("", "Variable", "n", "%", "n", "%", "n", "%", "n", "%"),
-              as.matrix(tab))
-colnames(tab) <- c("", "", "Overall", "", "Q1: lowest", "", "Q3", "", "Q5: highest", "")
-
-# Output the resulting table
-kable(tab[,-1])
-
-```
-
-# Hypertension PRS prospective analysis WITH MEASURED SBP
-
-## Cox regression of time until MACE event (`r nrow(data[!is.na(data$TEU_MACE_fucomp),])` events)
+MI event defined as diagnosis of myocardial infarction or MI prevention procedure in HES data, or MI recorded as primary cause of death (censoring at first MACE event applied)
 
 
 ```{r Cox model mace, echo=FALSE}
 
-varlist=c("TEU_BaC_AgeCat", "BaC_Sex", "TEU_BlP_SBP_quintiles", "TEU_SBP_PRS_quintiles",
+varlist=c("TEU_BaC_AgeCat", "BaC_Sex", "TEU_BlP_SBP_quintiles", #"TEU_SBP_PRS_quintiles",
           "TEU_BSM_BMIcat", "TEU_Smo_Status", "TEU_Alc_WeeklyCat", "TEU_Pha_METsover1200",
           "TEU_FaH_CVD", "Prosp_comorb_numcat", "TEU_VeI_numHTNmedscat", "TEU_LDL_Quintiles",
           "TEU_TownsendDepInd_Quint", "TEU_HouseholdIncome", "TEU_Emp_category", "TEU_Edu_ISCED", "TEU_Rec_Country",
@@ -211,12 +169,12 @@ varlist=c("TEU_BaC_AgeCat", "BaC_Sex", "TEU_BlP_SBP_quintiles", "TEU_SBP_PRS_qui
           )
 
 # age- and sex-adjusted
-agesex <- coxph(Surv(TEU_MACE_time_yrs,TEU_MACE_status) ~ TEU_BaC_AgeCat + BaC_Sex, data=data)
+agesex <- coxph(Surv(TEU_MACE_time_yrs,TEU_MACE_MI) ~ TEU_BaC_AgeCat + BaC_Sex, data=data)
 adj <- publish(agesex, ci.digits=2, ci.handler="sprintf", pvalue.eps=0.01,
               pvalue.digits=2,pvalue.stars=TRUE, ci.trim=FALSE,print=FALSE)$regressionTable
 for(var in varlist){
   if(! var %in% c("TEU_BaC_AgeCat", "BaC_Sex")){
-  formula <- as.formula(paste0("Surv(TEU_MACE_time_yrs,TEU_MACE_status) ~ TEU_BaC_AgeCat + BaC_Sex + ", var))
+  formula <- as.formula(paste0("Surv(TEU_MACE_time_yrs,TEU_MACE_MI) ~ TEU_BaC_AgeCat + BaC_Sex + ", var))
   model <- coxph(formula, data=data)
   output <- publish(model, ci.digits=2, ci.handler="sprintf", pvalue.eps=0.01,
               pvalue.digits=2,pvalue.stars=TRUE, ci.trim=FALSE,print=FALSE)$regressionTable
@@ -226,7 +184,7 @@ for(var in varlist){
 }
 
 # Complete case data
-formula <- as.formula(paste0("Surv(TEU_MACE_time_yrs,TEU_MACE_status) ~ ", paste(varlist, collapse="+")))
+formula <- as.formula(paste0("Surv(TEU_MACE_time_yrs,TEU_MACE_MI) ~ ", paste(varlist, collapse="+")))
 
 rmodel1<-coxph(formula,data=data)
 
@@ -252,13 +210,13 @@ kable(tab4)
 
 ```
 
-## Cox regression of the time until haemorrhagic stroke event (`r nrow(data[data$TEU_MACE_Stroke==1,])` events)
+## Cox regression of the time until stroke event (`r nrow(data[data$TEU_MACE_Stroke==1,])` events)
 
-Haemorrhagic stroke event defined as diagnosis of haemorrhagic stroke in HES data or haemorrhagic stroke recorded as primary cause of death (censoring at first MACE event applied).
+Stroke event defined as diagnosis of stroke (any kind) or stroke prevention procedure in HES data, or stroke recorded as primary cause of death (censoring at first MACE event applied).
 
 ```{r Cox model stroke, echo=FALSE}
 
-varlist=c("TEU_BaC_AgeCat", "BaC_Sex", "TEU_BlP_SBP_quintiles", "TEU_SBP_PRS_quintiles",
+varlist=c("TEU_BaC_AgeCat", "BaC_Sex", "TEU_BlP_SBP_quintiles", #"TEU_SBP_PRS_quintiles",
           "TEU_BSM_BMIcat", "TEU_Smo_Status", "TEU_Alc_WeeklyCat", "TEU_Pha_METsover1200",
           "TEU_FaH_CVD", "Prosp_comorb_numcat", "TEU_VeI_numHTNmedscat", "TEU_LDL_Quintiles",
           "TEU_TownsendDepInd_Quint", "TEU_HouseholdIncome", "TEU_Emp_category", "TEU_Edu_ISCED", "TEU_Rec_Country",
@@ -307,112 +265,3 @@ kable(tab4)
 
 ```
 
-# Hypertension PRS prospective analysis WITHOUT MEASURED SBP
-
-## Cox regression of time until MACE event (`r nrow(data[!is.na(data$TEU_MACE_fucomp),])` events)
-
-```{r Cox model mace 2, echo=FALSE}
-
-varlist=c("TEU_BaC_AgeCat", "BaC_Sex",  "TEU_SBP_PRS_quintiles",
-          "TEU_BSM_BMIcat", "TEU_Smo_Status", "TEU_Alc_WeeklyCat", "TEU_Pha_METsover1200",
-          "TEU_FaH_CVD", "Prosp_comorb_numcat", "TEU_VeI_numHTNmedscat", "TEU_LDL_Quintiles",
-          "TEU_TownsendDepInd_Quint", "TEU_HouseholdIncome", "TEU_Emp_category", "TEU_Edu_ISCED", "TEU_Rec_Country",
-          "GeP_PC_1", "GeP_PC_2", "GeP_PC_3", "GeP_PC_4"
-          )
-
-# age- and sex-adjusted
-agesex <- coxph(Surv(TEU_MACE_time_yrs,TEU_MACE_status) ~ TEU_BaC_AgeCat + BaC_Sex, data=data)
-adj <- publish(agesex, ci.digits=2, ci.handler="sprintf", pvalue.eps=0.01,
-              pvalue.digits=2,pvalue.stars=TRUE, ci.trim=FALSE,print=FALSE)$regressionTable
-for(var in varlist){
-  if(! var %in% c("TEU_BaC_AgeCat", "BaC_Sex")){
-  formula <- as.formula(paste0("Surv(TEU_MACE_time_yrs,TEU_MACE_status) ~ TEU_BaC_AgeCat + BaC_Sex + ", var))
-  model <- coxph(formula, data=data)
-  output <- publish(model, ci.digits=2, ci.handler="sprintf", pvalue.eps=0.01,
-              pvalue.digits=2,pvalue.stars=TRUE, ci.trim=FALSE,print=FALSE)$regressionTable
-  output <- output[-c(1:5),] %>% select(-any_of("Missing"))
-  adj <- rbind(adj, output)
-  }
-}
-
-# Complete case data
-formula <- as.formula(paste0("Surv(TEU_MACE_time_yrs,TEU_MACE_status) ~ ", paste(varlist, collapse="+")))
-
-rmodel1<-coxph(formula,data=data)
-
-
-routput1 <- publish(rmodel1, ci.digits=2, ci.handler="sprintf", pvalue.eps=0.01,
-              pvalue.digits=2,pvalue.stars=TRUE, ci.trim=FALSE,print=FALSE)$regressionTable  %>%
-  select(-any_of("Missing"))
-
-tab4 <- cbind(adj%>%select(-signif), routput1%>%select(-Variable, -Units, -signif))
-
-# Change pretty variable names
-tab4$Variable <-  sapply(tab4$Variable,function(i) if(i!=""){pretty_func(i)}else{i})
-
-rownames(tab4) <- NULL
-tab4 <- rbind(c("Coefficient", "Level", "OR", "95% CI", "p", "OR", "95% CI", "p"),
-              as.matrix(tab4))
-colnames(tab4) <- c("","", 
-                    "Age- and sex-adjusted", "", "", 
-                    "Multivariable- adjusted", "", "")
-
-kable(tab4)
-
-
-```
-
-## Cox regression of the time until haemorrhagic stroke event (`r nrow(data[data$TEU_MACE_Stroke==1,])` events)
-
-Haemorrhagic stroke event defined as diagnosis of haemorrhagic stroke in HES data or haemorrhagic stroke recorded as primary cause of death (censoring at first MACE event applied).
-
-```{r Cox model stroke 2, echo=FALSE}
-
-varlist=c("TEU_BaC_AgeCat", "BaC_Sex", "TEU_SBP_PRS_quintiles",
-          "TEU_BSM_BMIcat", "TEU_Smo_Status", "TEU_Alc_WeeklyCat", "TEU_Pha_METsover1200",
-          "TEU_FaH_CVD", "Prosp_comorb_numcat", "TEU_VeI_numHTNmedscat", "TEU_LDL_Quintiles",
-          "TEU_TownsendDepInd_Quint", "TEU_HouseholdIncome", "TEU_Emp_category", "TEU_Edu_ISCED", "TEU_Rec_Country",
-          "GeP_PC_1", "GeP_PC_2", "GeP_PC_3", "GeP_PC_4"
-          )
-
-# age- and sex-adjusted
-agesex <- coxph(Surv(TEU_MACE_time_yrs,TEU_MACE_Stroke) ~ TEU_BaC_AgeCat + BaC_Sex, data=data)
-adj <- publish(agesex, ci.digits=2, ci.handler="sprintf", pvalue.eps=0.01,
-              pvalue.digits=2,pvalue.stars=TRUE, ci.trim=FALSE,print=FALSE)$regressionTable
-for(var in varlist){
-  if(! var %in% c("TEU_BaC_AgeCat", "BaC_Sex")){
-  formula <- as.formula(paste0("Surv(TEU_MACE_time_yrs,TEU_MACE_Stroke) ~ TEU_BaC_AgeCat + BaC_Sex + ", var))
-  model <- coxph(formula, data=data)
-  output <- publish(model, ci.digits=2, ci.handler="sprintf", pvalue.eps=0.01,
-              pvalue.digits=2,pvalue.stars=TRUE, ci.trim=FALSE,print=FALSE)$regressionTable
-  output <- output[-c(1:5),] %>% select(-any_of("Missing"))
-  adj <- rbind(adj, output)
-  }
-}
-
-# Complete case data
-formula <- as.formula(paste0("Surv(TEU_MACE_time_yrs,TEU_MACE_Stroke) ~ ", paste(varlist, collapse="+")))
-
-rmodel1<-coxph(formula,data=data)
-
-
-routput1 <- publish(rmodel1, ci.digits=2, ci.handler="sprintf", pvalue.eps=0.01,
-              pvalue.digits=2,pvalue.stars=TRUE, ci.trim=FALSE,print=FALSE)$regressionTable  %>%
-  select(-any_of("Missing"))
-
-tab4 <- cbind(adj%>%select(-signif), routput1%>%select(-Variable, -Units, -signif))
-
-# Change pretty variable names
-tab4$Variable <-  sapply(tab4$Variable,function(i) if(i!=""){pretty_func(i)}else{i})
-
-rownames(tab4) <- NULL
-tab4 <- rbind(c("Coefficient", "Level", "OR", "95% CI", "p", "OR", "95% CI", "p"),
-              as.matrix(tab4))
-colnames(tab4) <- c("","", 
-                    "Age- and sex-adjusted", "", "", 
-                    "Multivariable- adjusted", "", "")
-
-kable(tab4)
-
-
-```

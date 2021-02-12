@@ -2591,22 +2591,68 @@ TEU_MACE_fucomp<-function(){
   )
 }
 
-# Haemorrhagic Stroke status (Secondary outcome)
+# Myocardial Infarction status (Secondary outcome)
+TEU_MACE_MI<-function(){
+  list(
+    name = 'TEU_MACE_MI',
+    source = c('TEU_MACE_fucomp', "TEU_Dth_MACE_dthtype"),
+    mapper = function(data){
+      
+      HES <- ifelse(data[["TEU_MACE_fucomp"]] %in% c("Nonfatal MI",
+                                                     "MI prevention procedure"), 1,0)
+      death <- ifelse((data[["TEU_MACE_fucomp"]]=="CVD death" & !is.na(data[["TEU_MACE_fucomp"]])) & 
+                        data[["TEU_Dth_MACE_dthtype"]] %in% c("MI"), 1,0)
+      y <- as.numeric(HES|death)
+      
+    },
+    post_exclusion = FALSE,
+    display_name = 'Stroke status',
+    description = 'Stroke status from HES diagnoses, stroke prevention operations, and primary causes of death (0=censored, 1=stroke)'
+    
+  )
+}
+
+# Stroke status (Secondary outcome)
 TEU_MACE_Stroke<-function(){
   list(
     name = 'TEU_MACE_Stroke',
     source = c('TEU_MACE_fucomp', "TEU_Dth_MACE_dthtype"),
     mapper = function(data){
       
+      HES <- ifelse(data[["TEU_MACE_fucomp"]] %in% c("Nonfatal Stroke - Haemorrhagic",
+                                                     "Nonfatal Stroke - Ischaemic",
+                                                     "Nonfatal Stroke - Type unspecified",
+                                                     "Stroke prevention procedure"), 1,0)
+      death <- ifelse((data[["TEU_MACE_fucomp"]]=="CVD death" & !is.na(data[["TEU_MACE_fucomp"]])) & 
+                         data[["TEU_Dth_MACE_dthtype"]] %in% c("Stroke - Haemorrhagic",
+                                                               "Stroke - Ischaemic",
+                                                               "Stroke - Type unspecified"), 1,0)
+      y <- as.numeric(HES|death)
+      
+    },
+    post_exclusion = FALSE,
+    display_name = 'Stroke status',
+    description = 'Stroke status from HES diagnoses, stroke prevention operations, and primary causes of death (0=censored, 1=stroke)'
+    
+  )
+}
+
+# Haemorrhagic Stroke status (Secondary outcome)
+TEU_MACE_HaemStroke<-function(){
+  list(
+    name = 'TEU_MACE_HaemStroke',
+    source = c('TEU_MACE_fucomp', "TEU_Dth_MACE_dthtype"),
+    mapper = function(data){
+      
       HES <- ifelse(data[["TEU_MACE_fucomp"]] %in% c("Nonfatal Stroke - Haemorrhagic"), 1,0)
       death <- ifelse((data[["TEU_MACE_fucomp"]]=="CVD death" & !is.na(data[["TEU_MACE_fucomp"]])) & 
-                         data[["TEU_Dth_MACE_dthtype"]] %in% c("Stroke - Haemorrhagic"), 1,0)
+                        data[["TEU_Dth_MACE_dthtype"]] %in% c("Stroke - Haemorrhagic"), 1,0)
       y <- as.numeric(HES|death)
       
     },
     post_exclusion = FALSE,
     display_name = 'Haemorrhagic stroke status',
-    description = 'Haemorrhagic stroke status (0=censored, 1=haemorrhagic stroke)'
+    description = 'Haemorrhagic stroke status from HES diagnoses and primary causes of death (0=censored, 1=haemorrhagic stroke)'
     
   )
 }
