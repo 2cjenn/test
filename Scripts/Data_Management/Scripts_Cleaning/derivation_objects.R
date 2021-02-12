@@ -245,6 +245,17 @@ TEU_BlP_SBP.avg <- function() {
   )
 }
 
+TEU_BlP_SBP_quintiles <- function() {
+  list(
+    name = "TEU_BlP_SBP_quintiles", 
+    source = c("TEU_BlP_SBP.avg"), 
+    mapper = FN_quantiles(quant=5),
+    post_exclusion = TRUE,
+    display_name = "Measured systolic BP Quintiles",
+    description = "Quintiles of the measured systolic blood pressure at baseline"
+  )
+}
+
 TEU_BlP_DBP.avg <- function() {
   list(
     name = "TEU_BlP_DBP.avg",
@@ -1091,6 +1102,17 @@ TEU_BP_PRS_quintiles <- function() {
     mapper = FN_quantiles(quant=5),
     post_exclusion = TRUE,
     display_name = "BP PRS Quintiles",
+    description = "Quintiles of the BP PRS score"
+  )
+}
+
+TEU_SBP_PRS_quintiles <- function() {
+  list(
+    name = "TEU_SBP_PRS_quintiles", 
+    source = c("TEU_SBP_PRS"), 
+    mapper = FN_quantiles(quant=5),
+    post_exclusion = TRUE,
+    display_name = "Systolic BP PRS Quintiles",
     description = "Quintiles of the BP PRS score"
   )
 }
