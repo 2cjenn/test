@@ -55,7 +55,7 @@ digraph dot {
   [6]: paste0('No prior MACE events at baseline\nn = ', excl$MACE)
   [7]: paste0('Genetically White British ethnic group\nn = ', excl$whiteBrit)
   [8]: paste0(excl$initial-excl$agerange,' outside the age range of [40,70) years')
-  [9]: paste0(excl$agerange-excl$BPmiss,' missing BP data from baseline assessment', '\n', excl$BPmiss-excl$BPimp, ' implausible BP data from baseline assessment', '\n', excl$BPimp-excl$PRSmiss, ' missing BP PRS data')
+  [9]: paste0(excl$agerange-excl$BPmiss,' missing BP data from baseline assessment', '\n', excl$BPmiss-excl$BPimp, ' implausible BP data from baseline assessment', '\n', excl$BPimp-excl$PRSmiss, ' missing genotyping data or outliers in genetic quality control')
   [10]: paste0(excl$PRSmiss-excl$pregnant, ' possibly pregnant at baseline\n', excl$pregnant-excl$seriouscomorb,' serious comorbidities, including cancer\n(except skin cancer)')
   [11]: paste0(excl$seriouscomorb-excl$evidenceHTN, ' no evidence of hypertension', '\n', excl$evidenceHTN-excl$aware, ' unaware hypertensives', '\n', excl$aware-excl$treated, ' untreated hypertensives')
   [12]: paste0(excl$treated-excl$MACE, ' prevalent MACE at baseline')
