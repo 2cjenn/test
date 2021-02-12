@@ -125,7 +125,7 @@ exclusions <- function(data){
   
   excl$whiteBrit <<- nrow(data)
   
-  return(data)
+  return(data) 
 }
 
 excl <- list(initial=0)
@@ -150,49 +150,37 @@ export_svg(DiagrammeR::grViz(here::here(file.path(config$outputs$flowcharts, "HT
 
 ```
 
-# Analysis Population
-
-## Figure `r figure`. Flowchart illustrating selection of analytic dataset (n = `r nrow(data)`).
-`r figure <- figure + 1`
-![Missing BP data was fewer than 2 BP measurements, or missing answers to the prior diagnosis and treatment questions. Hypertension was defined as self-report of hypertensive medication use, or self-report of a prior diagnosis of hypertension, or mean BP >= 140 /90 mmHg at baseline assessment. Awareness was defined as self-report of a prior diagnosis of hypertension among those who were hypertensive. Treatment was defined as self-report of hypertensive medication among those who were aware. Control was defined as mean BP < 140/90 mmHg at baseline assessment, among those who were treated.](Figures/HTN_PRS_MACE.png){height=700px}
-
 # Hypertension PRS cross-sectional analysis
 
-## Table `r table`. Characteristics of participants included in the analysis, by BP PRS quintile (treated hypertensives, n = `r nrow(data)`).
+## Table `r table`. Characteristics of participants included in the analysis, by Systolic BP PRS quintile (treated hypertensives, n = `r nrow(data)`).
 `r table <- table + 1`
 ```{r descriptive-table, include=TRUE, echo=FALSE}
-varlist=c("TEU_BaC_AgeAtRec", "TEU_BaC_AgeCat", "BaC_Sex",
+varlist=c("TEU_BaC_AgeAtRec", "TEU_BaC_AgeCat", "BaC_Sex", "TEU_BlP_SBP_quintiles",
           "TEU_BSM_BMIcat", "TEU_Smo_Status", "TEU_Alc_WeeklyCat", "TEU_Pha_METsover1200",
           "TEU_FaH_CVD", "Prosp_comorb_numcat", "TEU_VeI_numHTNmedscat", "TEU_LDL_Quintiles",
           "TEU_TownsendDepInd_Quint", "TEU_HouseholdIncome", "TEU_Emp_category", "TEU_Edu_ISCED", "TEU_Rec_Country"
           )
 
-footnote_list <- c("TEU_Emp_category", "TEU_Edu_ISCED", "TEU_Rec_Country", "TEU_BSM_BMIcat", "Prosp_comorb_numcat")
-footnote_no <- 1
 
 tab_all <- descriptivetable(df=data, 
                          varlist=varlist,
                          contavg='median',
-                         pretty_names=pretty_names,
-                         footnote_list=footnote_list)
+                         pretty_names=pretty_names)
 
-tab_1 <- descriptivetable(df=data[data$TEU_BP_PRS_quintiles=="Q1: lowest",], 
+tab_1 <- descriptivetable(df=data[data$TEU_SBP_PRS_quintiles=="Q1: lowest",], 
                          varlist=varlist,
                          contavg='median',
-                         pretty_names=pretty_names,
-                         footnote_list=footnote_list)
+                         pretty_names=pretty_names)
 
-tab_3 <- descriptivetable(df=data[data$TEU_BP_PRS_quintiles=="Q3",], 
+tab_3 <- descriptivetable(df=data[data$TEU_SBP_PRS_quintiles=="Q3",], 
                          varlist=varlist,
                          contavg='median',
-                         pretty_names=pretty_names,
-                         footnote_list=footnote_list)
+                         pretty_names=pretty_names)
 
-tab_5 <- descriptivetable(df=data[data$TEU_BP_PRS_quintiles=="Q5: highest",], 
+tab_5 <- descriptivetable(df=data[data$TEU_SBP_PRS_quintiles=="Q5: highest",], 
                          varlist=varlist,
                          contavg='median',
-                         pretty_names=pretty_names,
-                         footnote_list=footnote_list)
+                         pretty_names=pretty_names)
 
 tab <- inner_join(tab_all, tab_1%>%select(-Variable), by="IDcol")
 tab <- inner_join(tab, tab_3%>%select(-Variable), by="IDcol")
@@ -204,110 +192,18 @@ tab <- rbind(c("", "Variable", "n", "%", "n", "%", "n", "%", "n", "%"),
 colnames(tab) <- c("", "", "Overall", "", "Q1: lowest", "", "Q3", "", "Q5: highest", "")
 
 # Output the resulting table
-add_footnote(kable(tab[,-1]), label=c("Occupation categories have been condensed from those recorded in UKB. Professional and Administrative: Managers and Senior Officials, Professional Occupations, Associate Professional and Technical Occupations, Administrative and Secretarial Occupations. Skilled trades: Skilled Trades Occupations. Services: Personal Service Occupations, Sales and Customer Service Occupations. Manual and Industrial: Process, Plant and Machine Operatives, Elementary Occupations. Other employment: free text entry that was not coded by UKB.", 
-                                  "Self-reported highest education achieved was mapped to the International Standard Classification of Education (ISCED) categories",
-                                  "The assessment centre the participant attended was used as a proxy for country of residence",
-                                  "BMI has been categorised as: Underweight < 18.5 kg/m^2^; Normal 18.5 - 24.9 kg/m^2^; Overweight 25.0 - 29.9 kg/m^2^; Obese >= 30.0 kg/m^2^.", 
-                                  "The number of comorbidities considered to be of interest - diabetes, arrhythmia (afib/flutter), asthma or COPD, migraines, epilepsy, anxiety, depression, osteoarthritis, other joint disorder."), notation="number")
+kable(tab[,-1])
 
 ```
 
-
-## Table `r table`: Multivariable logistic regression identifying factors associated with hypertension control, among middle-aged UK adults on anti-hypertensive treatment (n=`r nrow(data)`)
-`r table <- table + 1`
-<div custom-style="Todo">Reminder: Manually re-order BMI categories</div>
-
-```{r logistic-regression, include=TRUE, echo=FALSE}
-
-varlist=c("TEU_BaC_AgeCat", "BaC_Sex", "TEU_BP_PRS_quintiles",
-          "TEU_BSM_BMIcat", "TEU_Smo_Status", "TEU_Alc_WeeklyCat", "TEU_Pha_METsover1200",
-          "TEU_FaH_CVD", "Prosp_comorb_numcat", "TEU_VeI_numHTNmedscat", "TEU_LDL_Quintiles",
-          "TEU_TownsendDepInd_Quint", "TEU_HouseholdIncome", "TEU_Emp_category", "TEU_Edu_ISCED", "TEU_Rec_Country",
-          "GeP_PC_1", "GeP_PC_2", "GeP_PC_3", "GeP_PC_4"
-          )
-
-
-footnote_list <- c("TEU_TownsendDepInd_Quint", "TEU_Emp_category", "TEU_Edu_ISCED", "TEU_Rec_Country", "TEU_BSM_BMIcat", "TEU_Pha_METsover1200", "Prosp_comorb_numcat")
-footnote_no <- 3
-
-desctable2 <- function(df){
-  n <- nrow(df)
-  control <- prop.test(x=nrow(df[df$TEU_controlledHTN==TRUE & !is.na(df$TEU_controlledHTN),]),
-                           n=nrow(df), alternative="two.sided", conf.level=0.95)
-  pct_control <- pretty_dp(control$estimate, dp=1, pct=TRUE)
-  
-  table <- cbind(n, pct_control)
-  return(table)
-}
-
-pct_ctrl <- c()
-for(var in varlist){
-  header <- c(var, paste0("**", pretty_func(var), "**"), NA, NA)
-  pct_ctrl <- rbind(pct_ctrl, header)
-  for(level in levels(data[[var]])){
-    newrow <- desctable2(data[data[var]==level,])
-    IDcol <- paste0(var, level)
-    pct_ctrl <- rbind(pct_ctrl, cbind(IDcol, level, newrow))
-  }
-}
-pct_ctrl <- data.frame(pct_ctrl)
-
-adj <- regressiontable(df=data, outcome="TEU_controlledHTN", varlist=varlist, 
-                       regresstype="adjusted", adjvarlist=c("TEU_BaC_AgeCat", "BaC_Sex"))
-multi <- regressiontable(df=data, outcome="TEU_controlledHTN", varlist=varlist, 
-                         regresstype="multivariable")
-
-tab3 <- merge(adj, multi, by=c("IDcol", "Coefficient", "Levels"), sort=FALSE) %>% select(-Coefficient, -Levels)
-# Add n column
-
-tab3 <- left_join(pct_ctrl, tab3, by=c("IDcol")) %>% select(-IDcol)
-
-# Hide "unanswered"/"unknown"/"do not know" categories
-tab3 <- tab3[-which(tab3$level %in% c("Unknown", "Unanswered", "Do not know", "Prefer not to answer")),]
-rownames(tab3) <- NULL
-
-tab3 <- rbind(c("Coefficient", "n^1^", "% Controlled^2^", "OR", "95% CI", "p", "OR", "95% CI", "p"),
-              as.matrix(tab3))
-colnames(tab3) <- c("","","", 
-                    "Age- and sex-adjusted", "", "", 
-                    "Multivariable- adjusted", "", "")
-
-# Output the resulting table
-add_footnote(kable(tab3), label=c("Number of individuals in levels of a categorical variable may not add up to total n because 'Do not know' and 'Prefer not to answer' categories have been removed from results table",
-                                  "Hypertension control is defined as mean systolic BP >= 140 mmHg or mean diastolic BP >= 90 mmHg at baseline assessment, among treated hypertensives.",
-                                  "The Townsend index is a measure of material deprivation calculated at the level of census output areas.", 
-                                  "Occupation categories have been condensed from those recorded in UKB. Professional and Administrative: Managers and Senior Officials, Professional Occupations, Associate Professional and Technical Occupations, Administrative and Secretarial Occupations. Skilled trades: Skilled Trades Occupations. Services: Personal Service Occupations, Sales and Customer Service Occupations. Manual and Industrial: Process, Plant and Machine Operatives, Elementary Occupations. Other employment: free text entry that was not coded by UKB.", 
-                                  "Self-reported highest education achieved was mapped to the International Standard Classification of Education (ISCED) categories",
-                                  "The assessment centre the participant attended was used as a proxy for country of residence",
-                                  "BMI has been categorised as: Underweight < 18.5 kg/m^2^; Normal 18.5 - 24.9 kg/m^2^; Overweight 25.0 - 29.9 kg/m^2^; Obese >= 30.0 kg/m^2^.", 
-                                  "The total Metabolic Equivalent Task (MET) minutes per week is based on self-reported frequency and duration of walking, moderate and vigorous activity, and was then dichotomized based on WHO physical activity guideline thresholds.",
-                                  "The number of comorbidities considered to be of interest - diabetes, arrhythmia (afib/flutter), asthma or COPD, migraines, epilepsy, anxiety, depression, osteoarthritis, other joint disorder."
-                                  ), notation="number")
-
-```
-
-
-# Hypertension PRS prospective analysis
-
-## Total MACE outcomes by subtype
-
-```{r MACE subtypes,echo=FALSE}
-
-# Freq of MACE subtypes
-MACE_subtypes <- data.frame(propped(table(data$TEU_MACE_fucomp)))
-colnames(MACE_subtypes)[1] <- 'MACE subtypes'
-
-kable(MACE_subtypes[-nrow(MACE_subtypes),],caption=paste0('Table.1 Frequency of MACE subtypes (N=',MACE_subtypes[nrow(MACE_subtypes),2],')'))
-
-  
-```
+# Hypertension PRS prospective analysis WITH MEASURED SBP
 
 ## Cox regression of time until MACE event (`r nrow(data[!is.na(data$TEU_MACE_fucomp),])` events)
 
 
 ```{r Cox model mace, echo=FALSE}
 
-varlist=c("TEU_BaC_AgeCat", "BaC_Sex", "TEU_BP_PRS_quintiles",
+varlist=c("TEU_BaC_AgeCat", "BaC_Sex", "TEU_BlP_SBP_quintiles", "TEU_SBP_PRS_quintiles",
           "TEU_BSM_BMIcat", "TEU_Smo_Status", "TEU_Alc_WeeklyCat", "TEU_Pha_METsover1200",
           "TEU_FaH_CVD", "Prosp_comorb_numcat", "TEU_VeI_numHTNmedscat", "TEU_LDL_Quintiles",
           "TEU_TownsendDepInd_Quint", "TEU_HouseholdIncome", "TEU_Emp_category", "TEU_Edu_ISCED", "TEU_Rec_Country",
@@ -362,7 +258,117 @@ Haemorrhagic stroke event defined as diagnosis of haemorrhagic stroke in HES dat
 
 ```{r Cox model stroke, echo=FALSE}
 
-varlist=c("TEU_BaC_AgeCat", "BaC_Sex", "TEU_BP_PRS_quintiles",
+varlist=c("TEU_BaC_AgeCat", "BaC_Sex", "TEU_BlP_SBP_quintiles", "TEU_SBP_PRS_quintiles",
+          "TEU_BSM_BMIcat", "TEU_Smo_Status", "TEU_Alc_WeeklyCat", "TEU_Pha_METsover1200",
+          "TEU_FaH_CVD", "Prosp_comorb_numcat", "TEU_VeI_numHTNmedscat", "TEU_LDL_Quintiles",
+          "TEU_TownsendDepInd_Quint", "TEU_HouseholdIncome", "TEU_Emp_category", "TEU_Edu_ISCED", "TEU_Rec_Country",
+          "GeP_PC_1", "GeP_PC_2", "GeP_PC_3", "GeP_PC_4"
+          )
+
+# age- and sex-adjusted
+agesex <- coxph(Surv(TEU_MACE_time_yrs,TEU_MACE_Stroke) ~ TEU_BaC_AgeCat + BaC_Sex, data=data)
+adj <- publish(agesex, ci.digits=2, ci.handler="sprintf", pvalue.eps=0.01,
+              pvalue.digits=2,pvalue.stars=TRUE, ci.trim=FALSE,print=FALSE)$regressionTable
+for(var in varlist){
+  if(! var %in% c("TEU_BaC_AgeCat", "BaC_Sex")){
+  formula <- as.formula(paste0("Surv(TEU_MACE_time_yrs,TEU_MACE_Stroke) ~ TEU_BaC_AgeCat + BaC_Sex + ", var))
+  model <- coxph(formula, data=data)
+  output <- publish(model, ci.digits=2, ci.handler="sprintf", pvalue.eps=0.01,
+              pvalue.digits=2,pvalue.stars=TRUE, ci.trim=FALSE,print=FALSE)$regressionTable
+  output <- output[-c(1:5),] %>% select(-any_of("Missing"))
+  adj <- rbind(adj, output)
+  }
+}
+
+# Complete case data
+formula <- as.formula(paste0("Surv(TEU_MACE_time_yrs,TEU_MACE_Stroke) ~ ", paste(varlist, collapse="+")))
+
+rmodel1<-coxph(formula,data=data)
+
+
+routput1 <- publish(rmodel1, ci.digits=2, ci.handler="sprintf", pvalue.eps=0.01,
+              pvalue.digits=2,pvalue.stars=TRUE, ci.trim=FALSE,print=FALSE)$regressionTable  %>%
+  select(-any_of("Missing"))
+
+tab4 <- cbind(adj%>%select(-signif), routput1%>%select(-Variable, -Units, -signif))
+
+# Change pretty variable names
+tab4$Variable <-  sapply(tab4$Variable,function(i) if(i!=""){pretty_func(i)}else{i})
+
+rownames(tab4) <- NULL
+tab4 <- rbind(c("Coefficient", "Level", "OR", "95% CI", "p", "OR", "95% CI", "p"),
+              as.matrix(tab4))
+colnames(tab4) <- c("","", 
+                    "Age- and sex-adjusted", "", "", 
+                    "Multivariable- adjusted", "", "")
+
+kable(tab4)
+
+
+```
+
+# Hypertension PRS prospective analysis WITHOUT MEASURED SBP
+
+## Cox regression of time until MACE event (`r nrow(data[!is.na(data$TEU_MACE_fucomp),])` events)
+
+```{r Cox model mace 2, echo=FALSE}
+
+varlist=c("TEU_BaC_AgeCat", "BaC_Sex",  "TEU_SBP_PRS_quintiles",
+          "TEU_BSM_BMIcat", "TEU_Smo_Status", "TEU_Alc_WeeklyCat", "TEU_Pha_METsover1200",
+          "TEU_FaH_CVD", "Prosp_comorb_numcat", "TEU_VeI_numHTNmedscat", "TEU_LDL_Quintiles",
+          "TEU_TownsendDepInd_Quint", "TEU_HouseholdIncome", "TEU_Emp_category", "TEU_Edu_ISCED", "TEU_Rec_Country",
+          "GeP_PC_1", "GeP_PC_2", "GeP_PC_3", "GeP_PC_4"
+          )
+
+# age- and sex-adjusted
+agesex <- coxph(Surv(TEU_MACE_time_yrs,TEU_MACE_status) ~ TEU_BaC_AgeCat + BaC_Sex, data=data)
+adj <- publish(agesex, ci.digits=2, ci.handler="sprintf", pvalue.eps=0.01,
+              pvalue.digits=2,pvalue.stars=TRUE, ci.trim=FALSE,print=FALSE)$regressionTable
+for(var in varlist){
+  if(! var %in% c("TEU_BaC_AgeCat", "BaC_Sex")){
+  formula <- as.formula(paste0("Surv(TEU_MACE_time_yrs,TEU_MACE_status) ~ TEU_BaC_AgeCat + BaC_Sex + ", var))
+  model <- coxph(formula, data=data)
+  output <- publish(model, ci.digits=2, ci.handler="sprintf", pvalue.eps=0.01,
+              pvalue.digits=2,pvalue.stars=TRUE, ci.trim=FALSE,print=FALSE)$regressionTable
+  output <- output[-c(1:5),] %>% select(-any_of("Missing"))
+  adj <- rbind(adj, output)
+  }
+}
+
+# Complete case data
+formula <- as.formula(paste0("Surv(TEU_MACE_time_yrs,TEU_MACE_status) ~ ", paste(varlist, collapse="+")))
+
+rmodel1<-coxph(formula,data=data)
+
+
+routput1 <- publish(rmodel1, ci.digits=2, ci.handler="sprintf", pvalue.eps=0.01,
+              pvalue.digits=2,pvalue.stars=TRUE, ci.trim=FALSE,print=FALSE)$regressionTable  %>%
+  select(-any_of("Missing"))
+
+tab4 <- cbind(adj%>%select(-signif), routput1%>%select(-Variable, -Units, -signif))
+
+# Change pretty variable names
+tab4$Variable <-  sapply(tab4$Variable,function(i) if(i!=""){pretty_func(i)}else{i})
+
+rownames(tab4) <- NULL
+tab4 <- rbind(c("Coefficient", "Level", "OR", "95% CI", "p", "OR", "95% CI", "p"),
+              as.matrix(tab4))
+colnames(tab4) <- c("","", 
+                    "Age- and sex-adjusted", "", "", 
+                    "Multivariable- adjusted", "", "")
+
+kable(tab4)
+
+
+```
+
+## Cox regression of the time until haemorrhagic stroke event (`r nrow(data[data$TEU_MACE_Stroke==1,])` events)
+
+Haemorrhagic stroke event defined as diagnosis of haemorrhagic stroke in HES data or haemorrhagic stroke recorded as primary cause of death (censoring at first MACE event applied).
+
+```{r Cox model stroke 2, echo=FALSE}
+
+varlist=c("TEU_BaC_AgeCat", "BaC_Sex", "TEU_SBP_PRS_quintiles",
           "TEU_BSM_BMIcat", "TEU_Smo_Status", "TEU_Alc_WeeklyCat", "TEU_Pha_METsover1200",
           "TEU_FaH_CVD", "Prosp_comorb_numcat", "TEU_VeI_numHTNmedscat", "TEU_LDL_Quintiles",
           "TEU_TownsendDepInd_Quint", "TEU_HouseholdIncome", "TEU_Emp_category", "TEU_Edu_ISCED", "TEU_Rec_Country",

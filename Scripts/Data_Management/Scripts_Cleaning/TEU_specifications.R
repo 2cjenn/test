@@ -244,7 +244,9 @@ specs <- function() {
     TEU_LDL_Quintiles,
     TEU_LDLctrl_v1,
     TEU_Emp_JobCode_v2, # When using v3 data until we grab emp_jobcode.0.0
-    TEU_MACE_Stroke
+    TEU_MACE_HaemStroke,
+    TEU_BlP_SBP_quintiles,
+    TEU_SBP_PRS_quintiles
   )
   
   Cholstrl_control<-c(
