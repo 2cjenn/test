@@ -257,18 +257,20 @@ uci = c(0, conf[rownames(conf) %in% c("TEU_BP_PRS_quintilesQ2", "TEU_BP_PRS_quin
                                       "TEU_BP_PRS_quintilesQ4", "TEU_BP_PRS_quintilesQ5: highest"),4])
 )
 
-# tabletext <- c("1st quintile", "2nd", "3rd quintile", "4th", "5th quintile")
+# tabletext <- 
 tabletext <- c("Age- and sex-adjusted", "Multivariate")
 
 forestplot(tabletext,
-       mean = t(cbind(unctrl$hr, ctrl$hr)),
-       lower = t(cbind(unctrl$lci, ctrl$lci)),
-       upper = t(cbind(unctrl$uci, ctrl$uci)),
-       )
-
-# ggforest(model)
-
-
+           legend = c("Q1 (lowest)", "Q2", "Q3", "Q4", "Q5 (highest)"),
+           legend_args = fpLegend(title="Quintiles of BP PRS",
+                                  gp = gpar(col = "#CCCCCC", fill = "#F9F9F9")),
+           mean = t(cbind(unctrl$hr, ctrl$hr)),
+           lower = t(cbind(unctrl$lci, ctrl$lci)),
+           upper = t(cbind(unctrl$uci, ctrl$uci)),
+           col = fpColors(box = c("green", "blue", "purple", "red", "orange")),
+           xlab = "OR for hypertension control",
+           vertices=TRUE
+           )
 
 ```
 
