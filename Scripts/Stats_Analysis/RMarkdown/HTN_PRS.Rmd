@@ -127,7 +127,7 @@ exclusions <- function(data){
   
   return(data)
 }
-
+ 
 excl <- list(initial=0)
 
 data <-
@@ -214,78 +214,97 @@ add_footnote(kable(tab[,-1]), label=c("Occupation categories have been condensed
 ```
 
 
-## Table `r table`: Multivariable logistic regression identifying factors associated with hypertension control, among middle-aged UK adults on anti-hypertensive treatment (n=`r nrow(data)`)
-`r table <- table + 1`
-<div custom-style="Todo">Reminder: Manually re-order BMI categories</div>
+## Figure `r figure`: Forest plot of association between BP quintiles and hypertension control in age- and sex-adjusted and multivariable logistic regression models, among middle-aged UK adults on anti-hypertensive treatment (n=`r nrow(data)`)
+`r figure <- figure + 1`
 
 ```{r logistic-regression, include=TRUE, echo=FALSE}
-
+library(forestplot)
 varlist=c("TEU_BaC_AgeCat", "BaC_Sex", "TEU_BP_PRS_quintiles",
-          "TEU_TownsendDepInd_Quint", "TEU_HouseholdIncome", "TEU_Emp_category", "TEU_Edu_ISCED", "TEU_Rec_Country",
           "TEU_BSM_BMIcat", "TEU_Smo_Status", "TEU_Alc_WeeklyCat", "TEU_Pha_METsover1200",
-          "TEU_VeI_numHTNmedscat",  "TEU_FaH_CVD", "TEU_LDL_Quintiles",
-          "Prosp_comorb_numcat")
+          "TEU_FaH_CVD", "Prosp_comorb_numcat", "TEU_VeI_numHTNmedscat", "TEU_LDL_Quintiles",
+          "TEU_TownsendDepInd_Quint", "TEU_HouseholdIncome", "TEU_Emp_category", "TEU_Edu_ISCED", "TEU_Rec_Country",
+          "GeP_PC_1", "GeP_PC_2", "GeP_PC_3", "GeP_PC_4"
+          )
 
-footnote_list <- c("TEU_TownsendDepInd_Quint", "TEU_Emp_category", "TEU_Edu_ISCED", "TEU_Rec_Country", "TEU_BSM_BMIcat", "TEU_Pha_METsover1200", "Prosp_comorb_numcat")
-footnote_no <- 3
+# formula <- paste0("TEU_controlledHTN ~ ", paste(varlist, collapse=" + "))
+formula <- as.formula(paste0("TEU_controlledHTN ~ ", paste(varlist, collapse="+")))
 
-desctable2 <- function(df){
-  n <- nrow(df)
-  control <- prop.test(x=nrow(df[df$TEU_controlledHTN==TRUE & !is.na(df$TEU_controlledHTN),]),
-                           n=nrow(df), alternative="two.sided", conf.level=0.95)
-  pct_control <- pretty_dp(control$estimate, dp=1, pct=TRUE)
-  
-  table <- cbind(n, pct_control)
-  return(table)
-}
+agesex <- glm("TEU_controlledHTN ~ TEU_BaC_AgeCat + BaC_Sex + TEU_BP_PRS_quintiles", data=data, family="binomial")
+multi <- glm(formula, data=data, family="binomial")
 
-pct_ctrl <- c()
-for(var in varlist){
-  header <- c(var, paste0("**", pretty_func(var), "**"), NA, NA)
-  pct_ctrl <- rbind(pct_ctrl, header)
-  for(level in levels(data[[var]])){
-    newrow <- desctable2(data[data[var]==level,])
-    IDcol <- paste0(var, level)
-    pct_ctrl <- rbind(pct_ctrl, cbind(IDcol, level, newrow))
-  }
-}
-pct_ctrl <- data.frame(pct_ctrl)
 
-adj <- regressiontable(df=data, outcome="TEU_controlledHTN", varlist=varlist, 
-                       regresstype="adjusted", adjvarlist=c("TEU_BaC_AgeCat", "BaC_Sex"))
-multi <- regressiontable(df=data, outcome="TEU_controlledHTN", varlist=varlist, 
-                         regresstype="multivariable")
+summ <- summary(agesex)
+conf <- summ$coeff
+conf[,3] <- exp(conf[,1] - (1.96*conf[,2]))
+conf[,4] <- exp(conf[,1] + (1.96*conf[,2]))
+conf[,1] <- exp(conf[,1])
+unctrl <-
+  data.frame(
+    hr = c(1, conf[rownames(conf) %in% c(
+      "TEU_BP_PRS_quintilesQ2",
+      "TEU_BP_PRS_quintilesQ3",
+      "TEU_BP_PRS_quintilesQ4",
+      "TEU_BP_PRS_quintilesQ5: highest"
+    ), 1]),
+    lci = c(1, conf[rownames(conf) %in% c(
+      "TEU_BP_PRS_quintilesQ2",
+      "TEU_BP_PRS_quintilesQ3",
+      "TEU_BP_PRS_quintilesQ4",
+      "TEU_BP_PRS_quintilesQ5: highest"
+    ), 3]),
+    uci = c(1, conf[rownames(conf) %in% c(
+      "TEU_BP_PRS_quintilesQ2",
+      "TEU_BP_PRS_quintilesQ3",
+      "TEU_BP_PRS_quintilesQ4",
+      "TEU_BP_PRS_quintilesQ5: highest"
+    ), 4])
+  )
 
-tab3 <- merge(adj, multi, by=c("IDcol", "Coefficient", "Levels"), sort=FALSE) %>% select(-Coefficient, -Levels)
-# Add n column
+summ <- summary(multi)
+conf <- summ$coeff
+conf[,3] <- exp(conf[,1] - (1.96*conf[,2]))
+conf[,4] <- exp(conf[,1] + (1.96*conf[,2]))
+conf[,1] <- exp(conf[,1])
+ctrl <- data.frame(hr = c(1, conf[rownames(conf) %in% c("TEU_BP_PRS_quintilesQ2", "TEU_BP_PRS_quintilesQ3", 
+                                      "TEU_BP_PRS_quintilesQ4", "TEU_BP_PRS_quintilesQ5: highest"),1]),
+lci = c(1, conf[rownames(conf) %in% c("TEU_BP_PRS_quintilesQ2", "TEU_BP_PRS_quintilesQ3", 
+                                      "TEU_BP_PRS_quintilesQ4", "TEU_BP_PRS_quintilesQ5: highest"),3]),
+uci = c(1, conf[rownames(conf) %in% c("TEU_BP_PRS_quintilesQ2", "TEU_BP_PRS_quintilesQ3", 
+                                      "TEU_BP_PRS_quintilesQ4", "TEU_BP_PRS_quintilesQ5: highest"),4])
+)
 
-tab3 <- left_join(pct_ctrl, tab3, by=c("IDcol")) %>% select(-IDcol)
+# tabletext <- 
+tabletext <- cbind(c("Model", "Age- and sex-adjusted", "Q1 (lowest)", "Q2", "Q3", "Q4", "Q5 (highest)",
+               "Multivariate", "Q1 (lowest)", "Q2", "Q3", "Q4", "Q5 (highest)"),
+               c("OR", NA, round(unctrl$hr,2), NA, round(ctrl$hr,2))
+)
 
-# Hide "unanswered"/"unknown"/"do not know" categories
-tab3 <- tab3[-which(tab3$level %in% c("Unknown", "Unanswered", "Do not know", "Prefer not to answer")),]
-rownames(tab3) <- NULL
-
-tab3 <- rbind(c("Coefficient", "n^1^", "% Controlled^2^", "OR", "95% CI", "p", "OR", "95% CI", "p"),
-              as.matrix(tab3))
-colnames(tab3) <- c("","","", 
-                    "Age- and sex-adjusted", "", "", 
-                    "Multivariable- adjusted", "", "")
-
-# Output the resulting table
-add_footnote(kable(tab3), label=c("Number of individuals in levels of a categorical variable may not add up to total n because 'Do not know' and 'Prefer not to answer' categories have been removed from results table",
-                                  "Hypertension control is defined as mean systolic BP >= 140 mmHg or mean diastolic BP >= 90 mmHg at baseline assessment, among treated hypertensives.",
-                                  "The Townsend index is a measure of material deprivation calculated at the level of census output areas.", 
-                                  "Occupation categories have been condensed from those recorded in UKB. Professional and Administrative: Managers and Senior Officials, Professional Occupations, Associate Professional and Technical Occupations, Administrative and Secretarial Occupations. Skilled trades: Skilled Trades Occupations. Services: Personal Service Occupations, Sales and Customer Service Occupations. Manual and Industrial: Process, Plant and Machine Operatives, Elementary Occupations. Other employment: free text entry that was not coded by UKB.", 
-                                  "Self-reported highest education achieved was mapped to the International Standard Classification of Education (ISCED) categories",
-                                  "The assessment centre the participant attended was used as a proxy for country of residence",
-                                  "BMI has been categorised as: Underweight < 18.5 kg/m^2^; Normal 18.5 - 24.9 kg/m^2^; Overweight 25.0 - 29.9 kg/m^2^; Obese >= 30.0 kg/m^2^.", 
-                                  "The total Metabolic Equivalent Task (MET) minutes per week is based on self-reported frequency and duration of walking, moderate and vigorous activity, and was then dichotomized based on WHO physical activity guideline thresholds.", 
-                                  "The number of comorbidities considered to be of interest - diabetes, arrhythmia (afib/flutter), asthma or COPD, migraines, epilepsy, anxiety, depression, osteoarthritis, other joint disorder."
-                                  ), notation="number")
+forestplot(tabletext,
+           hrzl_lines = list("1" = gpar(lty = 1), 
+                             "2" = gpar(lty = 1),
+                             "3" = gpar(lty = 1, columns = 1), 
+                             "8" = gpar(lty = 1),
+                             "9" = gpar(lty = 1, columns = 1) 
+                             #"14" = gpar(lwd = 1, columns = 1)
+                             ),
+           mean = c(NA, NA, unctrl$hr, NA, ctrl$hr),
+           lower = c(NA, NA, unctrl$lci, NA, ctrl$lci),
+           upper = c(NA, NA, unctrl$uci, NA, ctrl$uci),
+           col = fpColors(box = c("navy")),
+           xlab = "OR for hypertension control",
+           vertices=TRUE,
+           is.summary = c(TRUE,TRUE,rep(FALSE,5),TRUE,rep(FALSE,5)),
+           zero=1,
+           graph.pos=2,
+           xticks = c(0.6, 0.7, 0.8, 0.9, 1.0, 1.1),
+           boxsize=0.6,
+           title="Odds ratios for hypertension control by quintile of BP PRS"
+           )
 
 ```
 
-## ROC curve
+## Figure `r figure`: ROC curve - control status under multivariable model
+`r figure <- figure + 1`
 
 ```{r}
 #https://daviddalpiaz.github.io/r4sl/logistic-regression.html
