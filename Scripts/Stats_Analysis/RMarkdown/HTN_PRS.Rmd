@@ -310,13 +310,18 @@ forestplot(tabletext,
 ```{r}
 #https://daviddalpiaz.github.io/r4sl/logistic-regression.html
 
-data_roc <- data %>% mutate(TEU_controlledHTN = as.numeric(TEU_controlledHTN))
+data_roc <- data %>% mutate(TEU_controlledHTN = as.numeric(TEU_controlledHTN)) #%>%
+  #filter(!is.na(TEU_TownsendDepInd_Quint))
 formula <- paste0("TEU_controlledHTN ~ ", paste(varlist, collapse=" + "))
 model <- glm(formula, data=data_roc, family="binomial")
 
-test_prob = predict(model, newdata = data_roc, type = "response")
-test_roc = roc(data_roc$TEU_controlledHTN ~ test_prob, plot = TRUE, print.auc = TRUE, 
-               levels=c(0,1), direction="<", main="ROC curve: control status under multivariable model")
+data_roc$test_prob = predict(model, newdata = data_roc, type = "response")
+test_roc = pROC::roc(data_roc$TEU_controlledHTN ~ data_roc$test_prob, plot = TRUE, print.auc = TRUE, 
+               levels=c(0,1), direction="<")
+
+# library(cutpointr)
+# cp <- cutpointr(data_roc, test_prob, TEU_controlledHTN, 
+#                 method = maximize_metric, metric = sum_sens_spec)
 
 ```
 
