@@ -129,7 +129,7 @@ exclusions <- function(data){
   
   return(data)
 }
-
+ 
 excl <- list(initial=0)
 
 data <-
@@ -163,7 +163,7 @@ export_svg(DiagrammeR::grViz(here::here(file.path(config$outputs$flowcharts, "HT
 ## Table `r table`. Characteristics of participants included in the analysis, by BP PRS quintile (treated hypertensives, n = `r nrow(data)`).
 `r table <- table + 1`
 ```{r descriptive-table, include=TRUE, echo=FALSE}
-varlist=c("TEU_BaC_AgeAtRec", "TEU_BaC_AgeCat", "BaC_Sex",
+varlist=c("TEU_BaC_AgeAtRec", "TEU_BaC_AgeCat", "BaC_Sex", "TEU_BlP_SBP_quintiles",
           "TEU_HouseholdIncome", "TEU_Emp_category", "TEU_Edu_ISCED", "TEU_Rec_Country", "TEU_TownsendDepInd_Quint",
           "TEU_BSM_BMIcat", "TEU_Smo_Status",
           "TEU_VeI_numHTNmedscat", "TEU_VeI_CVD", "TEU_VeI_diab",
@@ -350,7 +350,7 @@ uci = c(1, conf[rownames(conf) %in% c("TEU_BP_PRS_quintilesQ2", "TEU_BP_PRS_quin
 
 # tabletext <- 
 tabletext <- cbind(c("Model", "Age- and sex-adjusted", "Q1 (lowest)", "Q2", "Q3", "Q4", "Q5 (highest)",
-               "Multivariate", "Q1 (lowest)", "Q2", "Q3", "Q4", "Q5 (highest)"),
+               "Multivariable", "Q1 (lowest)", "Q2", "Q3", "Q4", "Q5 (highest)"),
                c("OR", NA, round(unctrl$hr,2), NA, round(ctrl$hr,2))
 )
 
@@ -442,7 +442,7 @@ During follow-up (median `r median(data$TEU_MACE_time_yrs)` years), there were `
 
 ```{r Cox model mace, echo=FALSE}
 
-varlist=c("TEU_BaC_AgeCat", "BaC_Sex", "TEU_BP_PRS_quintiles",
+varlist=c("TEU_BaC_AgeCat", "BaC_Sex", "TEU_BP_PRS_quintiles", "TEU_BlP_SBP_quintiles",
           "TEU_TownsendDepInd_Quint", "TEU_HouseholdIncome", "TEU_Emp_category", "TEU_Edu_ISCED", "TEU_Rec_Country",
           "TEU_BSM_BMIcat", "TEU_Smo_Status", "TEU_Alc_WeeklyCat", "TEU_Pha_METsover1200",
           "TEU_VeI_numHTNmedscat",  "TEU_FaH_CVD", "TEU_LDL_Quintiles",
@@ -491,11 +491,11 @@ kable(tab4)
 
 ```
 
-## Cox regression of the time until haemorrhagic stroke event (`r nrow(data[data$TEU_MACE_Stroke==1,])` events)
+## Cox regression of the time until haemorrhagic stroke event (`r nrow(data[data$TEU_MACE_HaemStroke==1,])` events)
 
 ```{r Cox model stroke, echo=FALSE}
 
-varlist=c("TEU_BaC_AgeCat", "BaC_Sex", "TEU_BP_PRS_quintiles",
+varlist=c("TEU_BaC_AgeCat", "BaC_Sex", "TEU_BP_PRS_quintiles", "TEU_BlP_SBP_quintiles",
           "TEU_TownsendDepInd_Quint", "TEU_HouseholdIncome", "TEU_Emp_category", "TEU_Edu_ISCED", "TEU_Rec_Country",
           "TEU_BSM_BMIcat", "TEU_Smo_Status", "TEU_Alc_WeeklyCat", "TEU_Pha_METsover1200",
           "TEU_VeI_numHTNmedscat",  "TEU_FaH_CVD", "TEU_LDL_Quintiles",
@@ -503,12 +503,12 @@ varlist=c("TEU_BaC_AgeCat", "BaC_Sex", "TEU_BP_PRS_quintiles",
           "GeP_PC_1", "GeP_PC_2", "GeP_PC_3", "GeP_PC_4")
 
 # age- and sex-adjusted
-agesex <- coxph(Surv(TEU_MACE_time_yrs,TEU_MACE_Stroke) ~ TEU_BaC_AgeCat + BaC_Sex, data=data)
+agesex <- coxph(Surv(TEU_MACE_time_yrs,TEU_MACE_HaemStroke) ~ TEU_BaC_AgeCat + BaC_Sex, data=data)
 adj <- publish(agesex, ci.digits=2, ci.handler="sprintf", pvalue.eps=0.01,
               pvalue.digits=2,pvalue.stars=TRUE, ci.trim=FALSE,print=FALSE)$regressionTable
 for(var in varlist){
   if(! var %in% c("TEU_BaC_AgeCat", "BaC_Sex")){
-  formula <- as.formula(paste0("Surv(TEU_MACE_time_yrs,TEU_MACE_Stroke) ~ TEU_BaC_AgeCat + BaC_Sex + ", var))
+  formula <- as.formula(paste0("Surv(TEU_MACE_time_yrs,TEU_MACE_HaemStroke) ~ TEU_BaC_AgeCat + BaC_Sex + ", var))
   model <- coxph(formula, data=data)
   output <- publish(model, ci.digits=2, ci.handler="sprintf", pvalue.eps=0.01,
               pvalue.digits=2,pvalue.stars=TRUE, ci.trim=FALSE,print=FALSE)$regressionTable
@@ -518,7 +518,7 @@ for(var in varlist){
 }
 
 # Complete case data
-formula <- as.formula(paste0("Surv(TEU_MACE_time_yrs,TEU_MACE_Stroke) ~ ", paste(varlist, collapse="+")))
+formula <- as.formula(paste0("Surv(TEU_MACE_time_yrs,TEU_MACE_HaemStroke) ~ ", paste(varlist, collapse="+")))
 
 rmodel1<-coxph(formula,data=data)
 
