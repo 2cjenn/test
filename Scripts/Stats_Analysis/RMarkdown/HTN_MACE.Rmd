@@ -50,7 +50,7 @@ footnote_no <- 1
 ```{r data-derivation, include=FALSE, cache=TRUE}
  
 source(file.path(config$scripts$cleaning, "dataset_generator.R"))
- 
+
 exclusions <- function(data){
   
   excl$initial <<- nrow(data)
@@ -150,18 +150,26 @@ export_svg(DiagrammeR::grViz(here::here(file.path(config$outputs$flowcharts, "HT
 
 ```
 
+```{r}
+# Temporary fix:
+
+levels(data$TEU_TownsendDepInd_Quint) <- c(levels(data$TEU_TownsendDepInd_Quint), "Unavailable")
+data$TEU_TownsendDepInd_Quint[is.na(data$TEU_TownsendDepInd_Quint)] <- "Unavailable"
+
+```
+
 
 # Hypertension PRS cross-sectional analysis
 
 ## Table `r table`. Characteristics of participants included in the analysis, by Systolic BP PRS quintile (treated hypertensives, n = `r nrow(data)`).
 `r table <- table + 1`
+
 ```{r descriptive-table, include=TRUE, echo=FALSE}
 varlist=c("TEU_BaC_AgeAtRec", "TEU_BaC_AgeCat", "BaC_Sex", "TEU_BlP_SBP_quintiles",
           "TEU_BSM_BMIcat", "TEU_Smo_Status", "TEU_Alc_WeeklyCat", "TEU_Pha_METsover1200",
           "TEU_FaH_CVD", "Prosp_comorb_numcat", "TEU_VeI_numHTNmedscat", "TEU_LDL_Quintiles",
           "TEU_TownsendDepInd_Quint", "TEU_HouseholdIncome", "TEU_Emp_category", "TEU_Edu_ISCED", "TEU_Rec_Country"
           )
-
 
 tab_all <- descriptivetable(df=data, 
                          varlist=varlist,
@@ -197,18 +205,17 @@ kable(tab[,-1])
 
 ```
 
-
 ## Table `r table`: Multivariable logistic regression identifying factors associated with hypertension control, among middle-aged UK adults on anti-hypertensive treatment (n=`r nrow(data)`)
 `r table <- table + 1`
-<div custom-style="Todo">Reminder: Manually re-order BMI categories</div>
 
 ```{r logistic-regression, include=TRUE, echo=FALSE}
 
-varlist=c("TEU_BaC_AgeCat", "BaC_Sex",
-          "TEU_TownsendDepInd_Quint", "TEU_HouseholdIncome", "TEU_Emp_category", "TEU_Edu_ISCED", "TEU_Rec_Country",
+varlist=c("TEU_BaC_AgeCat", "BaC_Sex", "TEU_SBP_PRS_quintiles",
           "TEU_BSM_BMIcat", "TEU_Smo_Status", "TEU_Alc_WeeklyCat", "TEU_Pha_METsover1200",
-          "TEU_VeI_numHTNmedscat",  "TEU_FaH_CVD", "TEU_LDL_Quintiles",
-          "Prosp_comorb_numcat")
+          "TEU_FaH_CVD", "Prosp_comorb_numcat", "TEU_VeI_numHTNmedscat", "TEU_LDL_Quintiles",
+          "TEU_TownsendDepInd_Quint", "TEU_HouseholdIncome", "TEU_Emp_category", "TEU_Edu_ISCED", "TEU_Rec_Country",
+          "GeP_PC_1", "GeP_PC_2", "GeP_PC_3", "GeP_PC_4"
+          )
 
 desctable2 <- function(df){
   n <- nrow(df)
@@ -259,12 +266,14 @@ kable(tab3)
 
 # Hypertension PRS prospective analysis
 
-Including measured SBP at baseline (quintiles) and SBP PRS (quintiles)
+Including SBP PRS (quintiles), showing for each outcome:
 
-## Cox regression of time until MI event (`r nrow(data[data$TEU_MACE_MI==1,])` events)
+* Model A: without measured SBP at baseline
+* Model B: with measured SBP at baseline
 
-MI event defined as diagnosis of myocardial infarction or MI prevention procedure in HES data, or MI recorded as primary cause of death (censoring at first MACE event applied)
+## Cox regression of time until MACE event (`r nrow(data[data$TEU_MACE_status==1,])` events)
 
+MI event defined as diagnosis of MACE event or MACE prevention procedure in HES data, or MACE recorded as primary cause of death.
 
 ```{r Cox model mace, echo=FALSE}
 
@@ -282,43 +291,27 @@ varlist2=c("TEU_BaC_AgeCat", "BaC_Sex", "TEU_SBP_PRS_quintiles", "TEU_BlP_SBP_qu
           "GeP_PC_1", "GeP_PC_2", "GeP_PC_3", "GeP_PC_4"
           )
 
-# # age- and sex-adjusted
-# agesex <- coxph(Surv(TEU_MACE_time_yrs,TEU_MACE_MI) ~ TEU_BaC_AgeCat + BaC_Sex, data=data)
-# adj <- publish(agesex, ci.digits=2, ci.handler="sprintf", pvalue.eps=0.01,
-#               pvalue.digits=2,pvalue.stars=TRUE, ci.trim=FALSE,print=FALSE)$regressionTable
-# for(var in varlist){
-#   if(! var %in% c("TEU_BaC_AgeCat", "BaC_Sex")){
-#   formula <- as.formula(paste0("Surv(TEU_MACE_time_yrs,TEU_MACE_MI) ~ TEU_BaC_AgeCat + BaC_Sex + ", var))
-#   model <- coxph(formula, data=data)
-#   output <- publish(model, ci.digits=2, ci.handler="sprintf", pvalue.eps=0.01,
-#               pvalue.digits=2,pvalue.stars=TRUE, ci.trim=FALSE,print=FALSE)$regressionTable
-#   output <- output[-c(1:5),] %>% select(-any_of("Missing"))
-#   adj <- rbind(adj, output)
-#   }
-# }
-
-# Complete case data
-formula1 <- as.formula(paste0("Surv(TEU_MACE_time_yrs,TEU_MACE_MI) ~ ", paste(varlist1, collapse="+")))
+formula1 <- as.formula(paste0("Surv(TEU_MACE_time_yrs,TEU_MACE_status) ~ ", paste(varlist1, collapse="+")))
 
 rmodel1<-coxph(formula1,data=data)
 
 routput1 <- publish(rmodel1, ci.digits=2, ci.handler="sprintf", pvalue.eps=0.01,
               pvalue.digits=2,pvalue.stars=TRUE, ci.trim=FALSE,print=FALSE)$regressionTable %>%
-  select(-signif, -Missing) %>%
+  select(-signif) %>%
   mutate(ID = ifelse(Variable=="", NA, Variable)) %>%
   tidyr::fill(ID)
 
-formula2 <- as.formula(paste0("Surv(TEU_MACE_time_yrs,TEU_MACE_MI) ~ ", paste(varlist2, collapse="+")))
+formula2 <- as.formula(paste0("Surv(TEU_MACE_time_yrs,TEU_MACE_status) ~ ", paste(varlist2, collapse="+")))
 
 rmodel2<-coxph(formula2,data=data)
 
 routput2 <- publish(rmodel2, ci.digits=2, ci.handler="sprintf", pvalue.eps=0.01,
               pvalue.digits=2,pvalue.stars=TRUE, ci.trim=FALSE,print=FALSE)$regressionTable %>%
-  select(-signif, -Missing) %>%
+  select(-signif) %>%
   mutate(ID = ifelse(Variable=="", NA, Variable)) %>%
   tidyr::fill(ID)
 
-# tab4 <- cbind(adj%>%select(-signif), routput1%>%select(-Variable, -Units, -signif))
+
 tab4 <- left_join(routput2, routput1, by=c("ID", "Variable", "Units"), suffix=c("_b", "_a")) %>%
   select(Variable, Units, HazardRatio_a, CI.95_a, `p-value_a`, HazardRatio_b, CI.95_b, `p-value_b`) %>%
   replace(., is.na(.), "")
@@ -330,11 +323,56 @@ rownames(tab4) <- NULL
 tab4 <- rbind(c("Coefficient", "Level", "OR", "95% CI", "p", "OR", "95% CI", "p"),
               as.matrix(tab4))
 colnames(tab4) <- c("","", 
-                    "Age- and sex-adjusted", "", "", 
-                    "Multivariable- adjusted", "", "")
+                    "Model A", "", "", 
+                    "Model B", "", "")
 
 kable(tab4)
 
+
+```
+
+## Cox regression of time until MI event (`r nrow(data[data$TEU_MACE_MI==1,])` events)
+
+MI event defined as diagnosis of myocardial infarction or MI prevention procedure in HES data, or MI recorded as primary cause of death (censoring at first MACE event applied)
+
+```{r Cox model MI, echo=FALSE}
+
+formula1 <- as.formula(paste0("Surv(TEU_MACE_time_yrs,TEU_MACE_MI) ~ ", paste(varlist1, collapse="+")))
+
+rmodel1<-coxph(formula1,data=data)
+
+routput1 <- publish(rmodel1, ci.digits=2, ci.handler="sprintf", pvalue.eps=0.01,
+              pvalue.digits=2,pvalue.stars=TRUE, ci.trim=FALSE,print=FALSE)$regressionTable %>%
+  select(-signif) %>%
+  mutate(ID = ifelse(Variable=="", NA, Variable)) %>%
+  tidyr::fill(ID)
+
+formula2 <- as.formula(paste0("Surv(TEU_MACE_time_yrs,TEU_MACE_MI) ~ ", paste(varlist2, collapse="+")))
+
+rmodel2<-coxph(formula2,data=data)
+
+routput2 <- publish(rmodel2, ci.digits=2, ci.handler="sprintf", pvalue.eps=0.01,
+              pvalue.digits=2,pvalue.stars=TRUE, ci.trim=FALSE,print=FALSE)$regressionTable %>%
+  select(-signif) %>%
+  mutate(ID = ifelse(Variable=="", NA, Variable)) %>%
+  tidyr::fill(ID)
+
+
+tab4 <- left_join(routput2, routput1, by=c("ID", "Variable", "Units"), suffix=c("_b", "_a")) %>%
+  select(Variable, Units, HazardRatio_a, CI.95_a, `p-value_a`, HazardRatio_b, CI.95_b, `p-value_b`) %>%
+  replace(., is.na(.), "")
+
+# Change pretty variable names
+tab4$Variable <-  sapply(tab4$Variable,function(i) if(i!=""){pretty_func(i)}else{i})
+
+rownames(tab4) <- NULL
+tab4 <- rbind(c("Coefficient", "Level", "OR", "95% CI", "p", "OR", "95% CI", "p"),
+              as.matrix(tab4))
+colnames(tab4) <- c("","", 
+                    "Model A", "", "", 
+                    "Model B", "", "")
+
+kable(tab4)
 
 ```
 
@@ -344,39 +382,30 @@ Stroke event defined as diagnosis of stroke (any kind) or stroke prevention proc
 
 ```{r Cox model stroke, echo=FALSE}
 
-varlist=c("TEU_BaC_AgeCat", "BaC_Sex", "TEU_BlP_SBP_quintiles", "TEU_SBP_PRS_quintiles",
-          "TEU_BSM_BMIcat", "TEU_Smo_Status", "TEU_Alc_WeeklyCat", "TEU_Pha_METsover1200",
-          "TEU_FaH_CVD", "Prosp_comorb_numcat", "TEU_VeI_numHTNmedscat", "TEU_LDL_Quintiles",
-          "TEU_TownsendDepInd_Quint", "TEU_HouseholdIncome", "TEU_Emp_category", "TEU_Edu_ISCED", "TEU_Rec_Country",
-          "GeP_PC_1", "GeP_PC_2", "GeP_PC_3", "GeP_PC_4"
-          )
+formula1 <- as.formula(paste0("Surv(TEU_MACE_time_yrs,TEU_MACE_Stroke) ~ ", paste(varlist1, collapse="+")))
 
-# age- and sex-adjusted
-agesex <- coxph(Surv(TEU_MACE_time_yrs,TEU_MACE_Stroke) ~ TEU_BaC_AgeCat + BaC_Sex, data=data)
-adj <- publish(agesex, ci.digits=2, ci.handler="sprintf", pvalue.eps=0.01,
-              pvalue.digits=2,pvalue.stars=TRUE, ci.trim=FALSE,print=FALSE)$regressionTable
-for(var in varlist){
-  if(! var %in% c("TEU_BaC_AgeCat", "BaC_Sex")){
-  formula <- as.formula(paste0("Surv(TEU_MACE_time_yrs,TEU_MACE_Stroke) ~ TEU_BaC_AgeCat + BaC_Sex + ", var))
-  model <- coxph(formula, data=data)
-  output <- publish(model, ci.digits=2, ci.handler="sprintf", pvalue.eps=0.01,
-              pvalue.digits=2,pvalue.stars=TRUE, ci.trim=FALSE,print=FALSE)$regressionTable
-  output <- output[-c(1:5),] %>% select(-any_of("Missing"))
-  adj <- rbind(adj, output)
-  }
-}
-
-# Complete case data
-formula <- as.formula(paste0("Surv(TEU_MACE_time_yrs,TEU_MACE_Stroke) ~ ", paste(varlist, collapse="+")))
-
-rmodel1<-coxph(formula,data=data)
-
+rmodel1<-coxph(formula1,data=data)
 
 routput1 <- publish(rmodel1, ci.digits=2, ci.handler="sprintf", pvalue.eps=0.01,
-              pvalue.digits=2,pvalue.stars=TRUE, ci.trim=FALSE,print=FALSE)$regressionTable  %>%
-  select(-any_of("Missing"))
+              pvalue.digits=2,pvalue.stars=TRUE, ci.trim=FALSE,print=FALSE)$regressionTable %>%
+  select(-signif) %>%
+  mutate(ID = ifelse(Variable=="", NA, Variable)) %>%
+  tidyr::fill(ID)
 
-tab4 <- cbind(adj%>%select(-signif), routput1%>%select(-Variable, -Units, -signif))
+formula2 <- as.formula(paste0("Surv(TEU_MACE_time_yrs,TEU_MACE_Stroke) ~ ", paste(varlist2, collapse="+")))
+
+rmodel2<-coxph(formula2,data=data)
+
+routput2 <- publish(rmodel2, ci.digits=2, ci.handler="sprintf", pvalue.eps=0.01,
+              pvalue.digits=2,pvalue.stars=TRUE, ci.trim=FALSE,print=FALSE)$regressionTable %>%
+  select(-signif) %>%
+  mutate(ID = ifelse(Variable=="", NA, Variable)) %>%
+  tidyr::fill(ID)
+
+
+tab4 <- left_join(routput2, routput1, by=c("ID", "Variable", "Units"), suffix=c("_b", "_a")) %>%
+  select(Variable, Units, HazardRatio_a, CI.95_a, `p-value_a`, HazardRatio_b, CI.95_b, `p-value_b`) %>%
+  replace(., is.na(.), "")
 
 # Change pretty variable names
 tab4$Variable <-  sapply(tab4$Variable,function(i) if(i!=""){pretty_func(i)}else{i})
@@ -385,11 +414,10 @@ rownames(tab4) <- NULL
 tab4 <- rbind(c("Coefficient", "Level", "OR", "95% CI", "p", "OR", "95% CI", "p"),
               as.matrix(tab4))
 colnames(tab4) <- c("","", 
-                    "Age- and sex-adjusted", "", "", 
-                    "Multivariable- adjusted", "", "")
+                    "Model A", "", "", 
+                    "Model B", "", "")
 
 kable(tab4)
-
 
 ```
 
