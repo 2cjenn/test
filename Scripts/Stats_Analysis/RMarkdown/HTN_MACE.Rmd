@@ -50,7 +50,7 @@ footnote_no <- 1
 ```{r data-derivation, include=FALSE, cache=TRUE}
  
 source(file.path(config$scripts$cleaning, "dataset_generator.R"))
-
+ 
 exclusions <- function(data){
   
   excl$initial <<- nrow(data)
@@ -268,39 +268,60 @@ MI event defined as diagnosis of myocardial infarction or MI prevention procedur
 
 ```{r Cox model mace, echo=FALSE}
 
-varlist=c("TEU_BaC_AgeCat", "BaC_Sex", "TEU_BlP_SBP_quintiles", #"TEU_SBP_PRS_quintiles",
+varlist1=c("TEU_BaC_AgeCat", "BaC_Sex", "TEU_SBP_PRS_quintiles",
           "TEU_BSM_BMIcat", "TEU_Smo_Status", "TEU_Alc_WeeklyCat", "TEU_Pha_METsover1200",
           "TEU_FaH_CVD", "Prosp_comorb_numcat", "TEU_VeI_numHTNmedscat", "TEU_LDL_Quintiles",
           "TEU_TownsendDepInd_Quint", "TEU_HouseholdIncome", "TEU_Emp_category", "TEU_Edu_ISCED", "TEU_Rec_Country",
           "GeP_PC_1", "GeP_PC_2", "GeP_PC_3", "GeP_PC_4"
           )
 
-# age- and sex-adjusted
-agesex <- coxph(Surv(TEU_MACE_time_yrs,TEU_MACE_MI) ~ TEU_BaC_AgeCat + BaC_Sex, data=data)
-adj <- publish(agesex, ci.digits=2, ci.handler="sprintf", pvalue.eps=0.01,
-              pvalue.digits=2,pvalue.stars=TRUE, ci.trim=FALSE,print=FALSE)$regressionTable
-for(var in varlist){
-  if(! var %in% c("TEU_BaC_AgeCat", "BaC_Sex")){
-  formula <- as.formula(paste0("Surv(TEU_MACE_time_yrs,TEU_MACE_MI) ~ TEU_BaC_AgeCat + BaC_Sex + ", var))
-  model <- coxph(formula, data=data)
-  output <- publish(model, ci.digits=2, ci.handler="sprintf", pvalue.eps=0.01,
-              pvalue.digits=2,pvalue.stars=TRUE, ci.trim=FALSE,print=FALSE)$regressionTable
-  output <- output[-c(1:5),] %>% select(-any_of("Missing"))
-  adj <- rbind(adj, output)
-  }
-}
+varlist2=c("TEU_BaC_AgeCat", "BaC_Sex", "TEU_SBP_PRS_quintiles", "TEU_BlP_SBP_quintiles",
+          "TEU_BSM_BMIcat", "TEU_Smo_Status", "TEU_Alc_WeeklyCat", "TEU_Pha_METsover1200",
+          "TEU_FaH_CVD", "Prosp_comorb_numcat", "TEU_VeI_numHTNmedscat", "TEU_LDL_Quintiles",
+          "TEU_TownsendDepInd_Quint", "TEU_HouseholdIncome", "TEU_Emp_category", "TEU_Edu_ISCED", "TEU_Rec_Country",
+          "GeP_PC_1", "GeP_PC_2", "GeP_PC_3", "GeP_PC_4"
+          )
+
+# # age- and sex-adjusted
+# agesex <- coxph(Surv(TEU_MACE_time_yrs,TEU_MACE_MI) ~ TEU_BaC_AgeCat + BaC_Sex, data=data)
+# adj <- publish(agesex, ci.digits=2, ci.handler="sprintf", pvalue.eps=0.01,
+#               pvalue.digits=2,pvalue.stars=TRUE, ci.trim=FALSE,print=FALSE)$regressionTable
+# for(var in varlist){
+#   if(! var %in% c("TEU_BaC_AgeCat", "BaC_Sex")){
+#   formula <- as.formula(paste0("Surv(TEU_MACE_time_yrs,TEU_MACE_MI) ~ TEU_BaC_AgeCat + BaC_Sex + ", var))
+#   model <- coxph(formula, data=data)
+#   output <- publish(model, ci.digits=2, ci.handler="sprintf", pvalue.eps=0.01,
+#               pvalue.digits=2,pvalue.stars=TRUE, ci.trim=FALSE,print=FALSE)$regressionTable
+#   output <- output[-c(1:5),] %>% select(-any_of("Missing"))
+#   adj <- rbind(adj, output)
+#   }
+# }
 
 # Complete case data
-formula <- as.formula(paste0("Surv(TEU_MACE_time_yrs,TEU_MACE_MI) ~ ", paste(varlist, collapse="+")))
+formula1 <- as.formula(paste0("Surv(TEU_MACE_time_yrs,TEU_MACE_MI) ~ ", paste(varlist1, collapse="+")))
 
-rmodel1<-coxph(formula,data=data)
-
+rmodel1<-coxph(formula1,data=data)
 
 routput1 <- publish(rmodel1, ci.digits=2, ci.handler="sprintf", pvalue.eps=0.01,
-              pvalue.digits=2,pvalue.stars=TRUE, ci.trim=FALSE,print=FALSE)$regressionTable  %>%
-  select(-any_of("Missing"))
+              pvalue.digits=2,pvalue.stars=TRUE, ci.trim=FALSE,print=FALSE)$regressionTable %>%
+  select(-signif, -Missing) %>%
+  mutate(ID = ifelse(Variable=="", NA, Variable)) %>%
+  tidyr::fill(ID)
 
-tab4 <- cbind(adj%>%select(-signif), routput1%>%select(-Variable, -Units, -signif))
+formula2 <- as.formula(paste0("Surv(TEU_MACE_time_yrs,TEU_MACE_MI) ~ ", paste(varlist2, collapse="+")))
+
+rmodel2<-coxph(formula2,data=data)
+
+routput2 <- publish(rmodel2, ci.digits=2, ci.handler="sprintf", pvalue.eps=0.01,
+              pvalue.digits=2,pvalue.stars=TRUE, ci.trim=FALSE,print=FALSE)$regressionTable %>%
+  select(-signif, -Missing) %>%
+  mutate(ID = ifelse(Variable=="", NA, Variable)) %>%
+  tidyr::fill(ID)
+
+# tab4 <- cbind(adj%>%select(-signif), routput1%>%select(-Variable, -Units, -signif))
+tab4 <- left_join(routput2, routput1, by=c("ID", "Variable", "Units"), suffix=c("_b", "_a")) %>%
+  select(Variable, Units, HazardRatio_a, CI.95_a, `p-value_a`, HazardRatio_b, CI.95_b, `p-value_b`) %>%
+  replace(., is.na(.), "")
 
 # Change pretty variable names
 tab4$Variable <-  sapply(tab4$Variable,function(i) if(i!=""){pretty_func(i)}else{i})
@@ -323,7 +344,7 @@ Stroke event defined as diagnosis of stroke (any kind) or stroke prevention proc
 
 ```{r Cox model stroke, echo=FALSE}
 
-varlist=c("TEU_BaC_AgeCat", "BaC_Sex", "TEU_BlP_SBP_quintiles", #"TEU_SBP_PRS_quintiles",
+varlist=c("TEU_BaC_AgeCat", "BaC_Sex", "TEU_BlP_SBP_quintiles", "TEU_SBP_PRS_quintiles",
           "TEU_BSM_BMIcat", "TEU_Smo_Status", "TEU_Alc_WeeklyCat", "TEU_Pha_METsover1200",
           "TEU_FaH_CVD", "Prosp_comorb_numcat", "TEU_VeI_numHTNmedscat", "TEU_LDL_Quintiles",
           "TEU_TownsendDepInd_Quint", "TEU_HouseholdIncome", "TEU_Emp_category", "TEU_Edu_ISCED", "TEU_Rec_Country",
