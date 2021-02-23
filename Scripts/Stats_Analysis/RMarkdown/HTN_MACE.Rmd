@@ -14,7 +14,6 @@ library(kableExtra)
 library(knitr)
 library(yaml)
 library(here)
-library(Publish)
 library(DiagrammeR)
 library(DiagrammeRsvg)
 library(magrittr)
@@ -24,7 +23,13 @@ library(png)
 library(dplyr)
 library(ggplot2)
 library(survival)
+library(survminer)
 library(pROC)
+library(rms)
+library(ResourceSelection)
+library(shiny)
+library(rcompanion)
+library(Publish)
 
 # Specify the markdown format for knitr tables, otherwise they're not compatible with kableExtra
 options(knitr.kable.NA='', knitr.table.format = "markdown")
@@ -44,6 +49,10 @@ figure <- 1
 table <- 1
 suppfig <- 1
 footnote_no <- 1
+
+# Check if the session is being knitted or run interactively
+# When we're knitting the documentation, we don't want to include the diagnostic checks
+live <- interactive()
 
 ```
 
@@ -264,6 +273,31 @@ kable(tab3)
 
 ```
 
+```{r cross-sectional Model Check,eval=FALSE,echo=FALSE}
+## Assess model fit
+
+formula <- as.formula(paste0("TEU_controlledHTN ~ ", paste(varlist, collapse="+")))
+multi <- glm(formula=formula, data=data, family="binomial")
+
+
+## 1. Hosmer-Lemeshow Test
+
+HL <- hoslem.test(multi$y,fitted(multi),g=10)
+
+# g is the number of groups into which to split the observations in the sample
+# For g in 5 to 15, check Hosmer Lemeshow p-vals
+HL_pvals=sapply(5:15,function(i) hoslem.test(multi$y, fitted(multi), g=i)$p.value)
+sum(HL_pvals<0.05)
+
+## 2. Multicollinearity
+m2_vifs=data.frame(car::vif(multi))
+m2_vifs$squared=(m2_vifs$GVIF..1..2.Df..)^2
+
+# 3. p-value of including PRS in model
+
+
+```
+
 # Hypertension PRS prospective analysis
 
 Including SBP PRS (quintiles), showing for each outcome:
@@ -277,14 +311,14 @@ MI event defined as diagnosis of MACE event or MACE prevention procedure in HES 
 
 ```{r Cox model mace, echo=FALSE}
 
-varlist1=c("TEU_BaC_AgeCat", "BaC_Sex", "TEU_SBP_PRS_quintiles",
+varlist1=c("TEU_BaC_AgeCat", "BaC_Sex", "TEU_SBP_PRS_quintiles", #"TEU_BlP_SBP_quintiles", 
           "TEU_BSM_BMIcat", "TEU_Smo_Status", "TEU_Alc_WeeklyCat", "TEU_Pha_METsover1200",
           "TEU_FaH_CVD", "Prosp_comorb_numcat", "TEU_VeI_numHTNmedscat", "TEU_LDL_Quintiles",
           "TEU_TownsendDepInd_Quint", "TEU_HouseholdIncome", "TEU_Emp_category", "TEU_Edu_ISCED", "TEU_Rec_Country",
           "GeP_PC_1", "GeP_PC_2", "GeP_PC_3", "GeP_PC_4"
           )
 
-varlist2=c("TEU_BaC_AgeCat", "BaC_Sex", "TEU_SBP_PRS_quintiles", "TEU_BlP_SBP_quintiles",
+varlist2=c("TEU_BaC_AgeCat", "BaC_Sex", "TEU_BlP_SBP_quintiles", "TEU_SBP_PRS_quintiles", 
           "TEU_BSM_BMIcat", "TEU_Smo_Status", "TEU_Alc_WeeklyCat", "TEU_Pha_METsover1200",
           "TEU_FaH_CVD", "Prosp_comorb_numcat", "TEU_VeI_numHTNmedscat", "TEU_LDL_Quintiles",
           "TEU_TownsendDepInd_Quint", "TEU_HouseholdIncome", "TEU_Emp_category", "TEU_Edu_ISCED", "TEU_Rec_Country",
@@ -305,9 +339,7 @@ formula2 <- as.formula(paste0("Surv(TEU_MACE_time_yrs,TEU_MACE_status) ~ ", past
 
 rmodel2<-coxph(formula2,data=data)
 
-routput2 <- publish(rmodel2, ci.digits=2, ci.handler="sprintf", pvalue.eps=0.01,
-              pvalue.digits=2,pvalue.stars=TRUE, ci.trim=FALSE,print=FALSE)$regressionTable %>%
-  select(-signif) %>%
+anova(rmodel1, rmodel2)
   mutate(ID = ifelse(Variable=="", NA, Variable)) %>%
   tidyr::fill(ID)
 
@@ -328,8 +360,34 @@ colnames(tab4) <- c("","",
 
 kable(tab4)
 
+# chisq.test(table(ordered(data$TEU_SBP_PRS_quintiles), data$TEU_MACE_status))
+# 
+# prop.test(table(ordered(data$TEU_SBP_PRS_quintiles), data$TEU_MACE_status))
+# 
+# prop.trend.test(table(data$TEU_SBP_PRS_quintiles[data$TEU_MACE_status==1]),
+#                 table(data$TEU_SBP_PRS_quintiles))
 
 ```
+
+```{r, eval=live}
+
+# minimodel <- coxph(Surv(TEU_MACE_time_yrs,TEU_MACE_status) ~ TEU_BaC_AgeCat + BaC_Sex + TEU_SBP_PRS_quintiles, data=data)
+# thing <- publish(minimodel, ci.digits=2, ci.handler="sprintf", pvalue.eps=0.001,
+#               pvalue.digits=2, pvalue.stars=FALSE, ci.trim=FALSE, print=FALSE)$rawTable
+# 
+#  publish(minimodel, ci.digits=2, ci.handler="sprintf", pvalue.eps=0.001,
+#               pvalue.digits=2, pvalue.stars=FALSE, ci.trim=FALSE, print=FALSE)$regressionTable
+#  thing
+# 
+# format.pval(0.00039485, digits=3, eps=0.001)
+
+test.ph <- cox.zph(rmodel2)
+ggcoxzph(test.ph)
+
+car::vif(rmodel2)
+
+```
+
 
 ## Cox regression of time until MI event (`r nrow(data[data$TEU_MACE_MI==1,])` events)
 
@@ -351,7 +409,7 @@ formula2 <- as.formula(paste0("Surv(TEU_MACE_time_yrs,TEU_MACE_MI) ~ ", paste(va
 
 rmodel2<-coxph(formula2,data=data)
 
-routput2 <- publish(rmodel2, ci.digits=2, ci.handler="sprintf", pvalue.eps=0.01,
+anova(rmodel1, rmodel2)
               pvalue.digits=2,pvalue.stars=TRUE, ci.trim=FALSE,print=FALSE)$regressionTable %>%
   select(-signif) %>%
   mutate(ID = ifelse(Variable=="", NA, Variable)) %>%
@@ -373,6 +431,13 @@ colnames(tab4) <- c("","",
                     "Model B", "", "")
 
 kable(tab4)
+
+```
+
+```{r, eval=live}
+
+test.ph <- cox.zph(rmodel2)
+ggcoxzph(test.ph)
 
 ```
 
@@ -396,6 +461,8 @@ formula2 <- as.formula(paste0("Surv(TEU_MACE_time_yrs,TEU_MACE_Stroke) ~ ", past
 
 rmodel2<-coxph(formula2,data=data)
 
+anova(rmodel1, rmodel2)
+
 routput2 <- publish(rmodel2, ci.digits=2, ci.handler="sprintf", pvalue.eps=0.01,
               pvalue.digits=2,pvalue.stars=TRUE, ci.trim=FALSE,print=FALSE)$regressionTable %>%
   select(-signif) %>%
@@ -418,6 +485,98 @@ colnames(tab4) <- c("","",
                     "Model B", "", "")
 
 kable(tab4)
+
+```
+
+```{r Model 1 & 2 Model Checking,eval=FALSE,echo=FALSE}
+
+# Model 1 Model check
+
+## 1. PHA 
+shinyApp(ui = fluidPage(
+  mainPanel(
+    plotOutput("main_plot",height = "1000px",width = "2000px")
+  )),
+  server = function(input, output) {
+    
+    output$main_plot <- renderPlot({
+      ftest<-cox.zph(rmodel1)
+      ggcoxzph(ftest)}, height = 1000, width = 2000 )
+    
+  })
+
+## 2. Multicollinearity
+# VIF
+vif=rms::vif(cph(Surv(TEU_MACE_time_yrs,TEU_MACE_status)~ TEU_BaC_AgeCat + BaC_Sex +  TEU_LDL_C_PRS_Quint  + 
+               TEU_BSM_BMIcat + TEU_Smo_Status+
+               TEU_Alc_WeeklyCat + TEU_Pha_METsover1200 + TEU_FaH_CVD + 
+               Prosp_comorb_numcat + TEU_BlP_SBP_Quint+
+               TEU_TownsendDepInd_Quint + TEU_HouseholdIncome + TEU_Emp_category + TEU_Edu_ISCED + TEU_Rec_Country+
+               GeP_PC_1 + GeP_PC_2 + GeP_PC_3 + GeP_PC_4,data=model1_data))
+
+
+range(vif)
+
+
+# Model 2 Model check
+
+## 1. PHA
+shinyApp(ui = fluidPage(
+  mainPanel(
+    plotOutput("main_plot",height = "1000px",width = "2000px")
+  )),
+  server = function(input, output) {
+    
+    output$main_plot <- renderPlot({
+      ftest2<-cox.zph(rmodel2)
+      ggcoxzph(ftest2)}, height = 1000, width = 2000 )
+    
+  })
+
+## 2. VIF
+vif=rms::vif(cph(Surv(TEU_MACE_time_yrs,TEU_MACE_status)~ TEU_BaC_AgeCat + BaC_Sex +  TEU_LDL_C_PRS_Quint  + 
+               TEU_BSM_BMIcat + TEU_Smo_Status+
+               TEU_Alc_WeeklyCat + TEU_Pha_METsover1200 + TEU_FaH_CVD + 
+               Prosp_comorb_numcat + TEU_BlP_SBP_Quint+  BBC_LDL_Quint+
+               TEU_TownsendDepInd_Quint + TEU_HouseholdIncome + TEU_Emp_category + TEU_Edu_ISCED + TEU_Rec_Country+
+               GeP_PC_1 + GeP_PC_2 + GeP_PC_3 + GeP_PC_4,data=model2_data))
+
+
+# 3. Check correlation among covariates 
+corr <- data%>%select(varlist2)%>%select(!starts_with("GeP_PC"))
+corr_matrix <- corr_mat(corr)
+# Find covariates with highest correlation
+inds <- which(corr_matrix==max(corr_matrix), arr.ind=TRUE)
+maxrow <- pretty_func(rownames(corr_matrix)[inds[1,1]])
+maxcol <- pretty_func(colnames(corr_matrix)[inds[1,2]])
+
+```
+
+The highest correlation between any pair of variables in the model was `r max(corr_matrix)`, between `r maxrow` and `r maxcol`.
+
+```{r, eval=live}
+
+test.ph <- cox.zph(rmodel2)
+ggcoxzph(test.ph)
+
+## 1. PHA
+ftest<-cox.zph(rmodel1)
+# Using shinyApp for better plot visualisation
+shinyApp(ui = fluidPage(
+  mainPanel(
+    plotOutput("main_plot",height = "1000px",width = "2000px")
+  )),
+  server = function(input, output) {
+    
+    output$main_plot <- renderPlot({
+      ftest<-cox.zph(rmodel1)
+      ggcoxzph(ftest)}, height = 1000, width = 2000 )
+    
+  })
+
+rms::vif(rmodel2)
+
+cor(as.numeric(data$TEU_TownsendDepInd_Quint[data$TEU_TownsendDepInd_Quint!="Unavailable" & !data$TEU_HouseholdIncome%in%c("Prefer not to answer", "Unanswered")]), as.numeric(data$TEU_HouseholdIncome[data$TEU_TownsendDepInd_Quint!="Unavailable" & !data$TEU_HouseholdIncome%in%c("Prefer not to answer", "Unanswered")]), method="spearman")
 
 ```
 
