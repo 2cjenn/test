@@ -228,6 +228,28 @@ propped <- function(table, margin=NULL) {
   return(tabsums)
 }
 
+# Check correlation among all pairs of covariates in a given dataframe 
+# (this will need extending to be more robust if I want to use it for non-categorical covariates)
+corr_mat <- function(data){
+  corr_matrix <- matrix(0L, nrow=ncol(data), ncol=ncol(data))
+  colnames(corr_matrix) <- colnames(data)
+  rownames(corr_matrix) <- colnames(data)
+  for(i in c(1:(ncol(data)-1))){
+    x <- data[[i]]
+    for(j in c((i+1):ncol(data))){
+      y <- data[[j]]
+      if(is.factor(x) & is.factor(y)){
+        corr_matrix[i, j] <- (cramerV(table(x, y)))
+      } else if (is.numeric(x) & is.numeric(y)) {
+        corr_matrix[i, j] <- cor(x, y, method="pearson")
+      } else {
+        print("Unanticipated type")
+      }
+    }
+  }
+  return(corr_matrix)
+}
+
 preparecoefflist_1col <- function(df, varname, pretty_names=list()){
   pretty_varname <- prettyfunc(varname, pnames=pretty_names, bold=TRUE, upper=TRUE)
   if(is.factor(df[[varname]])){
