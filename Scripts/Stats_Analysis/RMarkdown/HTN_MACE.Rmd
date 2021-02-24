@@ -311,8 +311,6 @@ varlist_a <- c("TEU_BaC_AgeCat", "BaC_Sex", "TEU_SBP_PRS_quintiles",
           "TEU_TownsendDepInd_Quint", "TEU_HouseholdIncome", "TEU_Emp_category", "TEU_Edu_ISCED", "TEU_Rec_Country",
           "GeP_PC_1", "GeP_PC_2", "GeP_PC_3", "GeP_PC_4"
           )
-anova_a <- varlist_a[-which(varlist_a=="TEU_SBP_PRS_quintiles")]
-
 
 varlist_b <- c("TEU_BaC_AgeCat", "BaC_Sex", "TEU_SBP_PRS_quintiles", "TEU_BlP_SBP_quintiles", 
           "TEU_BSM_BMIcat", "TEU_Smo_Status", "TEU_Alc_WeeklyCat", "TEU_Pha_METsover1200",
@@ -320,7 +318,6 @@ varlist_b <- c("TEU_BaC_AgeCat", "BaC_Sex", "TEU_SBP_PRS_quintiles", "TEU_BlP_SB
           "TEU_TownsendDepInd_Quint", "TEU_HouseholdIncome", "TEU_Emp_category", "TEU_Edu_ISCED", "TEU_Rec_Country",
           "GeP_PC_1", "GeP_PC_2", "GeP_PC_3", "GeP_PC_4"
           )
-anova_b <- varlist_b[-which(varlist_b=="TEU_SBP_PRS_quintiles")]
 
 ```
 
@@ -330,25 +327,28 @@ MI event defined as diagnosis of MACE event or MACE prevention procedure in HES 
 
 ```{r Cox model mace, echo=FALSE}
 
-formula_a <- as.formula(paste0("Surv(TEU_MACE_time_yrs,TEU_MACE_status) ~ ", paste(varlist_a, collapse="+")))
-formula_b <- as.formula(paste0("Surv(TEU_MACE_time_yrs,TEU_MACE_status) ~ ", paste(varlist_b, collapse="+")))
+status <- "TEU_MACE_status"
 
 ```
 
 ```{r, cox-output, eval=TRUE}
 
+# Model A
+formula_a <- as.formula(paste0("Surv(TEU_MACE_time_yrs,", status, ") ~ ", paste(varlist_a, collapse="+")))
 rmodel_a <- coxph(formula_a, data=data)
 
 routput_a <- printcoxresults(df=data, varlist=varlist_b, modeloutput=rmodel_a,
                             pretty_names=pretty_names, onecol=FALSE, IDcol=TRUE)
 routput_a$HR[grepl("TEU_BlP_SBP_quintiles", routput_a$IDcol, fixed=TRUE)] <- NA
 
+# Model B
+formula_b <- as.formula(paste0("Surv(TEU_MACE_time_yrs,", status, ") ~ ", paste(varlist_b, collapse="+")))
 rmodel_b <- coxph(formula_b, data=data)
 
 routput_b <- printcoxresults(df=data, varlist=varlist_b, modeloutput=rmodel_b,
                             pretty_names=pretty_names, onecol=FALSE, IDcol=TRUE)
 
-
+# Combine into one table
 tab4 <- left_join(routput_a, routput_b, by=c("IDcol", "Coefficient", "Levels")) %>%
   select(-IDcol) %>%
   replace(., is.na(.), "")
@@ -364,23 +364,41 @@ kable(tab4)
 
 ```
 
+```{r, SBP_pval}
+
+anova_a <- as.formula(paste0("Surv(TEU_MACE_time_yrs,", status, ") ~ ",
+                             paste(varlist_a[-which(varlist_a=="TEU_SBP_PRS_quintiles")], collapse="+")))
+anova_b <- as.formula(paste0("Surv(TEU_MACE_time_yrs,", status, ") ~ ",
+                             paste(varlist_b[-which(varlist_b=="TEU_SBP_PRS_quintiles")], collapse="+")))
+
+SBP_p_a <- anova(rmodel_a, coxph(anova_a, data=data))$`P(>|Chi|)`[2]
+SBP_p_b <- anova(rmodel_b, coxph(anova_b, data=data))$`P(>|Chi|)`[2]
+
+```
+
+### Overall p-value of SBP PRS
+
+* Model A: Based on likelihood ratio test, inclusion of SBP PRS `r if(SBP_p_a < 0.05){"**does**"}else{"does **not**"}` provide significant improvement in model fit (p = `r pretty_pval(SBP_p_a)`).
+* Model B: Based on likelihood ratio test, inclusion of SBP PRS `r if(SBP_p_b < 0.05){"**does**"}else{"does **not**"}` provide significant improvement in model fit (p = `r pretty_pval(SBP_p_b)`).
+
+
 ```{r, model-checks, echo=FALSE}
 
-# Model 1 Model check
-
 ## 1. PHA 
-ggsave("ggcoxzph.pdf", arrangeGrob(grobs = ggcoxzph(cox.zph(rmodel_a))), width=20, height=14, limitsize = FALSE)
-ggsave("ggcoxzph.pdf", arrangeGrob(grobs = ggcoxzph(cox.zph(rmodel_b))), width=20, height=14, limitsize = FALSE)
+ggsave(file.path(config$outputs$figures, paste0(status, "_modelA.pdf")), 
+       arrangeGrob(grobs = ggcoxzph(cox.zph(rmodel_a))), width=20, height=14, limitsize = FALSE)
+ggsave(file.path(config$outputs$figures, paste0(status, "_modelB.pdf")), 
+       arrangeGrob(grobs = ggcoxzph(cox.zph(rmodel_b))), width=20, height=14, limitsize = FALSE)
 
 ## 2. Multicollinearity
 # VIF
 
-# Model 1
+# Model A
 vif_a <- rms::vif(cph(formula_a,data=data))
 max_a <- max(vif_a)
 var_a <- names(vif_a)[which(vif_a == max(vif_a))]
 
-# Model 2 
+# Model B 
 vif_b <- rms::vif(cph(formula_b, data=data))
 max_b <- max(vif_b)
 var_b <- names(vif_b)[which(vif_b == max(vif_b))]
@@ -418,12 +436,22 @@ MI event defined as diagnosis of myocardial infarction or MI prevention procedur
 
 ```{r Cox model MI, echo=FALSE}
 
-formula_a <- as.formula(paste0("Surv(TEU_MACE_time_yrs,TEU_MACE_MI) ~ ", paste(varlist_a, collapse="+")))
-formula_b <- as.formula(paste0("Surv(TEU_MACE_time_yrs,TEU_MACE_MI) ~ ", paste(varlist_b, collapse="+")))
+status <- "TEU_MACE_MI"
 
 <<cox-output>>
 
 ```
+
+```{r, echo=FALSE}
+
+<<SBP_pval>>
+
+```
+
+### Overall p-value of SBP PRS
+
+* Model A: Based on likelihood ratio test, inclusion of SBP PRS `r if(SBP_p_a < 0.05){"**does**"}else{"does **not**"}` provide significant improvement in model fit (p = `r pretty_pval(SBP_p_a)`).
+* Model B: Based on likelihood ratio test, inclusion of SBP PRS `r if(SBP_p_b < 0.05){"**does**"}else{"does **not**"}` provide significant improvement in model fit (p = `r pretty_pval(SBP_p_b)`).
 
 ```{r, echo=FALSE}
 
@@ -445,12 +473,22 @@ Stroke event defined as diagnosis of stroke (any kind) or stroke prevention proc
 
 ```{r Cox model stroke, echo=FALSE}
 
-formula_a <- as.formula(paste0("Surv(TEU_MACE_time_yrs,TEU_MACE_Stroke) ~ ", paste(varlist_a, collapse="+")))
-formula_b <- as.formula(paste0("Surv(TEU_MACE_time_yrs,TEU_MACE_Stroke) ~ ", paste(varlist_b, collapse="+")))
+status <- "TEU_MACE_Stroke"
 
 <<cox-output>>
 
 ```
+
+```{r, echo=FALSE}
+
+<<SBP_pval>>
+
+```
+
+### Overall p-value of SBP PRS
+
+* Model A: Based on likelihood ratio test, inclusion of SBP PRS `r if(SBP_p_a < 0.05){"**does**"}else{"does **not**"}` provide significant improvement in model fit (p = `r pretty_pval(SBP_p_a)`).
+* Model B: Based on likelihood ratio test, inclusion of SBP PRS `r if(SBP_p_b < 0.05){"**does**"}else{"does **not**"}` provide significant improvement in model fit (p = `r pretty_pval(SBP_p_b)`).
 
 ```{r, echo=FALSE}
 
