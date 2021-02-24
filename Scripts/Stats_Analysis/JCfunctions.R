@@ -125,7 +125,7 @@ descriptivetable <- function(df, varlist, contavg='mean', assocvar=NULL, pretty_
 # To use this, 
 # model <- coxph(Surv(time_to_dementia, dementia_status) ~ age, data=data)
 # kable(printcoxresults(model), caption="")
-printcoxresults <- function(df, surv, varlist, pretty_names=list(), onecol=FALSE, IDcol=FALSE){
+printcoxresults <- function(df, varlist, modeloutput, pretty_names=list(), onecol=FALSE, IDcol=FALSE){
   require(dplyr)
   
   coefflist <- list()
@@ -134,9 +134,6 @@ printcoxresults <- function(df, surv, varlist, pretty_names=list(), onecol=FALSE
     coefflist[[var]] <- preparecoefflist(df=df, varname=var, pretty_names=pretty_names, onecol=onecol)
   }
   coeffnames <- do.call(rbind, coefflist)
-  
-  formula <- paste0("surv ~ ", paste(varlist, collapse=" + "))
-  modeloutput <- coxph(as.formula(formula), data=df)
   
   summ <- summary(modeloutput)
   coeff <- summ$coefficients
@@ -151,7 +148,11 @@ printcoxresults <- function(df, surv, varlist, pretty_names=list(), onecol=FALSE
   )
   
   results <- left_join(coeffnames, regression, by="IDcol")
-  results$HR[is.na(results$HR) & (results$IDcol != results$Coefficient & !is.na(results$Coefficient))] <- "1"
+  if(onecol){
+    results$HR[is.na(results$HR) & (results$IDcol != results$Coefficient & !is.na(results$Coefficient))] <- "1"
+  } else {
+    results$HR[is.na(results$HR) & !is.na(results$Coefficient)] <- "1"
+  }
   
   coeffcols <- colnames(coeffnames)
   if(IDcol==FALSE){

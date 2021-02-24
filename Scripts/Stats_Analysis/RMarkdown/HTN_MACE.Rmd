@@ -305,128 +305,60 @@ Including SBP PRS (quintiles), showing for each outcome:
 * Model A: without measured SBP at baseline
 * Model B: with measured SBP at baseline
 
+```{r varlists for models}
+
+varlist_a <- c("TEU_BaC_AgeCat", "BaC_Sex", "TEU_SBP_PRS_quintiles",
+          "TEU_BSM_BMIcat", "TEU_Smo_Status", "TEU_Alc_WeeklyCat", "TEU_Pha_METsover1200",
+          "TEU_FaH_CVD", "Prosp_comorb_numcat", "TEU_VeI_numHTNmedscat", "TEU_LDL_Quintiles",
+          "TEU_TownsendDepInd_Quint", "TEU_HouseholdIncome", "TEU_Emp_category", "TEU_Edu_ISCED", "TEU_Rec_Country",
+          "GeP_PC_1", "GeP_PC_2", "GeP_PC_3", "GeP_PC_4"
+          )
+anova_a <- varlist_a[-which(varlist_a=="TEU_SBP_PRS_quintiles")]
+
+
+varlist_b <- c("TEU_BaC_AgeCat", "BaC_Sex", "TEU_SBP_PRS_quintiles", "TEU_BlP_SBP_quintiles", 
+          "TEU_BSM_BMIcat", "TEU_Smo_Status", "TEU_Alc_WeeklyCat", "TEU_Pha_METsover1200",
+          "TEU_FaH_CVD", "Prosp_comorb_numcat", "TEU_VeI_numHTNmedscat", "TEU_LDL_Quintiles",
+          "TEU_TownsendDepInd_Quint", "TEU_HouseholdIncome", "TEU_Emp_category", "TEU_Edu_ISCED", "TEU_Rec_Country",
+          "GeP_PC_1", "GeP_PC_2", "GeP_PC_3", "GeP_PC_4"
+          )
+anova_b <- varlist_b[-which(varlist_b=="TEU_SBP_PRS_quintiles")]
+
+```
+
 ## Cox regression of time until MACE event (`r nrow(data[data$TEU_MACE_status==1,])` events)
 
 MI event defined as diagnosis of MACE event or MACE prevention procedure in HES data, or MACE recorded as primary cause of death.
 
 ```{r Cox model mace, echo=FALSE}
 
-varlist1=c("TEU_BaC_AgeCat", "BaC_Sex", "TEU_SBP_PRS_quintiles", #"TEU_BlP_SBP_quintiles", 
-          "TEU_BSM_BMIcat", "TEU_Smo_Status", "TEU_Alc_WeeklyCat", "TEU_Pha_METsover1200",
-          "TEU_FaH_CVD", "Prosp_comorb_numcat", "TEU_VeI_numHTNmedscat", "TEU_LDL_Quintiles",
-          "TEU_TownsendDepInd_Quint", "TEU_HouseholdIncome", "TEU_Emp_category", "TEU_Edu_ISCED", "TEU_Rec_Country",
-          "GeP_PC_1", "GeP_PC_2", "GeP_PC_3", "GeP_PC_4"
-          )
+formula_a <- as.formula(paste0("Surv(TEU_MACE_time_yrs,TEU_MACE_status) ~ ", paste(varlist_a, collapse="+")))
+formula_b <- as.formula(paste0("Surv(TEU_MACE_time_yrs,TEU_MACE_status) ~ ", paste(varlist_b, collapse="+")))
 
-varlist2=c("TEU_BaC_AgeCat", "BaC_Sex", "TEU_BlP_SBP_quintiles", "TEU_SBP_PRS_quintiles", 
-          "TEU_BSM_BMIcat", "TEU_Smo_Status", "TEU_Alc_WeeklyCat", "TEU_Pha_METsover1200",
-          "TEU_FaH_CVD", "Prosp_comorb_numcat", "TEU_VeI_numHTNmedscat", "TEU_LDL_Quintiles",
-          "TEU_TownsendDepInd_Quint", "TEU_HouseholdIncome", "TEU_Emp_category", "TEU_Edu_ISCED", "TEU_Rec_Country",
-          "GeP_PC_1", "GeP_PC_2", "GeP_PC_3", "GeP_PC_4"
-          )
+```
 
-formula1 <- as.formula(paste0("Surv(TEU_MACE_time_yrs,TEU_MACE_status) ~ ", paste(varlist1, collapse="+")))
+```{r, cox-output, eval=TRUE}
 
-rmodel1<-coxph(formula1,data=data)
+rmodel_a <- coxph(formula_a, data=data)
 
-routput1 <- publish(rmodel1, ci.digits=2, ci.handler="sprintf", pvalue.eps=0.01,
-              pvalue.digits=2,pvalue.stars=TRUE, ci.trim=FALSE,print=FALSE)$regressionTable %>%
-  select(-signif) %>%
-  mutate(ID = ifelse(Variable=="", NA, Variable)) %>%
-  tidyr::fill(ID)
+routput_a <- printcoxresults(df=data, varlist=varlist_b, modeloutput=rmodel_a,
+                            pretty_names=pretty_names, onecol=FALSE, IDcol=TRUE)
+routput_a$HR[grepl("TEU_BlP_SBP_quintiles", routput_a$IDcol, fixed=TRUE)] <- NA
 
-formula2 <- as.formula(paste0("Surv(TEU_MACE_time_yrs,TEU_MACE_status) ~ ", paste(varlist2, collapse="+")))
+rmodel_b <- coxph(formula_b, data=data)
 
-rmodel2<-coxph(formula2,data=data)
-
-anova(rmodel1, rmodel2)
-  mutate(ID = ifelse(Variable=="", NA, Variable)) %>%
-  tidyr::fill(ID)
+routput_b <- printcoxresults(df=data, varlist=varlist_b, modeloutput=rmodel_b,
+                            pretty_names=pretty_names, onecol=FALSE, IDcol=TRUE)
 
 
-tab4 <- left_join(routput2, routput1, by=c("ID", "Variable", "Units"), suffix=c("_b", "_a")) %>%
-  select(Variable, Units, HazardRatio_a, CI.95_a, `p-value_a`, HazardRatio_b, CI.95_b, `p-value_b`) %>%
+tab4 <- left_join(routput_a, routput_b, by=c("IDcol", "Coefficient", "Levels")) %>%
+  select(-IDcol) %>%
   replace(., is.na(.), "")
-
-# Change pretty variable names
-tab4$Variable <-  sapply(tab4$Variable,function(i) if(i!=""){pretty_func(i)}else{i})
 
 rownames(tab4) <- NULL
 tab4 <- rbind(c("Coefficient", "Level", "OR", "95% CI", "p", "OR", "95% CI", "p"),
               as.matrix(tab4))
-colnames(tab4) <- c("","", 
-                    "Model A", "", "", 
-                    "Model B", "", "")
-
-kable(tab4)
-
-# chisq.test(table(ordered(data$TEU_SBP_PRS_quintiles), data$TEU_MACE_status))
-# 
-# prop.test(table(ordered(data$TEU_SBP_PRS_quintiles), data$TEU_MACE_status))
-# 
-# prop.trend.test(table(data$TEU_SBP_PRS_quintiles[data$TEU_MACE_status==1]),
-#                 table(data$TEU_SBP_PRS_quintiles))
-
-```
-
-```{r, eval=live}
-
-# minimodel <- coxph(Surv(TEU_MACE_time_yrs,TEU_MACE_status) ~ TEU_BaC_AgeCat + BaC_Sex + TEU_SBP_PRS_quintiles, data=data)
-# thing <- publish(minimodel, ci.digits=2, ci.handler="sprintf", pvalue.eps=0.001,
-#               pvalue.digits=2, pvalue.stars=FALSE, ci.trim=FALSE, print=FALSE)$rawTable
-# 
-#  publish(minimodel, ci.digits=2, ci.handler="sprintf", pvalue.eps=0.001,
-#               pvalue.digits=2, pvalue.stars=FALSE, ci.trim=FALSE, print=FALSE)$regressionTable
-#  thing
-# 
-# format.pval(0.00039485, digits=3, eps=0.001)
-
-test.ph <- cox.zph(rmodel2)
-ggcoxzph(test.ph)
-
-car::vif(rmodel2)
-
-```
-
-
-## Cox regression of time until MI event (`r nrow(data[data$TEU_MACE_MI==1,])` events)
-
-MI event defined as diagnosis of myocardial infarction or MI prevention procedure in HES data, or MI recorded as primary cause of death (censoring at first MACE event applied)
-
-```{r Cox model MI, echo=FALSE}
-
-formula1 <- as.formula(paste0("Surv(TEU_MACE_time_yrs,TEU_MACE_MI) ~ ", paste(varlist1, collapse="+")))
-
-rmodel1<-coxph(formula1,data=data)
-
-routput1 <- publish(rmodel1, ci.digits=2, ci.handler="sprintf", pvalue.eps=0.01,
-              pvalue.digits=2,pvalue.stars=TRUE, ci.trim=FALSE,print=FALSE)$regressionTable %>%
-  select(-signif) %>%
-  mutate(ID = ifelse(Variable=="", NA, Variable)) %>%
-  tidyr::fill(ID)
-
-formula2 <- as.formula(paste0("Surv(TEU_MACE_time_yrs,TEU_MACE_MI) ~ ", paste(varlist2, collapse="+")))
-
-rmodel2<-coxph(formula2,data=data)
-
-anova(rmodel1, rmodel2)
-              pvalue.digits=2,pvalue.stars=TRUE, ci.trim=FALSE,print=FALSE)$regressionTable %>%
-  select(-signif) %>%
-  mutate(ID = ifelse(Variable=="", NA, Variable)) %>%
-  tidyr::fill(ID)
-
-
-tab4 <- left_join(routput2, routput1, by=c("ID", "Variable", "Units"), suffix=c("_b", "_a")) %>%
-  select(Variable, Units, HazardRatio_a, CI.95_a, `p-value_a`, HazardRatio_b, CI.95_b, `p-value_b`) %>%
-  replace(., is.na(.), "")
-
-# Change pretty variable names
-tab4$Variable <-  sapply(tab4$Variable,function(i) if(i!=""){pretty_func(i)}else{i})
-
-rownames(tab4) <- NULL
-tab4 <- rbind(c("Coefficient", "Level", "OR", "95% CI", "p", "OR", "95% CI", "p"),
-              as.matrix(tab4))
-colnames(tab4) <- c("","", 
+colnames(tab4) <- c("", "",
                     "Model A", "", "", 
                     "Model B", "", "")
 
@@ -463,28 +395,16 @@ rmodel2<-coxph(formula2,data=data)
 
 anova(rmodel1, rmodel2)
 
-routput2 <- publish(rmodel2, ci.digits=2, ci.handler="sprintf", pvalue.eps=0.01,
-              pvalue.digits=2,pvalue.stars=TRUE, ci.trim=FALSE,print=FALSE)$regressionTable %>%
-  select(-signif) %>%
-  mutate(ID = ifelse(Variable=="", NA, Variable)) %>%
-  tidyr::fill(ID)
+## Cox regression of time until MI event (`r nrow(data[data$TEU_MACE_MI==1,])` events)
 
+MI event defined as diagnosis of myocardial infarction or MI prevention procedure in HES data, or MI recorded as primary cause of death (censoring at first MACE event applied)
 
-tab4 <- left_join(routput2, routput1, by=c("ID", "Variable", "Units"), suffix=c("_b", "_a")) %>%
-  select(Variable, Units, HazardRatio_a, CI.95_a, `p-value_a`, HazardRatio_b, CI.95_b, `p-value_b`) %>%
-  replace(., is.na(.), "")
+```{r Cox model MI, echo=FALSE}
 
-# Change pretty variable names
-tab4$Variable <-  sapply(tab4$Variable,function(i) if(i!=""){pretty_func(i)}else{i})
+formula_a <- as.formula(paste0("Surv(TEU_MACE_time_yrs,TEU_MACE_MI) ~ ", paste(varlist_a, collapse="+")))
+formula_b <- as.formula(paste0("Surv(TEU_MACE_time_yrs,TEU_MACE_MI) ~ ", paste(varlist_b, collapse="+")))
 
-rownames(tab4) <- NULL
-tab4 <- rbind(c("Coefficient", "Level", "OR", "95% CI", "p", "OR", "95% CI", "p"),
-              as.matrix(tab4))
-colnames(tab4) <- c("","", 
-                    "Model A", "", "", 
-                    "Model B", "", "")
-
-kable(tab4)
+<<cox-output>>
 
 ```
 
@@ -527,28 +447,16 @@ shinyApp(ui = fluidPage(
   )),
   server = function(input, output) {
     
-    output$main_plot <- renderPlot({
-      ftest2<-cox.zph(rmodel2)
-      ggcoxzph(ftest2)}, height = 1000, width = 2000 )
-    
-  })
+## Cox regression of the time until stroke event (`r nrow(data[data$TEU_MACE_Stroke==1,])` events)
 
-## 2. VIF
-vif=rms::vif(cph(Surv(TEU_MACE_time_yrs,TEU_MACE_status)~ TEU_BaC_AgeCat + BaC_Sex +  TEU_LDL_C_PRS_Quint  + 
-               TEU_BSM_BMIcat + TEU_Smo_Status+
-               TEU_Alc_WeeklyCat + TEU_Pha_METsover1200 + TEU_FaH_CVD + 
-               Prosp_comorb_numcat + TEU_BlP_SBP_Quint+  BBC_LDL_Quint+
-               TEU_TownsendDepInd_Quint + TEU_HouseholdIncome + TEU_Emp_category + TEU_Edu_ISCED + TEU_Rec_Country+
-               GeP_PC_1 + GeP_PC_2 + GeP_PC_3 + GeP_PC_4,data=model2_data))
+Stroke event defined as diagnosis of stroke (any kind) or stroke prevention procedure in HES data, or stroke recorded as primary cause of death (censoring at first MACE event applied).
 
+```{r Cox model stroke, echo=FALSE}
 
-# 3. Check correlation among covariates 
-corr <- data%>%select(varlist2)%>%select(!starts_with("GeP_PC"))
-corr_matrix <- corr_mat(corr)
-# Find covariates with highest correlation
-inds <- which(corr_matrix==max(corr_matrix), arr.ind=TRUE)
-maxrow <- pretty_func(rownames(corr_matrix)[inds[1,1]])
-maxcol <- pretty_func(colnames(corr_matrix)[inds[1,2]])
+formula_a <- as.formula(paste0("Surv(TEU_MACE_time_yrs,TEU_MACE_Stroke) ~ ", paste(varlist_a, collapse="+")))
+formula_b <- as.formula(paste0("Surv(TEU_MACE_time_yrs,TEU_MACE_Stroke) ~ ", paste(varlist_b, collapse="+")))
+
+<<cox-output>>
 
 ```
 
