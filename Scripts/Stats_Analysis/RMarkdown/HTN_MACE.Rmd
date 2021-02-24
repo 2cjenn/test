@@ -16,7 +16,6 @@ library(yaml)
 library(here)
 library(DiagrammeR)
 library(DiagrammeRsvg)
-library(magrittr)
 library(svglite)
 library(rsvg)
 library(png)
@@ -24,12 +23,11 @@ library(dplyr)
 library(ggplot2)
 library(survival)
 library(survminer)
-library(pROC)
 library(rms)
-library(ResourceSelection)
 library(shiny)
 library(rcompanion)
 library(Publish)
+library(gridExtra)
 
 # Specify the markdown format for knitr tables, otherwise they're not compatible with kableExtra
 options(knitr.kable.NA='', knitr.table.format = "markdown")
@@ -366,34 +364,53 @@ kable(tab4)
 
 ```
 
-```{r, eval=live}
+```{r, model-checks, echo=FALSE}
 
-test.ph <- cox.zph(rmodel2)
-ggcoxzph(test.ph)
+# Model 1 Model check
+
+## 1. PHA 
+ggsave("ggcoxzph.pdf", arrangeGrob(grobs = ggcoxzph(cox.zph(rmodel_a))), width=20, height=14, limitsize = FALSE)
+ggsave("ggcoxzph.pdf", arrangeGrob(grobs = ggcoxzph(cox.zph(rmodel_b))), width=20, height=14, limitsize = FALSE)
+
+## 2. Multicollinearity
+# VIF
+
+# Model 1
+vif_a <- rms::vif(cph(formula_a,data=data))
+max_a <- max(vif_a)
+var_a <- names(vif_a)[which(vif_a == max(vif_a))]
+
+# Model 2 
+vif_b <- rms::vif(cph(formula_b, data=data))
+max_b <- max(vif_b)
+var_b <- names(vif_b)[which(vif_b == max(vif_b))]
+
+if(max_a > max_b){
+  maxvif <- max_a
+  varvif <- var_a
+} else {
+  maxvif <- max_b
+  varvif <- var_b
+}
+prettyvif <- strsplit(varvif, "=")[[1]]
+
+# Check correlation among covariates 
+corr <- data%>%select(any_of(varlist_b))%>%select(!starts_with("GeP_PC"))
+corr_matrix <- corr_mat(corr)
+# Find covariates with highest correlation
+inds <- which(corr_matrix==max(corr_matrix), arr.ind=TRUE)
+maxrow <- pretty_func(rownames(corr_matrix)[inds[1,1]])
+maxcol <- pretty_func(colnames(corr_matrix)[inds[1,2]])
 
 ```
 
-## Cox regression of the time until stroke event (`r nrow(data[data$TEU_MACE_Stroke==1,])` events)
+### Model checks:
 
-Stroke event defined as diagnosis of stroke (any kind) or stroke prevention procedure in HES data, or stroke recorded as primary cause of death (censoring at first MACE event applied).
+**Proportional hazards assumption**: Visual inspection of the Schoenfeld residuals gave no evidence of PHA violation.
 
-```{r Cox model stroke, echo=FALSE}
-
-formula1 <- as.formula(paste0("Surv(TEU_MACE_time_yrs,TEU_MACE_Stroke) ~ ", paste(varlist1, collapse="+")))
-
-rmodel1<-coxph(formula1,data=data)
-
-routput1 <- publish(rmodel1, ci.digits=2, ci.handler="sprintf", pvalue.eps=0.01,
-              pvalue.digits=2,pvalue.stars=TRUE, ci.trim=FALSE,print=FALSE)$regressionTable %>%
-  select(-signif) %>%
-  mutate(ID = ifelse(Variable=="", NA, Variable)) %>%
-  tidyr::fill(ID)
-
-formula2 <- as.formula(paste0("Surv(TEU_MACE_time_yrs,TEU_MACE_Stroke) ~ ", paste(varlist2, collapse="+")))
-
-rmodel2<-coxph(formula2,data=data)
-
-anova(rmodel1, rmodel2)
+**Multicollinearity**: 
+  - VIFs across all covariates `r if(maxvif<10){"were"}else{"were not"}` below 10. The highest VIF was `r maxvif`, from level *`r prettyvif[2]`* of *`r pretty_func(prettyvif[1])`*. 
+  - The highest correlation between any pair of variables in the model was `r max(corr_matrix)`, between *`r maxrow`* and *`r maxcol`*.
 
 ## Cox regression of time until MI event (`r nrow(data[data$TEU_MACE_MI==1,])` events)
 
@@ -408,45 +425,20 @@ formula_b <- as.formula(paste0("Surv(TEU_MACE_time_yrs,TEU_MACE_MI) ~ ", paste(v
 
 ```
 
-```{r Model 1 & 2 Model Checking,eval=FALSE,echo=FALSE}
+```{r, echo=FALSE}
 
-# Model 1 Model check
+<<model-checks>>
 
-## 1. PHA 
-shinyApp(ui = fluidPage(
-  mainPanel(
-    plotOutput("main_plot",height = "1000px",width = "2000px")
-  )),
-  server = function(input, output) {
-    
-    output$main_plot <- renderPlot({
-      ftest<-cox.zph(rmodel1)
-      ggcoxzph(ftest)}, height = 1000, width = 2000 )
-    
-  })
+```
 
-## 2. Multicollinearity
-# VIF
-vif=rms::vif(cph(Surv(TEU_MACE_time_yrs,TEU_MACE_status)~ TEU_BaC_AgeCat + BaC_Sex +  TEU_LDL_C_PRS_Quint  + 
-               TEU_BSM_BMIcat + TEU_Smo_Status+
-               TEU_Alc_WeeklyCat + TEU_Pha_METsover1200 + TEU_FaH_CVD + 
-               Prosp_comorb_numcat + TEU_BlP_SBP_Quint+
-               TEU_TownsendDepInd_Quint + TEU_HouseholdIncome + TEU_Emp_category + TEU_Edu_ISCED + TEU_Rec_Country+
-               GeP_PC_1 + GeP_PC_2 + GeP_PC_3 + GeP_PC_4,data=model1_data))
+### Model checks:
 
+**Proportional hazards assumption**: Visual inspection of the Schoenfeld residuals gave no evidence of PHA violation.
 
-range(vif)
+**Multicollinearity**: 
+  - VIFs across all covariates `r if(maxvif<10){"were"}else{"were not"}` below 10. The highest VIF was `r maxvif`, from level *`r prettyvif[2]`* of *`r pretty_func(prettyvif[1])`*. 
+  - The highest correlation between any pair of variables in the model was `r max(corr_matrix)`, between *`r maxrow`* and *`r maxcol`*.
 
-
-# Model 2 Model check
-
-## 1. PHA
-shinyApp(ui = fluidPage(
-  mainPanel(
-    plotOutput("main_plot",height = "1000px",width = "2000px")
-  )),
-  server = function(input, output) {
-    
 ## Cox regression of the time until stroke event (`r nrow(data[data$TEU_MACE_Stroke==1,])` events)
 
 Stroke event defined as diagnosis of stroke (any kind) or stroke prevention procedure in HES data, or stroke recorded as primary cause of death (censoring at first MACE event applied).
@@ -460,31 +452,16 @@ formula_b <- as.formula(paste0("Surv(TEU_MACE_time_yrs,TEU_MACE_Stroke) ~ ", pas
 
 ```
 
-The highest correlation between any pair of variables in the model was `r max(corr_matrix)`, between `r maxrow` and `r maxcol`.
+```{r, echo=FALSE}
 
-```{r, eval=live}
-
-test.ph <- cox.zph(rmodel2)
-ggcoxzph(test.ph)
-
-## 1. PHA
-ftest<-cox.zph(rmodel1)
-# Using shinyApp for better plot visualisation
-shinyApp(ui = fluidPage(
-  mainPanel(
-    plotOutput("main_plot",height = "1000px",width = "2000px")
-  )),
-  server = function(input, output) {
-    
-    output$main_plot <- renderPlot({
-      ftest<-cox.zph(rmodel1)
-      ggcoxzph(ftest)}, height = 1000, width = 2000 )
-    
-  })
-
-rms::vif(rmodel2)
-
-cor(as.numeric(data$TEU_TownsendDepInd_Quint[data$TEU_TownsendDepInd_Quint!="Unavailable" & !data$TEU_HouseholdIncome%in%c("Prefer not to answer", "Unanswered")]), as.numeric(data$TEU_HouseholdIncome[data$TEU_TownsendDepInd_Quint!="Unavailable" & !data$TEU_HouseholdIncome%in%c("Prefer not to answer", "Unanswered")]), method="spearman")
+<<model-checks>>
 
 ```
 
+### Model checks:
+
+**Proportional hazards assumption**: Visual inspection of the Schoenfeld residuals gave no evidence of PHA violation.
+
+**Multicollinearity**: 
+  - VIFs across all covariates `r if(maxvif<10){"were"}else{"were not"}` below 10. The highest VIF was `r maxvif`, from level *`r prettyvif[2]`* of *`r pretty_func(prettyvif[1])`*. 
+  - The highest correlation between any pair of variables in the model was `r max(corr_matrix)`, between *`r maxrow`* and *`r maxcol`*.
