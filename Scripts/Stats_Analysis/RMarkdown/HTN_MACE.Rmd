@@ -503,3 +503,63 @@ status <- "TEU_MACE_Stroke"
 **Multicollinearity**: 
   - VIFs across all covariates `r if(maxvif<10){"were"}else{"were not"}` below 10. The highest VIF was `r maxvif`, from level *`r prettyvif[2]`* of *`r pretty_func(prettyvif[1])`*. 
   - The highest correlation between any pair of variables in the model was `r max(corr_matrix)`, between *`r maxrow`* and *`r maxcol`*.
+  
+# Appendix - including SBP PRS as an ordinal variable in regression model A with MACE outcome
+
+Please note all covariates from Model A have been included, but in the interests of saving space I've dropped all rows from the table below the SBP PRS
+
+## Ordered factor
+
+```{r}
+data$TEU_SBP_PRS_quintiles_o <- factor(data$TEU_SBP_PRS_quintiles, ordered=TRUE)
+
+varlist <- c("TEU_BaC_AgeCat", "BaC_Sex", "TEU_SBP_PRS_quintiles_o",
+          "TEU_BSM_BMIcat", "TEU_Smo_Status", "TEU_Alc_WeeklyCat", "TEU_Pha_METsover1200",
+          "TEU_FaH_CVD", "Prosp_comorb_numcat", "TEU_VeI_numHTNmedscat", "TEU_LDL_Quintiles",
+          "TEU_TownsendDepInd_Quint", "TEU_HouseholdIncome", "TEU_Emp_category", "TEU_Edu_ISCED", "TEU_Rec_Country",
+          "GeP_PC_1", "GeP_PC_2", "GeP_PC_3", "GeP_PC_4"
+          )
+
+formula <- as.formula(paste0("Surv(TEU_MACE_time_yrs, TEU_MACE_status) ~ ", paste(varlist, collapse="+")))
+rmodel <- coxph(formula, data=data)
+
+routput <- printcoxresults(df=data, varlist=varlist, modeloutput=rmodel,
+                            pretty_names=pretty_names, onecol=FALSE, IDcol=TRUE)
+
+kable(routput%>%select(-IDcol)%>%slice_head(n=10))
+
+```
+
+Note that when we include SBP PRS quintiles as an ordinal variable (ordered factor in R) we get linear, quadratic, cubic and quartic terms in R.
+
+Since there are 5 possible categories of SBP PRS quintile, a polynomial of degree 4 is used to replace it in the regression model. We can see that the linear term is statistically significant, but the higher order terms are not - this suggests that the PRS quintiles do have a linear relationship with the MACE outcome. However, we cannot just use the p-value of the linear term to describe the overall significance of the variable, because the higher order terms are present in the model.
+
+## Numeric $\in [1, 2, 3, 4, 5]$ 
+
+An alternative approach is to convert the quintile categories to numeric type, so Q1 will be the integer 1 and Q5 the integer 5, etc. Although we are now modelling this as a continuous variable, we have lost information from the original PRS score, with all scores being collapsed into these five integer values by quintile.
+
+```{r}
+data$TEU_SBP_PRS_quintiles_l <- as.numeric(data$TEU_SBP_PRS_quintiles)
+
+varlist <- c("TEU_BaC_AgeCat", "BaC_Sex", "TEU_SBP_PRS_quintiles_l",
+          "TEU_BSM_BMIcat", "TEU_Smo_Status", "TEU_Alc_WeeklyCat", "TEU_Pha_METsover1200",
+          "TEU_FaH_CVD", "Prosp_comorb_numcat", "TEU_VeI_numHTNmedscat", "TEU_LDL_Quintiles",
+          "TEU_TownsendDepInd_Quint", "TEU_HouseholdIncome", "TEU_Emp_category", "TEU_Edu_ISCED", "TEU_Rec_Country",
+          "GeP_PC_1", "GeP_PC_2", "GeP_PC_3", "GeP_PC_4"
+          )
+
+formula <- as.formula(paste0("Surv(TEU_MACE_time_yrs, TEU_MACE_status) ~ ", paste(varlist, collapse="+")))
+rmodel <- coxph(formula, data=data)
+
+routput <- printcoxresults(df=data, varlist=varlist, modeloutput=rmodel,
+                            pretty_names=pretty_names, onecol=FALSE, IDcol=TRUE)
+
+kable(routput%>%select(-IDcol)%>%slice_head(n=6))
+
+```
+
+We see a statistically significant HR of `r routput$HR[routput$IDcol=="TEU_SBP_PRS_quintiles_l"]` per quintile of PRS (p = `r routput$p[routput$IDcol=="TEU_SBP_PRS_quintiles_l"]`).
+
+
+
+

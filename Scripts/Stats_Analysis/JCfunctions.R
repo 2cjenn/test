@@ -254,9 +254,19 @@ corr_mat <- function(data){
 preparecoefflist_1col <- function(df, varname, pretty_names=list()){
   pretty_varname <- prettyfunc(varname, pnames=pretty_names, bold=TRUE, upper=TRUE)
   if(is.factor(df[[varname]])){
-    levels <- levels(df[[varname]])
+    if(is.ordered(df[[varname]])){
+      poly <- length(levels(df[[varname]]))
+      levels <- c("Ref", ".L", ".Q", ".C")
+      if(poly > 4){
+        powers <- c(4:(poly-1))
+        levels <- c(levels, paste0("^", powers))
+      }
+      levels <- levels[1:poly]
+    } else {
+      levels <- levels(df[[varname]])
+    }
     variable <- c(pretty_varname, levels)
-    coeffname <- c(pretty_varname, paste0(varname,levels))
+    coeffname <- c(pretty_varname, paste0(varname, levels))
   } else {
     variable <- pretty_varname
     coeffname <- varname
@@ -270,7 +280,17 @@ preparecoefflist_1col <- function(df, varname, pretty_names=list()){
 preparecoefflist_2col <- function(df, varname, pretty_names=list()){
   pretty_varname <- prettyfunc(varname, pnames=pretty_names, upper=TRUE)
   if(is.factor(df[[varname]])){
-    levels <- levels(df[[varname]])
+    if(is.ordered(df[[varname]])){
+      poly <- length(levels(df[[varname]]))
+      levels <- c("Ref", ".L", ".Q", ".C")
+      if(poly > 4){
+        powers <- c(4:(poly-1))
+        levels <- c(levels, paste0("^", powers))
+      }
+      levels <- levels[1:poly]
+    } else {
+      levels <- levels(df[[varname]])
+    }
     variable <- c(pretty_varname,
                   rep(NA, length(levels)-1))
     coeffname <- paste0(varname,levels)
