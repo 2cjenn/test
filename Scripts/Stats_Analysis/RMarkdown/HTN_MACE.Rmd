@@ -28,6 +28,7 @@ library(shiny)
 library(rcompanion)
 library(Publish)
 library(gridExtra)
+library(ResourceSelection)
 
 # Specify the markdown format for knitr tables, otherwise they're not compatible with kableExtra
 options(knitr.kable.NA='', knitr.table.format = "markdown")
@@ -271,13 +272,27 @@ kable(tab3)
 
 ```
 
-```{r cross-sectional Model Check,eval=FALSE,echo=FALSE}
-## Assess model fit
+```{r}
+
+# p-value of including PRS in model
 
 formula <- as.formula(paste0("TEU_controlledHTN ~ ", paste(varlist, collapse="+")))
 multi <- glm(formula=formula, data=data, family="binomial")
 
 
+anova <- as.formula(paste0("TEU_controlledHTN ~ ",
+                             paste(varlist[-which(varlist=="TEU_SBP_PRS_quintiles")], collapse="+")))
+SBP_p <- anova(multi, glm(anova, data=data, family="binomial"), test="Chisq")$`Pr(>Chi)`[2]
+
+```
+
+### Overall p-value of SBP PRS
+
+Based on likelihood ratio test, inclusion of SBP PRS `r if(SBP_p < 0.05){"**does**"}else{"does **not**"}` provide significant improvement in model fit (p = `r pretty_pval(SBP_p)`).
+
+```{r cross-sectional Model Check,echo=FALSE}
+
+## Assess model fit
 ## 1. Hosmer-Lemeshow Test
 
 HL <- hoslem.test(multi$y,fitted(multi),g=10)
@@ -285,16 +300,30 @@ HL <- hoslem.test(multi$y,fitted(multi),g=10)
 # g is the number of groups into which to split the observations in the sample
 # For g in 5 to 15, check Hosmer Lemeshow p-vals
 HL_pvals=sapply(5:15,function(i) hoslem.test(multi$y, fitted(multi), g=i)$p.value)
-sum(HL_pvals<0.05)
 
 ## 2. Multicollinearity
+# VIFs
 m2_vifs=data.frame(car::vif(multi))
 m2_vifs$squared=(m2_vifs$GVIF..1..2.Df..)^2
+max <- max(m2_vifs$squared)
 
-# 3. p-value of including PRS in model
-
+# Check correlation among covariates 
+corr <- data%>%select(any_of(varlist))%>%select(!starts_with("GeP_PC"))
+corr_matrix <- corr_mat(corr)
+# Find covariates with highest correlation
+inds <- which(corr_matrix==max(corr_matrix), arr.ind=TRUE)
+maxrow <- pretty_func(rownames(corr_matrix)[inds[1,1]])
+maxcol <- pretty_func(colnames(corr_matrix)[inds[1,2]])
 
 ```
+
+### Model checks:
+
+**Hosmer-Lemeshow Test**: `r sum(HL_pvals<0.05)` p-values were above 5% significance level, across 5 to 15 groups. 
+
+**Multicollinearity**: 
+VIFs (or squared VIFs for categorical covariates) across all covariates `r if(max<10){"were"}else{"were not"}` below 10. The highest VIF was `r max`. 
+The highest correlation between any pair of variables in the model was `r max(corr_matrix)`, between *`r maxrow`* and *`r maxcol`*.
 
 # Hypertension PRS prospective analysis
 
@@ -354,7 +383,7 @@ tab4 <- left_join(routput_a, routput_b, by=c("IDcol", "Coefficient", "Levels")) 
   replace(., is.na(.), "")
 
 rownames(tab4) <- NULL
-tab4 <- rbind(c("Coefficient", "Level", "OR", "95% CI", "p", "OR", "95% CI", "p"),
+tab4 <- rbind(c("Coefficient", "Level", "HR", "95% CI", "p", "OR", "95% CI", "p"),
               as.matrix(tab4))
 colnames(tab4) <- c("", "",
                     "Model A", "", "", 
@@ -371,8 +400,8 @@ anova_a <- as.formula(paste0("Surv(TEU_MACE_time_yrs,", status, ") ~ ",
 anova_b <- as.formula(paste0("Surv(TEU_MACE_time_yrs,", status, ") ~ ",
                              paste(varlist_b[-which(varlist_b=="TEU_SBP_PRS_quintiles")], collapse="+")))
 
-SBP_p_a <- anova(rmodel_a, coxph(anova_a, data=data))$`P(>|Chi|)`[2]
-SBP_p_b <- anova(rmodel_b, coxph(anova_b, data=data))$`P(>|Chi|)`[2]
+SBP_p_a <- anova(rmodel_a, coxph(anova_a, data=data), test="Chisq")$`P(>|Chi|)`[2]
+SBP_p_b <- anova(rmodel_b, coxph(anova_b, data=data), test="Chisq")$`P(>|Chi|)`[2]
 
 ```
 
@@ -427,8 +456,8 @@ maxcol <- pretty_func(colnames(corr_matrix)[inds[1,2]])
 **Proportional hazards assumption**: Visual inspection of the Schoenfeld residuals gave no evidence of PHA violation.
 
 **Multicollinearity**: 
-  - VIFs across all covariates `r if(maxvif<10){"were"}else{"were not"}` below 10. The highest VIF was `r maxvif`, from level *`r prettyvif[2]`* of *`r pretty_func(prettyvif[1])`*. 
-  - The highest correlation between any pair of variables in the model was `r max(corr_matrix)`, between *`r maxrow`* and *`r maxcol`*.
+VIFs across all covariates `r if(maxvif<10){"were"}else{"were not"}` below 10. The highest VIF was `r maxvif`, from level *`r prettyvif[2]`* of *`r pretty_func(prettyvif[1])`*. 
+The highest correlation between any pair of variables in the model was `r max(corr_matrix)`, between *`r maxrow`* and *`r maxcol`*.
 
 ## Cox regression of time until MI event (`r nrow(data[data$TEU_MACE_MI==1,])` events)
 
@@ -464,8 +493,8 @@ status <- "TEU_MACE_MI"
 **Proportional hazards assumption**: Visual inspection of the Schoenfeld residuals gave no evidence of PHA violation.
 
 **Multicollinearity**: 
-  - VIFs across all covariates `r if(maxvif<10){"were"}else{"were not"}` below 10. The highest VIF was `r maxvif`, from level *`r prettyvif[2]`* of *`r pretty_func(prettyvif[1])`*. 
-  - The highest correlation between any pair of variables in the model was `r max(corr_matrix)`, between *`r maxrow`* and *`r maxcol`*.
+VIFs across all covariates `r if(maxvif<10){"were"}else{"were not"}` below 10. The highest VIF was `r maxvif`, from level *`r prettyvif[2]`* of *`r pretty_func(prettyvif[1])`*. 
+The highest correlation between any pair of variables in the model was `r max(corr_matrix)`, between *`r maxrow`* and *`r maxcol`*.
 
 ## Cox regression of the time until stroke event (`r nrow(data[data$TEU_MACE_Stroke==1,])` events)
 
@@ -501,8 +530,8 @@ status <- "TEU_MACE_Stroke"
 **Proportional hazards assumption**: Visual inspection of the Schoenfeld residuals gave no evidence of PHA violation.
 
 **Multicollinearity**: 
-  - VIFs across all covariates `r if(maxvif<10){"were"}else{"were not"}` below 10. The highest VIF was `r maxvif`, from level *`r prettyvif[2]`* of *`r pretty_func(prettyvif[1])`*. 
-  - The highest correlation between any pair of variables in the model was `r max(corr_matrix)`, between *`r maxrow`* and *`r maxcol`*.
+VIFs across all covariates `r if(maxvif<10){"were"}else{"were not"}` below 10. The highest VIF was `r maxvif`, from level *`r prettyvif[2]`* of *`r pretty_func(prettyvif[1])`*. 
+The highest correlation between any pair of variables in the model was `r max(corr_matrix)`, between *`r maxrow`* and *`r maxcol`*.
   
 # Appendix - including SBP PRS as an ordinal variable in regression model A with MACE outcome
 
