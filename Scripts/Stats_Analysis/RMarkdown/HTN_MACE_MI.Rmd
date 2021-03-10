@@ -229,18 +229,23 @@ if(live){plot_list}
 
 # Using default imputation method based on variable type
 
+if(live) {
+  ini <- mice(MI_data,maxit = 0,print=FALSE)
+  pred <- ini$predictorMatrix
+  
+  # Remove predictors: ID; TEU_MACE_MI; TEU_MACE_Stroke; TEU_Alc_WeeklyCat (want to use alc continuous variables instead)
+  pred[,c("ID","TEU_MACE_MI","TEU_MACE_Stroke")] <- 0
+  
+  
+  imp1<-mice(MI_data,pred=pred, m=10, maxit = 20,seed = 100)
+  
+  save(imp1,file=file.path(config$data$derived, paste0("imputation", format(Sys.time(), '%d%B%Y'), ".rds")))
+} else {
+  imp1 <- readRDS(file.path(config$data$derived, "imputation10March2021.rds"))
+}
+```
 
-ini <- mice(MI_data,maxit = 0,print=FALSE)
-pred <- ini$predictorMatrix
-
-# Remove predictors: ID; TEU_MACE_MI; TEU_MACE_Stroke; TEU_Alc_WeeklyCat (want to use alc continuous variables instead)
-pred[,c("ID","TEU_MACE_MI","TEU_MACE_Stroke")] <- 0
-
-
-imp1<-mice(MI_data,pred=pred, m=10, maxit = 20,seed = 100)
-
-save(imp1,file=file.path(config$data$derived,'imp1.rds'))
-
+```{r}
 
 # Diagnostics 
 
