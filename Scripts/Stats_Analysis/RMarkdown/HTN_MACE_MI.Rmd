@@ -169,6 +169,7 @@ MI_data=data%>%
          TEU_BaC_AgeAtRec,BaC_Sex,
          TEU_SBP_PRS,
          BSM_BMI,TEU_Smo_Status,
+         TEU_Alc_WeeklyCat,
          TEU_Alc_WeeklyAlcUnits,
          PhA_METsWkAllAct,TEU_FaH_CVD,
          Prosp_comorb_numcat,
@@ -306,6 +307,54 @@ lapply(1:M, function(i) summary(long1%>%filter(.imp==i)%>%pull(TownsendDepInd)))
 
 
 ```
+
+```{r}
+
+# Post processing: Change continuous covariates to categorical for further analysis 
+
+long1 <- complete(imp1,"long",include = TRUE) 
+
+comp_long1<-long1%>%
+  mutate(
+    TEU_BaC_AgeCat=cut(TEU_BaC_AgeAtRec,
+                       breaks = c(40, 50, 60, 70),
+                       labels = c("40-49", "50-59", "60-69"),
+                       right = FALSE
+    ),
+    
+    TEU_BSM_BMIcat=factor(cut(BSM_BMI,
+                       breaks = c(0, 18.5, 25, 30, 200),
+                       c("Underweight", "Normal", "Overweight", "Obese"),
+                       right = FALSE
+    ),levels = c('Normal','Underweight','Overweight','Obese')),
+    
+    TEU_LDLctrl_v1=factor(ifelse(BBC_LDL_Result<3,1,0),levels=c(0,1), 
+                          labels=c("Not controlled", "Controlled")),
+    TEU_Smo_Status=factor(TEU_Smo_Status,levels = c('Never','Previous','Current')),
+    TEU_Pha_METsover1200 = factor(ifelse(PhA_METsWkAllAct<=1200,"Low (MET minutes <= 1200)",
+                                         "High (MET minutes > 1200)"),
+                                  levels = c("Low (MET minutes <= 1200)", "High (MET minutes > 1200)")),
+    TEU_VeI_numHTNmedscat = factor( dplyr::case_when(
+        is.na(TEU_VeI_numHTNmeds) ~ "None reported",
+        TEU_VeI_numHTNmeds == 0 ~ "None reported",
+        TEU_VeI_numHTNmeds == 1 ~ "1",
+        TEU_VeI_numHTNmeds == 2 ~ "2",
+        TEU_VeI_numHTNmeds >= 3 ~ "3 or more",
+        TRUE ~ as.character(TEU_VeI_numHTNmeds)
+      ), levels=c("None reported", "1", "2", "3 or more"))
+      )%>%
+  
+  group_by(.imp)%>%
+  mutate(TEU_SBP_PRS_Quint= quantcut(TEU_SBP_PRS,q=5,labels = c('Q1: Lowest score','Q2','Q3','Q4','Q5: Highest score')),
+         TEU_TownsendDepInd_Quint= quantcut(TownsendDepInd,q=5,labels = c('Q1: least deprived','Q2','Q3','Q4','Q5: most deprived')),
+         TEU_BlP_SBP_Quint=quantcut(TEU_BlP_SBP.avg,q=5,labels=c('Q1: Lowest level','Q2','Q3','Q4','Q5: Highest level')),
+         #TEU_BlP_DBP_Quint=quantcut(TEU_BlP_DBP.avg,q=5,labels=c('Q1: Lowest level','Q2','Q3','Q4','Q5: Highest level')),
+         BBC_LDL_Quint=quantcut(BBC_LDL_Result,q=5,labels=c('Q1: Lowest level','Q2','Q3','Q4','Q5: Highest level')))
+
+comp_long1<-as.mids(comp_long1)
+
+```
+
 
 
 
@@ -476,16 +525,16 @@ Including SBP PRS (quintiles), showing for each outcome:
 
 ```{r varlists for models}
 
-varlist_a <- c("TEU_BaC_AgeCat", "BaC_Sex", "TEU_SBP_PRS_quintiles",
+varlist_a <- c("TEU_BaC_AgeCat", "BaC_Sex", "TEU_SBP_PRS_Quint",
           "TEU_BSM_BMIcat", "TEU_Smo_Status", "TEU_Alc_WeeklyCat", "TEU_Pha_METsover1200",
-          "TEU_FaH_CVD", "Prosp_comorb_numcat", "TEU_VeI_numHTNmedscat", "TEU_LDL_Quintiles",
+          "TEU_FaH_CVD", "Prosp_comorb_numcat", "TEU_VeI_numHTNmedscat", "BBC_LDL_Quint",
           "TEU_TownsendDepInd_Quint", "TEU_HouseholdIncome", "TEU_Emp_category", "TEU_Edu_ISCED", "TEU_Rec_Country",
           "GeP_PC_1", "GeP_PC_2", "GeP_PC_3", "GeP_PC_4"
           )
 
-varlist_b <- c("TEU_BaC_AgeCat", "BaC_Sex", "TEU_SBP_PRS_quintiles", "TEU_BlP_SBP_quintiles", 
+varlist_b <- c("TEU_BaC_AgeCat", "BaC_Sex", "TEU_SBP_PRS_Quint", "TEU_BlP_SBP_Quint", 
           "TEU_BSM_BMIcat", "TEU_Smo_Status", "TEU_Alc_WeeklyCat", "TEU_Pha_METsover1200",
-          "TEU_FaH_CVD", "Prosp_comorb_numcat", "TEU_VeI_numHTNmedscat", "TEU_LDL_Quintiles",
+          "TEU_FaH_CVD", "Prosp_comorb_numcat", "TEU_VeI_numHTNmedscat", "BBC_LDL_Quint",
           "TEU_TownsendDepInd_Quint", "TEU_HouseholdIncome", "TEU_Emp_category", "TEU_Edu_ISCED", "TEU_Rec_Country",
           "GeP_PC_1", "GeP_PC_2", "GeP_PC_3", "GeP_PC_4"
           )
