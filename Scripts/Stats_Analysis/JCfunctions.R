@@ -121,6 +121,46 @@ descriptivetable <- function(df, varlist, contavg='mean', assocvar=NULL, pretty_
   return(outdf)
 }
 
+printMIresults <- function(df, varlist, modeloutput, pretty_names=list(), onecol=FALSE, IDcol=FALSE){
+  require(dplyr)
+  
+  coefflist <- list()
+  # Prepare the list of coefficients - variables and levels for factors or blanks for continuous
+  for(var in varlist){
+    coefflist[[var]] <- preparecoefflist(df=df, varname=var, pretty_names=pretty_names, onecol=onecol)
+  }
+  coeffnames <- do.call(rbind, coefflist)
+  
+  regression <- data.frame(
+    IDcol=modeloutput$term,
+    HR=pretty_dp(exp(modeloutput$estimate),dp=2),
+    CI=pretty_confint(exp(modeloutput$estimate-1.96*modeloutput$std.error),
+                            exp(modeloutput$estimate+1.96*modeloutput$std.error),
+                            dp=2),
+    p=pretty_pval(modeloutput$p.value),
+    stringsAsFactors=FALSE
+  )
+  
+  results <- left_join(coeffnames, regression, by="IDcol")
+  if(onecol){
+    results$HR[is.na(results$HR) & (results$IDcol != results$Coefficient & !is.na(results$Coefficient))] <- "1"
+  } else {
+    results$HR[is.na(results$HR) & !is.na(results$Coefficient)] <- "1"
+  }
+  
+  coeffcols <- colnames(coeffnames)
+  if(IDcol==FALSE){
+    coeffcols <- coeffcols[coeffcols != "IDcol"]
+  }
+  results <- results[,c(coeffcols, "HR", "CI", "p")]
+  names(results) <- c(coeffcols, "HR", "95% CI", "p")
+  
+  
+  rownames(results) <- NULL
+  # https://www.r-bloggers.com/regression-on-categorical-variables/
+  return(results)
+}
+
 # Prettyprint the results from a Cox model
 # To use this, 
 # model <- coxph(Surv(time_to_dementia, dementia_status) ~ age, data=data)

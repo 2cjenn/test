@@ -31,6 +31,7 @@ library(gridExtra)
 library(ResourceSelection)
 library(naniar)
 library(mice)
+library(gtools)
 
 # Specify the markdown format for knitr tables, otherwise they're not compatible with kableExtra
 options(knitr.kable.NA='', knitr.table.format = "markdown")
@@ -554,18 +555,18 @@ status <- "TEU_MACE_status"
 ```{r, cox-output, eval=TRUE}
 
 # Model A
-formula_a <- as.formula(paste0("Surv(TEU_MACE_time_yrs,", status, ") ~ ", paste(varlist_a, collapse="+")))
-rmodel_a <- coxph(formula_a, data=data)
+formula_a <- paste0("Surv(TEU_MACE_time_yrs,", status, ") ~ ", paste(varlist_a, collapse="+"))
+rmodel_a <- with(comp_long1, coxph(as.formula(formula_a)))
 
-routput_a <- printcoxresults(df=data, varlist=varlist_b, modeloutput=rmodel_a,
+routput_a <- printMIresults(df=data, varlist=varlist_b, modeloutput=summary(pool(rmodel_a)),
                             pretty_names=pretty_names, onecol=FALSE, IDcol=TRUE)
 routput_a$HR[grepl("TEU_BlP_SBP_quintiles", routput_a$IDcol, fixed=TRUE)] <- NA
 
 # Model B
-formula_b <- as.formula(paste0("Surv(TEU_MACE_time_yrs,", status, ") ~ ", paste(varlist_b, collapse="+")))
-rmodel_b <- coxph(formula_b, data=data)
+formula_b <- paste0("Surv(TEU_MACE_time_yrs,", status, ") ~ ", paste(varlist_b, collapse="+"))
+rmodel_b <- with(comp_long1, coxph(as.formula(formula_b)))
 
-routput_b <- printcoxresults(df=data, varlist=varlist_b, modeloutput=rmodel_b,
+routput_b <- printMIresults(df=data, varlist=varlist_b, modeloutput=summary(pool(rmodel_b)),
                             pretty_names=pretty_names, onecol=FALSE, IDcol=TRUE)
 
 # Combine into one table
