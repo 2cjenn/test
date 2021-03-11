@@ -166,7 +166,7 @@ export_svg(DiagrammeR::grViz(here::here(file.path(config$outputs$flowcharts, "HT
 ```{r}
 
 MI_data=data%>%
-  select(ID,TEU_MACE_status,TEU_MACE_time_yrs, TEU_MACE_MI, TEU_MACE_Stroke,
+  select(ID,TEU_MACE_status,TEU_MACE_time_yrs, TEU_MACE_MI, TEU_MACE_Stroke, TEU_controlledHTN,
          TEU_BaC_AgeAtRec,BaC_Sex,
          TEU_SBP_PRS,
          BSM_BMI,TEU_Smo_Status,
@@ -245,7 +245,7 @@ if(live) {
   
   save(imp1,file=file.path(config$data$derived, paste0("imputation", format(Sys.time(), '%d%B%Y'), ".rds")))
 } else {
-  imp1 <- readRDS(file.path(config$data$derived, "imputation10March2021.rds"))
+  imp1 <- readRDS(file.path(config$data$derived, "imputation11March2021.rds"))
 }
 ```
 
@@ -354,6 +354,9 @@ comp_long1<-long1%>%
 
 comp_long1<-as.mids(comp_long1)
 
+pretty_names$TEU_SBP_PRS_Quint <- "Systolic BP PRS Quintiles"
+pretty_names$BBC_LDL_Quint <- "Baseline LDL-C quintiles"
+
 ```
 
 
@@ -410,57 +413,25 @@ kable(tab[,-1])
 
 ```{r logistic-regression, include=TRUE, echo=FALSE}
 
-varlist=c("TEU_BaC_AgeCat", "BaC_Sex", "TEU_SBP_PRS_quintiles",
+varlist=c("TEU_BaC_AgeCat", "BaC_Sex", "TEU_SBP_PRS_Quint",
           "TEU_BSM_BMIcat", "TEU_Smo_Status", "TEU_Alc_WeeklyCat", "TEU_Pha_METsover1200",
-          "TEU_FaH_CVD", "Prosp_comorb_numcat", "TEU_VeI_numHTNmedscat", "TEU_LDL_Quintiles",
+          "TEU_FaH_CVD", "Prosp_comorb_numcat", "TEU_VeI_numHTNmedscat", "BBC_LDL_Quint",
           "TEU_TownsendDepInd_Quint", "TEU_HouseholdIncome", "TEU_Emp_category", "TEU_Edu_ISCED", "TEU_Rec_Country",
           "GeP_PC_1", "GeP_PC_2", "GeP_PC_3", "GeP_PC_4"
           )
 
-desctable2 <- function(df){
-  n <- nrow(df)
-  control <- prop.test(x=nrow(df[df$TEU_controlledHTN==TRUE & !is.na(df$TEU_controlledHTN),]),
-                           n=nrow(df), alternative="two.sided", conf.level=0.95)
-  pct_control <- pretty_dp(control$estimate, dp=1, pct=TRUE)
-  
-  table <- cbind(n, pct_control)
-  return(table)
-}
+formula <- paste0("TEU_controlledHTN  ~ ", paste(varlist, collapse="+"))
+rmodel <- with(comp_long1, glm(as.formula(formula), family="binomial"))
 
-pct_ctrl <- c()
-for(var in varlist){
-  header <- c(var, paste0("**", pretty_func(var), "**"), NA, NA)
-  pct_ctrl <- rbind(pct_ctrl, header)
-  for(level in levels(data[[var]])){
-    newrow <- desctable2(data[data[var]==level,])
-    IDcol <- paste0(var, level)
-    pct_ctrl <- rbind(pct_ctrl, cbind(IDcol, level, newrow))
-  }
-}
-pct_ctrl <- data.frame(pct_ctrl)
+routput <- printMIresults(df=data, varlist=varlist, modeloutput=summary(pool(rmodel)),
+                            pretty_names=pretty_names, onecol=FALSE, IDcol=FALSE)
 
-adj <- regressiontable(df=data, outcome="TEU_controlledHTN", varlist=varlist, 
-                       regresstype="adjusted", adjvarlist=c("TEU_BaC_AgeCat", "BaC_Sex"))
-multi <- regressiontable(df=data, outcome="TEU_controlledHTN", varlist=varlist, 
-                         regresstype="multivariable")
+rownames(routput) <- NULL
 
-tab3 <- merge(adj, multi, by=c("IDcol", "Coefficient", "Levels"), sort=FALSE) %>% select(-Coefficient, -Levels)
-# Add n column
-
-tab3 <- left_join(pct_ctrl, tab3, by=c("IDcol")) %>% select(-IDcol)
-
-# Hide "unanswered"/"unknown"/"do not know" categories
-# tab3 <- tab3[-which(tab3$level %in% c("Unknown", "Unanswered", "Do not know", "Prefer not to answer")),]
-rownames(tab3) <- NULL
-
-tab3 <- rbind(c("Coefficient", "n^1^", "% Controlled^2^", "OR", "95% CI", "p", "OR", "95% CI", "p"),
-              as.matrix(tab3))
-colnames(tab3) <- c("","","", 
-                    "Age- and sex-adjusted", "", "", 
-                    "Multivariable- adjusted", "", "")
+colnames(routput) <- c("Coefficient", "Level", "OR", "95% CI", "p")
 
 # Output the resulting table
-kable(tab3)
+kable(routput)
 
 ```
 
