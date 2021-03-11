@@ -226,6 +226,8 @@ if(live){plot_list}
 ```{r}
 
 # Create Imputations (iter=20, M=5)
+iter <- 20
+M <- 10
 
 # Using default imputation method based on variable type
 
@@ -237,7 +239,7 @@ if(live) {
   pred[,c("ID","TEU_MACE_MI","TEU_MACE_Stroke")] <- 0
   
   
-  imp1<-mice(MI_data,pred=pred, m=10, maxit = 20,seed = 100)
+  imp1<-mice(MI_data,pred=pred, m = M, maxit = iter,seed = 100)
   
   save(imp1,file=file.path(config$data$derived, paste0("imputation", format(Sys.time(), '%d%B%Y'), ".rds")))
 } else {
@@ -270,7 +272,7 @@ for (var in missing_var){
     
     #long1 <- cbind(long1, ind.na=is.na(imp1$data[[var]]))
     long1 <- long1 %>%
-      mutate(ind.na=rep(is.na(imp1$data[[var]]),5))
+      mutate(ind.na=rep(is.na(imp1$data[[var]]), M))
     
     p<-densityplot(~long1[[var]]|.imp, data=long1, group=ind.na, plot.points=FALSE,
                 ref=TRUE, xlab=paste0(var),scales=list(y=list(draw=F)),
@@ -282,7 +284,7 @@ for (var in missing_var){
   }else{
     # If factor, produce freq table of each level between observed and imputed 
     long1 <- long1 %>%
-      mutate(ind.na=rep(ifelse(is.na(imp1$data[[var]]),'Imputed','Observed'),5))
+      mutate(ind.na=rep(ifelse(is.na(imp1$data[[var]]),'Imputed','Observed'), M))
     
     factor_tb[[var]] <- lapply(unique(long1$.imp), function(i) 
       prop.table(table(long1%>%filter(.imp==i)%>%pull(ind.na),
@@ -296,11 +298,11 @@ for (var in missing_var){
 # Check overall descriptive between observed and completed (observed + imputed)
 summary(MI_data$TEU_BlP_SBP.avg)
 
-lapply(1:5, function(i) summary(long1%>%filter(.imp==i)%>%pull(TEU_BlP_SBP.avg)))
+lapply(1:M, function(i) summary(long1%>%filter(.imp==i)%>%pull(TEU_BlP_SBP.avg)))
 
 summary(MI_data$TownsendDepInd)
 
-lapply(1:5, function(i) summary(long1%>%filter(.imp==i)%>%pull(TownsendDepInd)))
+lapply(1:M, function(i) summary(long1%>%filter(.imp==i)%>%pull(TownsendDepInd)))
 
 
 ```
