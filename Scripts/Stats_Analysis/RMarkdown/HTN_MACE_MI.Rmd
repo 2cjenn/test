@@ -439,13 +439,12 @@ kable(routput)
 
 # p-value of including PRS in model
 
-formula <- as.formula(paste0("TEU_controlledHTN ~ ", paste(varlist, collapse="+")))
-multi <- glm(formula=formula, data=data, family="binomial")
+anova <- with(comp_long1, glm(as.formula(paste0("TEU_controlledHTN ~ ",
+                             paste(varlist[-which(varlist=="TEU_SBP_PRS_Quint")], collapse="+"))), family="binomial"))
 
+LRT <- anova(rmodel, anova, method = 'D2',use = 'likelihood')
 
-anova <- as.formula(paste0("TEU_controlledHTN ~ ",
-                             paste(varlist[-which(varlist=="TEU_SBP_PRS_quintiles")], collapse="+")))
-SBP_p <- anova(multi, glm(anova, data=data, family="binomial"), test="Chisq")$`Pr(>Chi)`[2]
+SBP_p <- LRT$out$`1 ~~ 2`$result[4]
 
 ```
 
@@ -558,13 +557,18 @@ kable(tab4)
 
 ```{r, SBP_pval}
 
-anova_a <- as.formula(paste0("Surv(TEU_MACE_time_yrs,", status, ") ~ ",
-                             paste(varlist_a[-which(varlist_a=="TEU_SBP_PRS_quintiles")], collapse="+")))
-anova_b <- as.formula(paste0("Surv(TEU_MACE_time_yrs,", status, ") ~ ",
-                             paste(varlist_b[-which(varlist_b=="TEU_SBP_PRS_quintiles")], collapse="+")))
+anova_a <- with(comp_long1, 
+                coxph(as.formula(paste0("Surv(TEU_MACE_time_yrs,", status, ") ~ ",
+                                        paste(varlist_a[-which(varlist_a=="TEU_SBP_PRS_Quint")], collapse="+")))))
+anova_b <- with(comp_long1, 
+                coxph(as.formula(paste0("Surv(TEU_MACE_time_yrs,", status, ") ~ ",
+                                        paste(varlist_b[-which(varlist_b=="TEU_SBP_PRS_Quint")], collapse="+")))))
 
-SBP_p_a <- anova(rmodel_a, coxph(anova_a, data=data), test="Chisq")$`P(>|Chi|)`[2]
-SBP_p_b <- anova(rmodel_b, coxph(anova_b, data=data), test="Chisq")$`P(>|Chi|)`[2]
+LRT_a <- anova(rmodel_a, anova_a, method='D2', use='likelihood')
+LRT_b <- anova(rmodel_b, anova_b, method='D2', use='likelihood')
+
+SBP_p_a <- LRT_a$out$`1 ~~ 2`$result[4] 
+SBP_p_b <- LRT_b$out$`1 ~~ 2`$result[4]
 
 ```
 
