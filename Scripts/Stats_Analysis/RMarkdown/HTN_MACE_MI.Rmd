@@ -373,11 +373,6 @@ varlist=c("TEU_BaC_AgeAtRec", "TEU_BaC_AgeCat", "BaC_Sex", "TEU_BlP_SBP_quintile
           "TEU_TownsendDepInd_Quint", "TEU_HouseholdIncome", "TEU_Emp_category", "TEU_Edu_ISCED", "TEU_Rec_Country"
           )
 
-tab_all <- descriptivetable(df=data, 
-                         varlist=varlist,
-                         contavg='median',
-                         pretty_names=pretty_names)
-
 tab_1 <- descriptivetable(df=data[data$TEU_SBP_PRS_quintiles=="Q1: lowest",], 
                          varlist=varlist,
                          contavg='median',
@@ -393,14 +388,19 @@ tab_5 <- descriptivetable(df=data[data$TEU_SBP_PRS_quintiles=="Q5: highest",],
                          contavg='median',
                          pretty_names=pretty_names)
 
-tab <- inner_join(tab_all, tab_1%>%select(-Variable), by="IDcol")
-tab <- inner_join(tab, tab_3%>%select(-Variable), by="IDcol")
+tab_all <- descriptivetable(df=data, 
+                         varlist=varlist,
+                         contavg='median',
+                         pretty_names=pretty_names)
+
+tab <- inner_join(tab_1, tab_3%>%select(-Variable), by="IDcol")
 tab <- inner_join(tab, tab_5%>%select(-Variable), by="IDcol")
+tab <- inner_join(tab, tab_all%>%select(-Variable), by="IDcol")
 
 rownames(tab) <- NULL
 tab <- rbind(c("", "Variable", "n", "%", "n", "%", "n", "%", "n", "%"),
               as.matrix(tab))
-colnames(tab) <- c("", "", "Overall", "", "Q1: lowest", "", "Q3", "", "Q5: highest", "")
+colnames(tab) <- c("", "", "Q1: lowest", "", "Q3", "", "Q5: highest", "", "Overall", "")
 
 # Output the resulting table
 kable(tab[,-1])
