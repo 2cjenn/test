@@ -161,6 +161,12 @@ export_svg(DiagrammeR::grViz(here::here(file.path(config$outputs$flowcharts, "HT
 
 ```
 
+# Multiple Imputation
+
+**Multiple imputation (MI)** was used to impute missing values for covariates fitted in the analysis model under missing at random (MAR) assumption. We constructed imputation model using rawest format of covariates from the analysis model and performed 10 imputations (ran for 20 iterations) using default imputation method according to covariate type. 
+
+
+Table 1 shows the descriptive statistics of the original dataset (i.e. before multiple imputation). Tables 2-5 show the pooled analysis outputs using 10 imputed datasets (i.e. complete datasets with imputed missing values). 
 
 
 ```{r}
@@ -451,40 +457,33 @@ SBP_p <- LRT$out$`1 ~~ 2`$result[4]
 
 Based on likelihood ratio test, inclusion of SBP PRS `r if(SBP_p < 0.05){"**does**"}else{"does **not**"}` provide significant improvement in model fit (p = `r pretty_pval(SBP_p)`).
 
-```{r cross-sectional Model Check,echo=FALSE}
+```{r cross-sectional model check,echo=FALSE,eval=live}
 
-## Assess model fit
-## 1. Hosmer-Lemeshow Test
+HL_test<-list() #saves how many groups have HL test p<0.05 for each imputation, if large indicates poor model fit
 
-HL <- hoslem.test(multi$y,fitted(multi),g=10)
+vifs<-list() #saves vif output for each imputation
 
-# g is the number of groups into which to split the observations in the sample
-# For g in 5 to 15, check Hosmer Lemeshow p-vals
-HL_pvals=sapply(5:15,function(i) hoslem.test(multi$y, fitted(multi), g=i)$p.value)
+for (i in 1:comp_long1$m) {
+  ## 1. HL test (goodness of fit) across multiple choices of g,5:15
+  HL_pvalues<-sapply(5:15,function(k) hoslem.test(rmodel$analyses[[i]]$y,fitted(rmodel$analyses[[i]]),
+                                                  g=k)$p.value)
+  
+  HL_test[[i]]<-sum(HL_pvalues<0.05)
+  
+  ## 2. Multicollinearity
+  vifs[[i]]<-data.frame(car::vif(rmodel$analyses[[i]]))
+  vifs[[i]]$squared=(vifs[[i]]$GVIF..1..2.Df..)^2
+}
 
-## 2. Multicollinearity
-# VIFs
-m2_vifs=data.frame(car::vif(multi))
-m2_vifs$squared=(m2_vifs$GVIF..1..2.Df..)^2
-max <- max(m2_vifs$squared)
-
-# Check correlation among covariates 
-corr <- data%>%select(any_of(varlist))%>%select(!starts_with("GeP_PC"))
-corr_matrix <- corr_mat(corr)
-# Find covariates with highest correlation
-inds <- which(corr_matrix==max(corr_matrix), arr.ind=TRUE)
-maxrow <- pretty_func(rownames(corr_matrix)[inds[1,1]])
-maxcol <- pretty_func(colnames(corr_matrix)[inds[1,2]])
+if(live){HL_test}
+if(live){vifs}
 
 ```
 
-### Model checks:
+### Model Checking on each imputed dataset:
 
-**Hosmer-Lemeshow Test**: `r sum(HL_pvals<0.05)` p-values were above 5% significance level, across 5 to 15 groups. 
-
-**Multicollinearity**: 
-VIFs (or squared VIFs for categorical covariates) across all covariates `r if(max<10){"were"}else{"were not"}` below 10. The highest VIF was `r max`. 
-The highest correlation between any pair of variables in the model was `r max(corr_matrix)`, between *`r maxrow`* and *`r maxcol`*.
+*	Assessing model fit: Performed Hosmer-Lemeshow test across multiple choices of g (number of groups) from 5 to 15 and majority of p-values were above 5% significance level, which suggested good model fit.
+*	Multicollinearity: Assessed via ‘car’ R package and VIFs across all covariates were below 10. No multicollinearity detected.
 
 # Hypertension PRS prospective analysis
 
@@ -577,53 +576,90 @@ SBP_p_b <- LRT_b$out$`1 ~~ 2`$result[4]
 * Model B: Based on likelihood ratio test, inclusion of SBP PRS `r if(SBP_p_b < 0.05){"**does**"}else{"does **not**"}` provide significant improvement in model fit (p = `r pretty_pval(SBP_p_b)`).
 
 
-```{r, model-checks, echo=FALSE}
+```{r model-checks,echo=FALSE,eval=live}
+# Model 1: Multivariable model (without baseline LDL)
+pha_plots<-list() #save PHA plot for each imputation
+vifs<-list() #save multicollinearity results
 
-## 1. PHA 
-ggsave(file.path(config$outputs$figures, paste0(status, "_modelA.pdf")), 
-       arrangeGrob(grobs = ggcoxzph(cox.zph(rmodel_a))), width=20, height=14, limitsize = FALSE)
-ggsave(file.path(config$outputs$figures, paste0(status, "_modelB.pdf")), 
-       arrangeGrob(grobs = ggcoxzph(cox.zph(rmodel_b))), width=20, height=14, limitsize = FALSE)
-
-## 2. Multicollinearity
-# VIF
-
-# Model A
-vif_a <- rms::vif(cph(formula_a,data=data))
-max_a <- max(vif_a)
-var_a <- names(vif_a)[which(vif_a == max(vif_a))]
-
-# Model B 
-vif_b <- rms::vif(cph(formula_b, data=data))
-max_b <- max(vif_b)
-var_b <- names(vif_b)[which(vif_b == max(vif_b))]
-
-if(max_a > max_b){
-  maxvif <- max_a
-  varvif <- var_a
-} else {
-  maxvif <- max_b
-  varvif <- var_b
+for (i in 1:comp_long1$m) {
+  ## 1. PHA
+  pha_plots[[i]]<-ggcoxzph(cox.zph(rmodel_a$analyses[[i]]))
+  
+  ## 2. Multicollinearity
+  
+  vifs[[i]]<-rms::vif(cph(as.formula(formula_a),data=complete(comp_long1,i)))
+  cat("Imputation",i,", Any VIF above>10:",any(vifs[[i]]>10),'\n')
+  
 }
-prettyvif <- strsplit(varvif, "=")[[1]]
 
-# Check correlation among covariates 
-corr <- data%>%select(any_of(varlist_b))%>%select(!starts_with("GeP_PC"))
-corr_matrix <- corr_mat(corr)
-# Find covariates with highest correlation
-inds <- which(corr_matrix==max(corr_matrix), arr.ind=TRUE)
-maxrow <- pretty_func(rownames(corr_matrix)[inds[1,1]])
-maxcol <- pretty_func(colnames(corr_matrix)[inds[1,2]])
+# Use shinyapp for better visualisation
+
+choices = 1:comp_long1$m
+
+names(choices) <- paste("Imputation",1:comp_long1$m)
+shinyApp(
+  ui = fluidPage(
+    titlePanel("PHA plot on each imputation"),
+    sidebarPanel(
+      selectInput("plot", "Choose plot:", choices=choices),
+      hr()),
+      #helpText("Trail plots")),
+    plotOutput("mainplot")
+  ),
+  server = function(input, output) {
+    output$mainplot<-renderPlot({
+      i<- as.integer(input$plot)
+      pha_plots[[i]]
+    }, height = 1000, width = 2000)
+  }
+)
+
+
+# Model 2: Multivariable model (With baseline LDL)
+
+pha_plots2<-list() #save PHA plot for each imputation
+vifs2<-list() #save multicollinearity results
+
+for (i in 1:comp_long1$m) {
+  ## 1. PHA
+  pha_plots2[[i]]<-ggcoxzph(cox.zph(rmodel_b$analyses[[i]]))
+  
+  ## 2. Multicollinearity
+  
+  vifs2[[i]]<-rms::vif(cph(as.formula(formula_b),data=complete(comp_long1,i)))
+  cat("Imputation",i,", Any VIF above>10:",any(vifs2[[i]]>10),'\n')
+  
+}
+
+# Use shinyapp for better visualisation
+
+choices = 1:comp_long1$m
+
+names(choices) <- paste("Imputation",1:comp_long1$m)
+shinyApp(
+  ui = fluidPage(
+    titlePanel("PHA plot on each imputation"),
+    sidebarPanel(
+      selectInput("plot", "Choose plot:", choices=choices),
+      hr()),
+    #helpText("Trail plots")),
+    plotOutput("mainplot")
+  ),
+  server = function(input, output) {
+    output$mainplot<-renderPlot({
+      i<- as.integer(input$plot)
+      pha_plots2[[i]]
+    }, height = 1000, width = 2000)
+  }
+)
+
 
 ```
 
-### Model checks:
+### Model Checking (for both Model A and B on each imputed dataset):
 
-**Proportional hazards assumption**: Visual inspection of the Schoenfeld residuals gave no evidence of PHA violation.
-
-**Multicollinearity**: 
-VIFs across all covariates `r if(maxvif<10){"were"}else{"were not"}` below 10. The highest VIF was `r maxvif`, from level *`r prettyvif[2]`* of *`r pretty_func(prettyvif[1])`*. 
-The highest correlation between any pair of variables in the model was `r max(corr_matrix)`, between *`r maxrow`* and *`r maxcol`*.
+*	Proportional hazard assumption (PHA): Assessed by plotting Schoenfeld residuals against time and testing the significance of relationship between residuals and time. Schoenfeld residuals plots indicated no evidence of PHA violation.
+*	Multicollinearity: Assessed via ‘rms’ R package and VIFs across all covariates were below 10. No multicollinearity detected.
 
 ## Cox regression of time until MI event (`r nrow(data[data$TEU_MACE_MI==1,])` events)
 
@@ -648,19 +684,10 @@ status <- "TEU_MACE_MI"
 * Model A: Based on likelihood ratio test, inclusion of SBP PRS `r if(SBP_p_a < 0.05){"**does**"}else{"does **not**"}` provide significant improvement in model fit (p = `r pretty_pval(SBP_p_a)`).
 * Model B: Based on likelihood ratio test, inclusion of SBP PRS `r if(SBP_p_b < 0.05){"**does**"}else{"does **not**"}` provide significant improvement in model fit (p = `r pretty_pval(SBP_p_b)`).
 
-```{r, echo=FALSE}
+### Model Checking (for both Model A and B on each imputed dataset):
 
-<<model-checks>>
-
-```
-
-### Model checks:
-
-**Proportional hazards assumption**: Visual inspection of the Schoenfeld residuals gave no evidence of PHA violation.
-
-**Multicollinearity**: 
-VIFs across all covariates `r if(maxvif<10){"were"}else{"were not"}` below 10. The highest VIF was `r maxvif`, from level *`r prettyvif[2]`* of *`r pretty_func(prettyvif[1])`*. 
-The highest correlation between any pair of variables in the model was `r max(corr_matrix)`, between *`r maxrow`* and *`r maxcol`*.
+*	Proportional hazard assumption (PHA): Assessed by plotting Schoenfeld residuals against time and testing the significance of relationship between residuals and time. Schoenfeld residuals plots indicated no evidence of PHA violation.
+*	Multicollinearity: Assessed via ‘rms’ R package and VIFs across all covariates were below 10. No multicollinearity detected.
 
 ## Cox regression of the time until stroke event (`r nrow(data[data$TEU_MACE_Stroke==1,])` events)
 
@@ -685,20 +712,12 @@ status <- "TEU_MACE_Stroke"
 * Model A: Based on likelihood ratio test, inclusion of SBP PRS `r if(SBP_p_a < 0.05){"**does**"}else{"does **not**"}` provide significant improvement in model fit (p = `r pretty_pval(SBP_p_a)`).
 * Model B: Based on likelihood ratio test, inclusion of SBP PRS `r if(SBP_p_b < 0.05){"**does**"}else{"does **not**"}` provide significant improvement in model fit (p = `r pretty_pval(SBP_p_b)`).
 
-```{r, echo=FALSE}
+### Model Checking (for both Model A and B on each imputed dataset):
 
-<<model-checks>>
+*	Proportional hazard assumption (PHA): Assessed by plotting Schoenfeld residuals against time and testing the significance of relationship between residuals and time. Schoenfeld residuals plots indicated no evidence of PHA violation.
+*	Multicollinearity: Assessed via ‘rms’ R package and VIFs across all covariates were below 10. No multicollinearity detected.
 
-```
 
-### Model checks:
-
-**Proportional hazards assumption**: Visual inspection of the Schoenfeld residuals gave no evidence of PHA violation.
-
-**Multicollinearity**: 
-VIFs across all covariates `r if(maxvif<10){"were"}else{"were not"}` below 10. The highest VIF was `r maxvif`, from level *`r prettyvif[2]`* of *`r pretty_func(prettyvif[1])`*. 
-The highest correlation between any pair of variables in the model was `r max(corr_matrix)`, between *`r maxrow`* and *`r maxcol`*.
-  
 # Appendix - including SBP PRS as an ordinal variable in regression model A with MACE outcome
 
 Please note all covariates from Model A have been included, but in the interests of saving space I've dropped all rows from the table below the SBP PRS
@@ -754,7 +773,4 @@ kable(routput%>%select(-IDcol)%>%slice_head(n=6))
 ```
 
 We see a statistically significant HR of `r routput$HR[routput$IDcol=="TEU_SBP_PRS_quintiles_l"]` per quintile of PRS (p = `r routput$p[routput$IDcol=="TEU_SBP_PRS_quintiles_l"]`).
-
-
-
 
