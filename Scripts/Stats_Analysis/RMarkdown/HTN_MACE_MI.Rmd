@@ -243,7 +243,7 @@ if(live) {
   
   imp1<-mice(MI_data,pred=pred, m = M, maxit = iter,seed = 100)
   
-  save(imp1,file=file.path(config$data$derived, paste0("imputation", format(Sys.time(), '%d%B%Y'), ".rds")))
+  saveRDS(imp1,file=file.path(config$data$derived, paste0("imputation", format(Sys.time(), '%d%B%Y'), ".rds")))
 } else {
   imp1 <- readRDS(file.path(config$data$derived, "imputation11March2021.rds"))
 }
