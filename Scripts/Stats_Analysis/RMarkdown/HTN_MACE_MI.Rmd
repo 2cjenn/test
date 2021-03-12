@@ -188,7 +188,7 @@ MI_data=data%>%
 
 
 # Check missing percentage 
-MI_data%>%miss_var_summary()
+if(live){MI_data%>%miss_var_summary()}
 
 # Based on our Stats Guide, one can consider MI when missing percentage 10%-30%
 # Assumption: MAR
@@ -249,7 +249,7 @@ if(live) {
 }
 ```
 
-```{r}
+```{r, eval=live}
 
 # Diagnostics 
 
@@ -295,6 +295,8 @@ for (var in missing_var){
   }
 }
 
+num_plot
+factor_tb
 
 
 # Check overall descriptive between observed and completed (observed + imputed)
