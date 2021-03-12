@@ -528,7 +528,6 @@ rmodel_a <- with(comp_long1, coxph(as.formula(formula_a)))
 
 routput_a <- printMIresults(df=comp_long1$data, varlist=varlist_b, modeloutput=summary(pool(rmodel_a)),
                             pretty_names=pretty_names, onecol=FALSE, IDcol=TRUE)
-routput_a$HR[grepl("TEU_SBP_PRS_quintiles", routput_a$IDcol, fixed=TRUE)] <- NA
 
 # Model B
 formula_b <- paste0("Surv(TEU_MACE_time_yrs,", status, ") ~ ", paste(varlist_b, collapse="+"))
@@ -543,7 +542,7 @@ tab4 <- left_join(routput_a, routput_b, by=c("IDcol", "Coefficient", "Levels")) 
   replace(., is.na(.), "")
 
 rownames(tab4) <- NULL
-tab4 <- rbind(c("Coefficient", "Level", "HR", "95% CI", "p", "OR", "95% CI", "p"),
+tab4 <- rbind(c("Coefficient", "Level", "HR", "95% CI", "p", "HR", "95% CI", "p"),
               as.matrix(tab4))
 colnames(tab4) <- c("", "",
                     "Model A", "", "", 

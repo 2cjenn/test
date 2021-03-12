@@ -22,7 +22,7 @@ pretty_dp <- function(x, dp=0, pct=FALSE, comma=FALSE){
 }
 
 pretty_confint <- function(lci, uci, dp, pct=FALSE){
-  paste0("[", pretty_dp(x=lci, dp=dp, pct=pct), ", ", pretty_dp(x=uci, dp=dp, pct=pct), "]")
+  paste0("(", pretty_dp(x=lci, dp=dp, pct=pct), ", ", pretty_dp(x=uci, dp=dp, pct=pct), ")")
 }
 
 pretty_pval <- function(p, cutoff=0.001, string="<0.001", dp=3){
