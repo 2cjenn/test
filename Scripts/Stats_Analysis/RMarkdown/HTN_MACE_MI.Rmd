@@ -348,16 +348,13 @@ comp_long1<-long1%>%
       )%>%
   
   group_by(.imp)%>%
-  mutate(TEU_SBP_PRS_Quint= quantcut(TEU_SBP_PRS,q=5,labels = c('Q1: Lowest score','Q2','Q3','Q4','Q5: Highest score')),
+  mutate(TEU_SBP_PRS_quintiles= quantcut(TEU_SBP_PRS,q=5,labels = c('Q1: lowest','Q2','Q3','Q4','Q5: highest')),
          TEU_TownsendDepInd_Quint= quantcut(TownsendDepInd,q=5,labels = c('Q1: least deprived','Q2','Q3','Q4','Q5: most deprived')),
-         TEU_BlP_SBP_Quint=quantcut(TEU_BlP_SBP.avg,q=5,labels=c('Q1: Lowest level','Q2','Q3','Q4','Q5: Highest level')),
-         #TEU_BlP_DBP_Quint=quantcut(TEU_BlP_DBP.avg,q=5,labels=c('Q1: Lowest level','Q2','Q3','Q4','Q5: Highest level')),
-         BBC_LDL_Quint=quantcut(BBC_LDL_Result,q=5,labels=c('Q1: Lowest level','Q2','Q3','Q4','Q5: Highest level')))
+         TEU_BlP_SBP_quintiles=quantcut(TEU_BlP_SBP.avg,q=5,labels=c('Q1: lowest','Q2','Q3','Q4','Q5: highest')),
+         TEU_LDL_Quintiles=quantcut(BBC_LDL_Result,q=5,labels=c('Q1: lowest','Q2','Q3','Q4','Q5: highest')))
 
 comp_long1<-as.mids(comp_long1)
 
-pretty_names$TEU_SBP_PRS_Quint <- "Systolic BP PRS Quintiles"
-pretty_names$BBC_LDL_Quint <- "Baseline LDL-C quintiles"
 
 ```
 
@@ -415,9 +412,9 @@ kable(tab[,-1])
 
 ```{r logistic-regression, include=TRUE, echo=FALSE}
 
-varlist=c("TEU_BaC_AgeCat", "BaC_Sex", "TEU_SBP_PRS_Quint",
+varlist=c("TEU_BaC_AgeCat", "BaC_Sex", "TEU_SBP_PRS_quintiles",
           "TEU_BSM_BMIcat", "TEU_Smo_Status", "TEU_Alc_WeeklyCat", "TEU_Pha_METsover1200",
-          "TEU_FaH_CVD", "Prosp_comorb_numcat", "TEU_VeI_numHTNmedscat", "BBC_LDL_Quint",
+          "TEU_FaH_CVD", "Prosp_comorb_numcat", "TEU_VeI_numHTNmedscat", "TEU_LDL_Quintiles",
           "TEU_TownsendDepInd_Quint", "TEU_HouseholdIncome", "TEU_Emp_category", "TEU_Edu_ISCED", "TEU_Rec_Country",
           "GeP_PC_1", "GeP_PC_2", "GeP_PC_3", "GeP_PC_4"
           )
@@ -425,7 +422,7 @@ varlist=c("TEU_BaC_AgeCat", "BaC_Sex", "TEU_SBP_PRS_Quint",
 formula <- paste0("TEU_controlledHTN  ~ ", paste(varlist, collapse="+"))
 rmodel <- with(comp_long1, glm(as.formula(formula), family="binomial"))
 
-routput <- printMIresults(df=data, varlist=varlist, modeloutput=summary(pool(rmodel)),
+routput <- printMIresults(df=comp_long1$data, varlist=varlist, modeloutput=summary(pool(rmodel)),
                             pretty_names=pretty_names, onecol=FALSE, IDcol=FALSE)
 
 rownames(routput) <- NULL
@@ -442,7 +439,7 @@ kable(routput)
 # p-value of including PRS in model
 
 anova <- with(comp_long1, glm(as.formula(paste0("TEU_controlledHTN ~ ",
-                             paste(varlist[-which(varlist=="TEU_SBP_PRS_Quint")], collapse="+"))), family="binomial"))
+                             paste(varlist[-which(varlist=="TEU_SBP_PRS_quintiles")], collapse="+"))), family="binomial"))
 
 LRT <- anova(rmodel, anova, method = 'D2',use = 'likelihood')
 
@@ -498,16 +495,16 @@ Including SBP PRS (quintiles), showing for each outcome:
 
 ```{r varlists for models}
 
-varlist_a <- c("TEU_BaC_AgeCat", "BaC_Sex", "TEU_SBP_PRS_Quint",
+varlist_a <- c("TEU_BaC_AgeCat", "BaC_Sex", "TEU_SBP_PRS_quintiles",
           "TEU_BSM_BMIcat", "TEU_Smo_Status", "TEU_Alc_WeeklyCat", "TEU_Pha_METsover1200",
-          "TEU_FaH_CVD", "Prosp_comorb_numcat", "TEU_VeI_numHTNmedscat", "BBC_LDL_Quint",
+          "TEU_FaH_CVD", "Prosp_comorb_numcat", "TEU_VeI_numHTNmedscat", "TEU_LDL_Quintiles",
           "TEU_TownsendDepInd_Quint", "TEU_HouseholdIncome", "TEU_Emp_category", "TEU_Edu_ISCED", "TEU_Rec_Country",
           "GeP_PC_1", "GeP_PC_2", "GeP_PC_3", "GeP_PC_4"
           )
 
-varlist_b <- c("TEU_BaC_AgeCat", "BaC_Sex", "TEU_SBP_PRS_Quint", "TEU_BlP_SBP_Quint", 
+varlist_b <- c("TEU_BaC_AgeCat", "BaC_Sex", "TEU_SBP_PRS_quintiles", "TEU_BlP_SBP_quintiles", 
           "TEU_BSM_BMIcat", "TEU_Smo_Status", "TEU_Alc_WeeklyCat", "TEU_Pha_METsover1200",
-          "TEU_FaH_CVD", "Prosp_comorb_numcat", "TEU_VeI_numHTNmedscat", "BBC_LDL_Quint",
+          "TEU_FaH_CVD", "Prosp_comorb_numcat", "TEU_VeI_numHTNmedscat", "TEU_LDL_Quintiles",
           "TEU_TownsendDepInd_Quint", "TEU_HouseholdIncome", "TEU_Emp_category", "TEU_Edu_ISCED", "TEU_Rec_Country",
           "GeP_PC_1", "GeP_PC_2", "GeP_PC_3", "GeP_PC_4"
           )
@@ -530,15 +527,15 @@ status <- "TEU_MACE_status"
 formula_a <- paste0("Surv(TEU_MACE_time_yrs,", status, ") ~ ", paste(varlist_a, collapse="+"))
 rmodel_a <- with(comp_long1, coxph(as.formula(formula_a)))
 
-routput_a <- printMIresults(df=data, varlist=varlist_b, modeloutput=summary(pool(rmodel_a)),
+routput_a <- printMIresults(df=comp_long1$data, varlist=varlist_b, modeloutput=summary(pool(rmodel_a)),
                             pretty_names=pretty_names, onecol=FALSE, IDcol=TRUE)
-routput_a$HR[grepl("TEU_BlP_SBP_quintiles", routput_a$IDcol, fixed=TRUE)] <- NA
+routput_a$HR[grepl("TEU_SBP_PRS_quintiles", routput_a$IDcol, fixed=TRUE)] <- NA
 
 # Model B
 formula_b <- paste0("Surv(TEU_MACE_time_yrs,", status, ") ~ ", paste(varlist_b, collapse="+"))
 rmodel_b <- with(comp_long1, coxph(as.formula(formula_b)))
 
-routput_b <- printMIresults(df=data, varlist=varlist_b, modeloutput=summary(pool(rmodel_b)),
+routput_b <- printMIresults(df=comp_long1$data, varlist=varlist_b, modeloutput=summary(pool(rmodel_b)),
                             pretty_names=pretty_names, onecol=FALSE, IDcol=TRUE)
 
 # Combine into one table
@@ -561,10 +558,10 @@ kable(tab4)
 
 anova_a <- with(comp_long1, 
                 coxph(as.formula(paste0("Surv(TEU_MACE_time_yrs,", status, ") ~ ",
-                                        paste(varlist_a[-which(varlist_a=="TEU_SBP_PRS_Quint")], collapse="+")))))
+                                        paste(varlist_a[-which(varlist_a=="TEU_SBP_PRS_quintiles")], collapse="+")))))
 anova_b <- with(comp_long1, 
                 coxph(as.formula(paste0("Surv(TEU_MACE_time_yrs,", status, ") ~ ",
-                                        paste(varlist_b[-which(varlist_b=="TEU_SBP_PRS_Quint")], collapse="+")))))
+                                        paste(varlist_b[-which(varlist_b=="TEU_SBP_PRS_quintiles")], collapse="+")))))
 
 LRT_a <- anova(rmodel_a, anova_a, method='D2', use='likelihood')
 LRT_b <- anova(rmodel_b, anova_b, method='D2', use='likelihood')
