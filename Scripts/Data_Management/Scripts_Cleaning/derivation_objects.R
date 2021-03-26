@@ -546,7 +546,8 @@ TEU_Rec_AssessCentre <- function() {
                  map,
                  by.x = "x",
                  by.y = "Code",
-                 all.x = TRUE)
+                 all.x = TRUE,
+                 sort = FALSE)
       y <- y[["meaning"]]
     },
     post_exclusion = FALSE,
@@ -693,6 +694,19 @@ TEU_HMH_Meds_Chol <- function() {
     post_exclusion = FALSE,
     display_name = "Cholmeds",
     description = "Participant self-reported taking cholesterol lowering medication in the touchscreen questionnaire"
+  )
+}
+
+TEU_HMH_Meds_Diab <- function() {
+  list(
+    name = "TEU_HMH_Meds_Diab",
+    source = c(paste0("HMH_MedCholBPDiabHorm.0.", c(0:3)),
+               paste0("HMH_MedCholBPDiab.0.", c(0:2))
+    ),
+    mapper = FN_HMHmeds_type(medtype = "Insulin", string = "Insulin"),
+    post_exclusion = FALSE,
+    display_name = "Self-reported insulin (TQ)",
+    description = "Participant self-reported taking insulin medication in the touchscreen questionnaire"
   )
 }
 
@@ -1162,6 +1176,29 @@ TEU_LDL_C_PRS_centiles <- function() {
   )
 }
 
+TEU_T2DM_PRS <- function() {
+  list(
+    name = "TEU_T2DM_PRS", 
+    source = c("ID"), 
+    mapper = FN_JoinPRS(filepath="K:/TEU/UKB_Genetic_Data/PRS_Pipeline/prs/projects/diab-mahajan2018/outputs/diab-mahajan2018_PRS_sampleQC.rds",
+                        colname="PRS"),
+    post_exclusion = FALSE,
+    display_name = "T2DM PRS",
+    description = "Type 2 Diabetes Mellitus polygenic risk score from Mahajan 2018 paper"
+  )
+}
+
+TEU_T2DM_PRS_quintiles <- function() {
+  list(
+    name = "TEU_T2DM_PRS_quintiles", 
+    source = c("TEU_T2DM_PRS"), 
+    mapper = FN_quantiles(quant=5),
+    post_exclusion = TRUE,
+    display_name = "T2DM PRS Quintiles",
+    description = "Quintiles of the Type 2 Diabetes Mellitus PRS score"
+  )
+}
+
 # XL add: 17/11/2020
 HMH_VascCond <- function() {
   list(
@@ -1239,6 +1276,17 @@ HMH_Diabetes <- function() {
     post_exclusion = FALSE,
     display_name = "Self-reported diabetes",
     description = "Participant self-reported diabetes on the touchscreen questionnaire"
+  )
+}
+
+HMH_DiabetesAge <- function() {
+  list(
+    name = "HMH_DiabetesAge",
+    source = c("HMH_DiabetesAge.0.0"),
+    mapper = FN_id,
+    post_exclusion = FALSE,
+    display_name = "Self-reported age at diagnosis of diabetes",
+    description = "Participant self-reported age at diagnosis of diabetes on the touchscreen questionnaire"
   )
 }
 
@@ -1330,10 +1378,27 @@ GeP_Batch <- function() {
   list(
     name = "GeP_Batch", 
     source = "GeP_Batch.0.0", 
-    mapper = FN_toNumeric,
+    mapper = function(x) {
+      coding <- read.csv(file.path(config$cleaning$coding, "coding22000_flat_GenotypingArray.csv"))
+      y <- coding$L1[match(x, coding$Code)]
+    },
     post_exclusion = FALSE,
     display_name = "Genotype measurement batch",
     description = "Genotype measurement batch"
+  )
+}
+
+GeP_Array <- function() {
+  list(
+    name = "GeP_Array", 
+    source = "GeP_Batch.0.0", 
+    mapper = function(x){
+      coding <- read.csv(file.path(config$cleaning$coding, "coding22000_flat_GenotypingArray.csv"))
+      y <- coding$L0[match(x, coding$Code)]
+    },
+    post_exclusion = FALSE,
+    display_name = "Genotype array",
+    description = "Genotype array - UK BiLEVE or Biobank Axiom Array"
   )
 }
 
@@ -1832,6 +1897,74 @@ TEU_VeI_diab <- function(condition='diabetes'){
     post_exclusion=FALSE,
     display_name = 'diabetes status at baseline (VI)',
     description = 'Whether participant self reported diabetes at baseline in verbal interview'
+  )
+}
+
+TEU_VeI_T2DM_prevalent <- function(dx_codes = c(1220, 1223)) {
+  list(
+    list(
+      name = "TEU_VeI_T2DM",
+      source = c("ID", "Rec_DateAssess",
+                 paste0("VeI_NonCancerCode.0.", seq(0, 33, by=1)),
+                 paste0("VeI_NonCancerYear.0.", seq(0, 33, by=1))),
+      mapper = FN_VI_filtercodes(dx_codes = dx_codes,
+                                 colname = "VeI_NonCancer",
+                                 instance = 0,
+                                 return_label = "dx",
+                                 mapper = file.path(config$cleaning$coding,"coding6_flat_NonCancerIllness.csv")),
+      post_exclusion = FALSE,
+      display_name = "Self-reported Type 2 diabetes, verbal interview",
+      description = "Whether type 2 diabetes was reported in verbal interview at baseline"
+    ),
+    list(
+      name = "TEU_VeI_T2DM_age",
+      source = c("ID", "Rec_DateAssess",
+                 paste0("VeI_NonCancerCode.0.", seq(0, 33, by=1)),
+                 paste0("VeI_NonCancerYear.0.", seq(0, 33, by=1)),
+                 paste0("VeI_NonCancerAge.0.", seq(0, 33, by=1))),
+      mapper = FN_VI_filtercodes(dx_codes = dx_codes,
+                                 colname = "VeI_NonCancer",
+                                 instance = 0, 
+                                 return_label = "Age",
+                                 mapper = file.path(config$cleaning$coding,"coding6_flat_NonCancerIllness.csv")),
+      post_exclusion = FALSE,
+      display_name = "Self-reported age at diagnosis of Type 2 diabetes, verbal interview",
+      description = "Age at diagnosis of Type 2 diabetes reported in verbal interview at baseline"
+    )
+  )
+}
+
+## Type 1 diabetes
+TEU_VeI_T1D <- function(condition='Type1'){
+  list(
+    name = 'TEU_VeI_T1D',
+    source = c("ID", "Rec_DateAssess",
+               paste0("VeI_NonCancerCode.0.", seq(0, 33, by=1)),
+               paste0("VeI_NonCancerYear.0.", seq(0, 33, by=1))),
+    mapper = FN_VI_comorb(condition=condition,
+                          returned_mapping = read.xlsx_kdrive(file.path(config$cleaning$mapping,'coding6_flat_NonCancerIllness.xlsx'))%>%
+                            rename(Conditions=Diabetes, coding=Code))
+    ,
+    post_exclusion=FALSE,
+    display_name = 'Type 1 diabetes status at baseline (VI)',
+    description = 'Whether participant self reported type 1 diabetes at baseline in verbal interview'
+  )
+}
+
+### Other diabetes
+TEU_VeI_Diab_other <- function(condition='other'){
+  list(
+    name = 'TEU_VeI_Diab_other',
+    source = c("ID", "Rec_DateAssess",
+               paste0("VeI_NonCancerCode.0.", seq(0, 33, by=1)),
+               paste0("VeI_NonCancerYear.0.", seq(0, 33, by=1))),
+    mapper = FN_VI_comorb(condition=condition,
+                          returned_mapping = read.xlsx_kdrive(file.path(config$cleaning$mapping,'coding6_flat_NonCancerIllness.xlsx'))%>%
+                            rename(Conditions=Diabetes, coding=Code))
+    ,
+    post_exclusion=FALSE,
+    display_name = 'Other diabetes status at baseline (VI)',
+    description = 'Whether participant self reported other diabetes (gestational or diabetes insipidus) at baseline in verbal interview'
   )
 }
 
@@ -2438,8 +2571,8 @@ TEU_Dth_MACE_dthtype <-function(record_level=FALSE){
       return(y)
     },
     post_exclusion = FALSE,
-    display_name = 'MACE death date',
-    description = paste0('Death date caused by MACE from Death Registry data',
+    display_name = 'MACE death type',
+    description = paste0('Death type caused by MACE from Death Registry data',
                          'The data used was ', if(record_level) {'record-level data from the UKB data portal.'} 
                          else {'summary data from the UKB data showcase'})
   )
@@ -2606,8 +2739,8 @@ TEU_MACE_MI<-function(){
       
     },
     post_exclusion = FALSE,
-    display_name = 'Stroke status',
-    description = 'Stroke status from HES diagnoses, stroke prevention operations, and primary causes of death (0=censored, 1=stroke)'
+    display_name = 'MI status',
+    description = 'MI status from HES diagnoses, stroke prevention operations, and primary causes of death (0=censored, 1=stroke)'
     
   )
 }
@@ -2694,6 +2827,119 @@ TEU_MACE_time_yrs<-function(){
   )
 }
 
+TEU_HMH_gest_diabetes <- function() {
+  list(
+    name = "TEU_HMH_gest_diabetes", 
+    source = c("HMH_DiabetesGest.0.0", "HMH_DiabetesGest_p.0.0"), 
+    mapper = function(data) {
+      coalesce(data[["HMH_DiabetesGest.0.0"]], data[["HMH_DiabetesGest_p.0.0"]])
+    },
+    post_exclusion = FALSE,
+    display_name = "Gestational diabetes",
+    description = "Did the participant self-report gestational diabetes"
+  )
+}
 
 
+TEU_HES_T2DM_base<-function(record_level=FALSE){
+  list(
+    name='TEU_HES_T2DM_base',
+    source=if(record_level){
+      c("ID","Rec_DateAssess")
+    } else {
+      c("ID", "Rec_DateAssess",
+        paste0("HES_ICD9Diag.0.", seq(0, 46, by=1)),
+        paste0("HES_ICD9DateFirst.0.",seq(0,46,by=1)),
+        paste0("HES_ICD10Diag.0.", seq(0, 212, by=1)),
+        paste0("HES_ICD10DateFirst.0.",seq(0,212,by=1)),
+        paste0("HES_OPCS4Code.0.",seq(0,116,by=1)),
+        paste0("HES_OPCS4DateFirst.0.",seq(0,116,by=1)))
+    },
+    mapper=FN_HES_First(ICD9_xlsx = file.path(config$cleaning$mapping,'coding87_ICD9_Diabetes.xlsx'),
+                        ICD10_xlsx = file.path(config$cleaning$mapping,'coding19_ICD10_Diabetes.xlsx'),
+                        #OPCS4_xlsx = file.path(config$cleaning$mapping,'MACE/HES_OPCS4_Mapping_20210128.xlsx'),
+                        condition = 'T2DM',
+                        return_label = 'baseline',
+                        record_level = record_level),
+    post_exclusion=FALSE,
+    display_name='T2DM diagnoses at baseline',
+    description='T2DM diagnoses identified from HES (ICD-9, ICD-10) data prior to or at baseline'
+  )
+}
 
+TEU_HES_T2DM_excl<-function(record_level=FALSE){
+  list(
+    name='TEU_HES_T2DM_excl',
+    source=if(record_level){
+      c("ID","Rec_DateAssess")
+    } else {
+      c("ID", "Rec_DateAssess",
+        paste0("HES_ICD9Diag.0.", seq(0, 46, by=1)),
+        paste0("HES_ICD9DateFirst.0.",seq(0,46,by=1)),
+        paste0("HES_ICD10Diag.0.", seq(0, 212, by=1)),
+        paste0("HES_ICD10DateFirst.0.",seq(0,212,by=1)),
+        paste0("HES_OPCS4Code.0.",seq(0,116,by=1)),
+        paste0("HES_OPCS4DateFirst.0.",seq(0,116,by=1)))
+    },
+    mapper=FN_HES_First(ICD9_xlsx = file.path(config$cleaning$mapping,'coding87_ICD9_Diabetes.xlsx'),
+                        ICD10_xlsx = file.path(config$cleaning$mapping,'coding19_ICD10_Diabetes.xlsx'),
+                        #OPCS4_xlsx = file.path(config$cleaning$mapping,'MACE/HES_OPCS4_Mapping_20210128.xlsx'),
+                        condition = 'Exclude',
+                        return_label = 'baseline',
+                        record_level = record_level),
+    post_exclusion=FALSE,
+    display_name='T2DM exclusions at baseline',
+    description='T2DM exclusions identified from HES (ICD-9, ICD-10) data prior to or at baseline'
+  )
+}
+
+TEU_VeI_Diabetes_meds <- function(){
+  list(
+    list(
+      name = 'TEU_VeI_T2DM_meds',
+      source = c('ID',paste0("VeI_MedCode.0.",c(0:47))),
+      mapper = FN_VImed_filtercodes(med_codes = read.xlsx_kdrive(file.path(config$cleaning$mapping, "coding4_VImedications.xlsx")) %>%
+                                    filter(!is.na(Drug_type)) %>%
+                                    pull(value),
+                                  med_name = 'T2DM_meds',
+                                  colname = "VeI_Med", 
+                                  instance = 0,
+                                  return_label = 'T2DM_meds',
+                                  mapper = file.path(config$cleaning$coding,'coding4_Treatments.csv')),
+      post_exclusion = FALSE,
+      display_name = 'T2DM meds',
+      description = 'Whether people self reported taking T2DM_meds at baseline during verbal interview (Does NOT include insulin, glucagon)'
+    ),
+    list(
+      name = 'TEU_VeI_T2DM_medsnum',
+      source = c('ID',paste0("VeI_MedCode.0.",c(0:47))),
+      mapper = FN_VImed_filtercodes(med_codes = read.xlsx_kdrive(file.path(config$cleaning$mapping, "coding4_VImedications.xlsx")) %>%
+                                           filter(!is.na(Drug_type)) %>%
+                                           pull(value),
+                                         med_name = 'T2DM_meds',
+                                         colname = "VeI_Med", 
+                                         instance = 0,
+                                         return_label = 'T2DM_meds_num',
+                                         mapper = file.path(config$cleaning$coding,'coding4_Treatments.csv')),
+      post_exclusion = FALSE,
+      display_name = 'Number of T2DM_meds taken at baseline',
+      description = 'Number of T2DM_meds people self reported taking at baseline during verbal interview'
+    ),
+    list(
+      name = 'TEU_VeI_Insulin',
+      source = c('ID',paste0("VeI_MedCode.0.",c(0:47))),
+      mapper = FN_VImed_filtercodes(med_codes = read.xlsx_kdrive(file.path(config$cleaning$mapping, "coding4_VImedications.xlsx")) %>%
+                                      filter(!is.na(Insulin)) %>%
+                                      pull(value),
+                                  med_name = 'Insulin',
+                                  colname = "VeI_Med", 
+                                  instance = 0,
+                                  return_label = 'Insulin',
+                                  mapper = file.path(config$cleaning$coding,'coding4_Treatments.csv')),
+      post_exclusion = FALSE,
+      display_name = 'Insulin',
+      description = 'Whether people self reported taking insulin at baseline during verbal interview (Does NOT include insulin, glucagon)'
+    )
+  )
+  
+}

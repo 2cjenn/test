@@ -86,6 +86,7 @@ specs <- function() {
     GeP_UsedInPCA, # Identifies participants which met UKB QC for inclusion in PCA
     GeP_Outliers, # Identifies participants who are outliers for missingness and heterozygosity
     GeP_ethnic, # Identifies participants with genetic White British ancestry
+    GeP_Array,
     GeP_Batch, # We may wish to adjust for batch effect
     # GeP_Plate, # We may wish to adjust for plate effect
     GeP_PC(pc=1),
@@ -251,7 +252,8 @@ specs <- function() {
     TEU_MACE_Stroke,
     TEU_MACE_HaemStroke,
     TEU_BlP_SBP_quintiles,
-    TEU_SBP_PRS_quintiles
+    TEU_SBP_PRS_quintiles,
+    GeP_Array
   )
   
   Cholstrl_control<-c(
