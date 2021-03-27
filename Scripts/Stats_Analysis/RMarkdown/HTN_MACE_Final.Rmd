@@ -184,7 +184,9 @@ MI_data=data%>%
          TEU_BlP_SBP.avg, 
          BBC_LDL_Result,
          TownsendDepInd, TEU_HouseholdIncome,TEU_Emp_category,TEU_Edu_ISCED,
-         TEU_Rec_Country,paste0('GeP_PC_',1:4))%>%
+         TEU_Rec_Country,
+         paste0('GeP_PC_',1:4), GeP_Array
+         )%>%
   # Change missing categories to NA
   mutate_if(is.factor, list(~na_if(., "Unanswered")))%>%
   mutate_if(is.factor, list(~na_if(., "Prefer not to answer")))%>%
@@ -251,7 +253,7 @@ if(live) {
   
   saveRDS(imp1,file=file.path(config$data$derived, paste0("imputation", format(Sys.time(), '%d%B%Y'), ".rds")))
 } else {
-  imp1 <- readRDS(file.path(config$data$derived, "imputation11March2021.rds"))
+  imp1 <- readRDS(file.path(config$data$derived, "imputation27March2021.rds"))
 }
 ```
 
@@ -398,7 +400,7 @@ tab <- inner_join(tab_1, tab_3%>%select(-Variable), by="IDcol")
 tab <- inner_join(tab, tab_5%>%select(-Variable), by="IDcol")
 
 rownames(tab) <- NULL
-tab <- rbind(c("", "Variable", "n", "%", "n", "%", "n", "%", "n", "%"),
+tab <- rbind(c("", "Variable", "n", "%", "n", "%", "n", "%"),
               as.matrix(tab))
 colnames(tab) <- c("", "", "Q1: lowest", "", "Q3", "", "Q5: highest", "")
 
@@ -416,7 +418,7 @@ varlist=c("TEU_BaC_AgeCat", "BaC_Sex", "TEU_SBP_PRS_quintiles",
           "TEU_BSM_BMIcat", "TEU_Smo_Status", "TEU_Alc_WeeklyCat", "TEU_Pha_METsover1200",
           "TEU_FaH_CVD", "Prosp_comorb_numcat", "TEU_VeI_numHTNmedscat", "TEU_LDL_Quintiles",
           "TEU_TownsendDepInd_Quint", "TEU_HouseholdIncome", "TEU_Emp_category", "TEU_Edu_ISCED", "TEU_Rec_Country",
-          "GeP_PC_1", "GeP_PC_2", "GeP_PC_3", "GeP_PC_4"
+          "GeP_PC_1", "GeP_PC_2", "GeP_PC_3", "GeP_PC_4", "GeP_Array"
           )
 
 formula <- paste0("TEU_controlledHTN  ~ ", paste(varlist, collapse="+"))
