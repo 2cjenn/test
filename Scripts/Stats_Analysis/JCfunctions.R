@@ -66,13 +66,15 @@ diagcollist <- function(colstring, sep="", ncols) {
 
 # Print numbers and proportions for factors, median and IQR or mean and 95% CI for continuous variables
 # Optionally provide p-values from chi-squared (categorical) and t-test (continuous)
-descriptivetable <- function(df, varlist, contavg='mean', assocvar=NULL, pretty_names=list(), footnote_list=c()){
+descriptivetable <- function(df, varlist, contavg='mean', assocvar=NULL, singlecol=FALSE, 
+                             pretty_names=list(), footnote_list=c()){
   if(!exists("footnote_no")){footnote_no <<- 1} # Note use of <<- instead of <- to assign this globally
   outtable <- c()
   for(var in varlist){
     if(is.factor(df[[var]])){ # Categorical variables (factors) need a row per level, n's and %'s
       n <- table(df[[var]], useNA='ifany')
       pct <- pretty_dp(prop.table(n), dp=1, pct=TRUE)
+      npct <- paste0(n, " (", pct, "%)")
       variable <- c(prettyfunc(var, pnames=pretty_names, upper=TRUE, flist=footnote_list))
       levels <- names(n)
       if(!is.null(assocvar)){
@@ -80,44 +82,48 @@ descriptivetable <- function(df, varlist, contavg='mean', assocvar=NULL, pretty_
         chi <- chisq.test(tab)
         pval <- c(ifelse(chi$p.value<0.001, "<0.001", round(chi$p.value,3)))
         outtable <- rbind(outtable, 
-                          c(var, paste0("**", variable, "**"), "", "", pval), 
-                          cbind(paste0(var, levels), levels, n, pct, ""))
+                          c(var, paste0("**", variable, "**"), "", "", "", pval), 
+                          cbind(paste0(var, levels), levels, n, pct, npct, ""))
       } else{
         outtable<- rbind(outtable, 
-                         c(var, paste0("**", variable, "**"), "", ""), 
-                         cbind(paste0(var, levels), levels, n, pct))
+                         c(var, paste0("**", variable, "**"), "", "", ""), 
+                         cbind(paste0(var, levels), levels, n, pct, npct))
       }
     } else { # Continuous variables need the mean (and SD) or median (and IQR)
       if(contavg=="mean"){
         n <- pretty_dp(mean(df[[var]], na.rm=TRUE), dp=1, comma=TRUE)
         pct <- pretty_dp(sd(df[[var]], na.rm=TRUE), dp=1, comma=TRUE)
+        npct <- paste0(n, " (", pct, ")")
         variable <- paste0("Mean ", prettyfunc(var, pretty_names, upper=FALSE, flist=footnote_list), " (SD)")
       } else if (contavg=="median"){
         n <- pretty_dp(median(df[[var]], na.rm=TRUE), dp=1, comma=TRUE)
         IQR <- pretty_dp(quantile(df[[var]], na.rm=TRUE), dp=1, comma=TRUE)
         pct <- paste0("(", IQR[2], "-", IQR[4], ")")
+        npct <- paste0(n, " ", pct)
         variable <- paste0("Median ", prettyfunc(var, pnames=pretty_names, upper=FALSE, flist=footnote_list), " (IQR)")
       } else if(contavg=="n"){
         n <- nrow(df[!is.na(df[[var]]),])
         pct <- NA
+        npct <- NA
         variable <- prettyfunc(var, pnames=pretty_names, upper=TRUE, flist=footnote_list)
       }
       if(!is.null(assocvar)){
         tt <- t.test(df[[var]][df[[assocvar]]==TRUE], df[[var]][df[[assocvar]]==FALSE])
-        pval <- pretty_pval(tt$p.value)
-        outtable <- rbind(outtable, cbind(var, paste0("**", variable, "**"), n, pct, pval))
+        p <- pretty_pval(tt$p.value)
+        outtable <- rbind(outtable, cbind(var, paste0("**", variable, "**"), n, pct, npct, p))
       } else {
-        outtable<- rbind(outtable, cbind(var, paste0("**", variable, "**"), n, pct))
+        outtable<- rbind(outtable, cbind(var, paste0("**", variable, "**"), n, pct, npct))
       }
     }
   }
   rownames(outtable) <- c()
-  if(!is.null(assocvar)){
-    colnames(outtable) <- c("IDcol", "Variable", "n", "%", "p")
-  } else {
-    colnames(outtable) <- c("IDcol", "Variable", "n", "%")
-    }
+
   outdf <- as.data.frame(outtable, stringsAsFactors=FALSE)
+  if(singlecol){
+    outdf <- outdf %>% select(-c(n, pct))
+  } else {
+    outdf <- outdf %>% select(-npct)
+  }
   return(outdf)
 }
 
