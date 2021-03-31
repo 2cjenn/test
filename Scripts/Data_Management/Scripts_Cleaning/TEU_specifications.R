@@ -173,6 +173,7 @@ specs <- function() {
       TEU_awareHTN,
       TEU_treatedHTN,
       TEU_controlledHTN,
+      TEU_uncontrolledHTN,
       TEU_HMH_BowelCancerScreen,
       TEU_Edu_HighestQual,
       TEU_Edu_ISCED,

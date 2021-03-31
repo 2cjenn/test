@@ -1113,7 +1113,9 @@ TEU_BP_PRS_quintiles <- function() {
   list(
     name = "TEU_BP_PRS_quintiles", 
     source = c("TEU_BP_PRS"), 
-    mapper = FN_quantiles(quant=5),
+    mapper = FN_quantiles(quant=5, 
+                          labels = c("Q1: Lowest score", "Q2", "Q3", "Q4", "Q5: Highest score")
+    ),
     post_exclusion = TRUE,
     display_name = "BP PRS Quintiles",
     description = "Quintiles of the BP PRS score"
@@ -1124,7 +1126,9 @@ TEU_SBP_PRS_quintiles <- function() {
   list(
     name = "TEU_SBP_PRS_quintiles", 
     source = c("TEU_SBP_PRS"), 
-    mapper = FN_quantiles(quant=5),
+    mapper = FN_quantiles(quant=5, 
+                          labels = c("Q1: Lowest score", "Q2", "Q3", "Q4", "Q5: Highest score")
+    ),
     post_exclusion = TRUE,
     display_name = "Systolic BP PRS Quintiles",
     description = "Quintiles of the BP PRS score"
@@ -1147,7 +1151,9 @@ TEU_LDL_C_PRS_quintiles <- function() {
   list(
     name = "TEU_LDL_C_PRS_quintiles", 
     source = c("TEU_LDL_C_PRS"), 
-    mapper = FN_quantiles(quant=5),
+    mapper = FN_quantiles(quant=5, 
+                          labels = c("Q1: Lowest score", "Q2", "Q3", "Q4", "Q5: Highest score")
+    ),
     post_exclusion = TRUE,
     display_name = "LDL Cholesterol PRS Quintiles",
     description = "Quintiles of the LDL Cholesterol PRS score"
@@ -1630,6 +1636,21 @@ TEU_controlledHTN <- function() {
     post_exclusion = FALSE,
     display_name = "Controlled hypertension",
     description = "Was the participant's BP below 140/90 while on medication for their hypertension"
+  )
+}
+
+TEU_uncontrolledHTN <- function() {
+  list(
+    name = "TEU_uncontrolledHTN", 
+    source = c("TEU_BlP_measuredHTN", "TEU_treatedHTN"), 
+    mapper = function(data) {
+      y <- data[["TEU_BlP_measuredHTN"]]
+      y[(data[["TEU_treatedHTN"]] == FALSE | is.na(data[["TEU_treatedHTN"]]))] <- NA
+      return(y)
+    },
+    post_exclusion = FALSE,
+    display_name = "Controlled hypertension",
+    description = "Was the participant's BP above 140/90 while on medication for their hypertension"
   )
 }
 

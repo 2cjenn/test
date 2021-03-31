@@ -59,7 +59,7 @@ live <- interactive()
 ```
 
 ```{r data-derivation, include=FALSE, cache=TRUE}
- 
+
 source(file.path(config$scripts$cleaning, "dataset_generator.R"))
 
 exclusions <- function(data){
@@ -172,7 +172,7 @@ Table 1 shows the descriptive statistics of the original dataset (i.e. before mu
 ```{r}
 
 MI_data=data%>%
-  select(ID,TEU_MACE_status,TEU_MACE_time_yrs, TEU_MACE_MI, TEU_MACE_Stroke, TEU_controlledHTN,
+  select(ID,TEU_MACE_status,TEU_MACE_time_yrs, TEU_MACE_MI, TEU_MACE_Stroke, TEU_controlledHTN, TEU_uncontrolledHTN,
          TEU_BaC_AgeAtRec,BaC_Sex,
          TEU_SBP_PRS,
          BSM_BMI,TEU_Smo_Status,
@@ -253,7 +253,7 @@ if(live) {
   
   saveRDS(imp1,file=file.path(config$data$derived, paste0("imputation", format(Sys.time(), '%d%B%Y'), ".rds")))
 } else {
-  imp1 <- readRDS(file.path(config$data$derived, "imputation27March2021.rds"))
+  imp1 <- readRDS(file.path(config$data$derived, "imputation30March2021.rds"))
 }
 ```
 
@@ -356,7 +356,7 @@ comp_long1<-long1%>%
       )%>%
   
   group_by(.imp)%>%
-  mutate(TEU_SBP_PRS_quintiles= quantcut(TEU_SBP_PRS,q=5,labels = c('Q1: lowest','Q2','Q3','Q4','Q5: highest')),
+  mutate(TEU_SBP_PRS_quintiles= quantcut(TEU_SBP_PRS,q=5,labels = c('Q1: Lowest score','Q2','Q3','Q4','Q5: Highest score')),
          TEU_TownsendDepInd_Quint= quantcut(TownsendDepInd,q=5,labels = c('Q1: least deprived','Q2','Q3','Q4','Q5: most deprived')),
          TEU_BlP_SBP_quintiles=quantcut(TEU_BlP_SBP.avg,q=5,labels=c('Q1: lowest','Q2','Q3','Q4','Q5: highest')),
          TEU_LDL_Quintiles=quantcut(BBC_LDL_Result,q=5,labels=c('Q1: lowest','Q2','Q3','Q4','Q5: highest')))
@@ -371,7 +371,7 @@ comp_long1<-as.mids(comp_long1)
 
 # Hypertension PRS cross-sectional analysis
 
-## Table `r table`. Characteristics of participants included in the analysis, by Systolic BP PRS quintile (treated hypertensives, n = `r nrow(data)`).
+## Table `r table`. Descriptive statistics of analysis population by systolic BP PRS quintiles (N = `r nrow(data)`).
 `r table <- table + 1`
 
 ```{r descriptive-table, include=TRUE, echo=FALSE}
@@ -381,7 +381,7 @@ varlist=c("TEU_BaC_AgeCat", "BaC_Sex", "TEU_BlP_SBP_quintiles",
           "TEU_TownsendDepInd_Quint", "TEU_HouseholdIncome", "TEU_Emp_category", "TEU_Edu_ISCED", "TEU_Rec_Country"
           )
 
-tab_1 <- descriptivetable(df=data[data$TEU_SBP_PRS_quintiles=="Q1: lowest",], 
+tab_1 <- descriptivetable(df=data[data$TEU_SBP_PRS_quintiles=="Q1: Lowest score",], 
                          varlist=varlist,
                          contavg='median',
                          pretty_names=pretty_names,
@@ -393,7 +393,7 @@ tab_3 <- descriptivetable(df=data[data$TEU_SBP_PRS_quintiles=="Q3",],
                          pretty_names=pretty_names,
                          singlecol=TRUE)
 
-tab_5 <- descriptivetable(df=data[data$TEU_SBP_PRS_quintiles=="Q5: highest",], 
+tab_5 <- descriptivetable(df=data[data$TEU_SBP_PRS_quintiles=="Q5: Highest score",], 
                          varlist=varlist,
                          contavg='median',
                          pretty_names=pretty_names,
@@ -407,14 +407,14 @@ rownames(tab) <- NULL
 colnames(tab) <- c("", "Variable", 
                    paste0("Q1: Lowest score (N=", nrow(data[data$TEU_SBP_PRS_quintiles=="Q1: lowest",]), ")"), 
                    paste0("Q3 (N=", nrow(data[data$TEU_SBP_PRS_quintiles=="Q3",]), ")"), 
-                   paste0("Q5: highest (N=", nrow(data[data$TEU_SBP_PRS_quintiles=="Q5: highest",]), ")"))
+                   paste0("Q5: Highest score (N=", nrow(data[data$TEU_SBP_PRS_quintiles=="Q5: highest",]), ")"))
 
 # Output the resulting table
 kable(tab[,-1])
 
 ```
 
-## Table `r table`: Multivariable logistic regression identifying factors associated with hypertension control, among middle-aged UK adults on anti-hypertensive treatment (n=`r nrow(data)`)
+## Table `r table`: Multivariable logistic regression exploring association of systolic BP PRS with uncontrolled hypertension (N =`r nrow(data)`)
 `r table <- table + 1`
 
 ```{r logistic-regression, include=TRUE, echo=FALSE}
@@ -426,7 +426,7 @@ varlist=c("TEU_BaC_AgeCat", "BaC_Sex", "TEU_SBP_PRS_quintiles",
           "GeP_PC_1", "GeP_PC_2", "GeP_PC_3", "GeP_PC_4", "GeP_Array"
           )
 
-formula <- paste0("TEU_controlledHTN  ~ ", paste(varlist, collapse="+"))
+formula <- paste0("TEU_uncontrolledHTN  ~ ", paste(varlist, collapse="+"))
 rmodel <- with(comp_long1, glm(as.formula(formula), family="binomial"))
 
 routput <- printMIresults(df=comp_long1$data, varlist=varlist, modeloutput=summary(pool(rmodel)),
@@ -445,7 +445,7 @@ kable(routput)
 
 # p-value of including PRS in model
 
-anova <- with(comp_long1, glm(as.formula(paste0("TEU_controlledHTN ~ ",
+anova <- with(comp_long1, glm(as.formula(paste0("TEU_uncontrolledHTN ~ ",
                              paste(varlist[-which(varlist=="TEU_SBP_PRS_quintiles")], collapse="+"))), family="binomial"))
 
 LRT <- anova(rmodel, anova, method = 'D2',use = 'likelihood')
@@ -485,3 +485,234 @@ if(live){vifs}
 
 *	Assessing model fit: Performed Hosmer-Lemeshow test across multiple choices of g (number of groups) from 5 to 15 and majority of p-values were above 5% significance level, which suggested good model fit.
 *	Multicollinearity: Assessed via ‘car’ R package and VIFs across all covariates were below 10. No multicollinearity detected.
+
+# Hypertension PRS prospective analysis
+
+Including SBP PRS (quintiles), showing for each outcome:
+
+* Model A: without measured SBP at baseline
+* Model B: with measured SBP at baseline
+
+```{r varlists for models}
+
+varlist_a <- c("TEU_BaC_AgeCat", "BaC_Sex", "TEU_SBP_PRS_quintiles",
+          "TEU_BSM_BMIcat", "TEU_Smo_Status", "TEU_Alc_WeeklyCat", "TEU_Pha_METsover1200",
+          "TEU_FaH_CVD", "Prosp_comorb_numcat", "TEU_VeI_numHTNmedscat", "TEU_LDL_Quintiles",
+          "TEU_TownsendDepInd_Quint", "TEU_HouseholdIncome", "TEU_Emp_category", "TEU_Edu_ISCED", "TEU_Rec_Country",
+          "GeP_PC_1", "GeP_PC_2", "GeP_PC_3", "GeP_PC_4"
+          )
+
+varlist_b <- c("TEU_BaC_AgeCat", "BaC_Sex", "TEU_SBP_PRS_quintiles", "TEU_BlP_SBP_quintiles", 
+          "TEU_BSM_BMIcat", "TEU_Smo_Status", "TEU_Alc_WeeklyCat", "TEU_Pha_METsover1200",
+          "TEU_FaH_CVD", "Prosp_comorb_numcat", "TEU_VeI_numHTNmedscat", "TEU_LDL_Quintiles",
+          "TEU_TownsendDepInd_Quint", "TEU_HouseholdIncome", "TEU_Emp_category", "TEU_Edu_ISCED", "TEU_Rec_Country",
+          "GeP_PC_1", "GeP_PC_2", "GeP_PC_3", "GeP_PC_4"
+          )
+
+```
+
+## Cox regression of time until MACE event (`r nrow(data[data$TEU_MACE_status==1,])` events)
+
+MI event defined as diagnosis of MACE event or MACE prevention procedure in HES data, or MACE recorded as primary cause of death.
+
+```{r Cox model mace, echo=FALSE}
+
+status <- "TEU_MACE_status"
+
+```
+
+```{r, cox-output, eval=TRUE}
+
+# Model A
+formula_a <- paste0("Surv(TEU_MACE_time_yrs,", status, ") ~ ", paste(varlist_a, collapse="+"))
+rmodel_a <- with(comp_long1, coxph(as.formula(formula_a)))
+
+routput_a <- printMIresults(df=comp_long1$data, varlist=varlist_b, modeloutput=summary(pool(rmodel_a)),
+                            pretty_names=pretty_names, onecol=FALSE, IDcol=TRUE)
+
+# Model B
+formula_b <- paste0("Surv(TEU_MACE_time_yrs,", status, ") ~ ", paste(varlist_b, collapse="+"))
+rmodel_b <- with(comp_long1, coxph(as.formula(formula_b)))
+
+routput_b <- printMIresults(df=comp_long1$data, varlist=varlist_b, modeloutput=summary(pool(rmodel_b)),
+                            pretty_names=pretty_names, onecol=FALSE, IDcol=TRUE)
+
+# Combine into one table
+tab4 <- left_join(routput_a, routput_b, by=c("IDcol", "Coefficient", "Levels")) %>%
+  select(-IDcol) %>%
+  replace(., is.na(.), "")
+
+rownames(tab4) <- NULL
+tab4 <- rbind(c("Coefficient", "Level", "HR", "95% CI", "p", "HR", "95% CI", "p"),
+              as.matrix(tab4))
+colnames(tab4) <- c("", "",
+                    "Model A", "", "", 
+                    "Model B", "", "")
+
+kable(tab4)
+
+```
+
+```{r, SBP_pval}
+
+anova_a <- with(comp_long1, 
+                coxph(as.formula(paste0("Surv(TEU_MACE_time_yrs,", status, ") ~ ",
+                                        paste(varlist_a[-which(varlist_a=="TEU_SBP_PRS_quintiles")], collapse="+")))))
+anova_b <- with(comp_long1, 
+                coxph(as.formula(paste0("Surv(TEU_MACE_time_yrs,", status, ") ~ ",
+                                        paste(varlist_b[-which(varlist_b=="TEU_SBP_PRS_quintiles")], collapse="+")))))
+
+LRT_a <- anova(rmodel_a, anova_a, method='D2', use='likelihood')
+LRT_b <- anova(rmodel_b, anova_b, method='D2', use='likelihood')
+
+SBP_p_a <- LRT_a$out$`1 ~~ 2`$result[4] 
+SBP_p_b <- LRT_b$out$`1 ~~ 2`$result[4]
+
+```
+
+### Overall p-value of SBP PRS
+
+* Model A: Based on likelihood ratio test, inclusion of SBP PRS `r if(SBP_p_a < 0.05){"**does**"}else{"does **not**"}` provide significant improvement in model fit (p = `r pretty_pval(SBP_p_a)`).
+* Model B: Based on likelihood ratio test, inclusion of SBP PRS `r if(SBP_p_b < 0.05){"**does**"}else{"does **not**"}` provide significant improvement in model fit (p = `r pretty_pval(SBP_p_b)`).
+
+
+```{r model-checks,echo=FALSE,eval=live}
+# Model 1: Multivariable model (without baseline LDL)
+pha_plots<-list() #save PHA plot for each imputation
+vifs<-list() #save multicollinearity results
+
+for (i in 1:comp_long1$m) {
+  ## 1. PHA
+  pha_plots[[i]]<-ggcoxzph(cox.zph(rmodel_a$analyses[[i]]))
+  
+  ## 2. Multicollinearity
+  
+  vifs[[i]]<-rms::vif(cph(as.formula(formula_a),data=complete(comp_long1,i)))
+  cat("Imputation",i,", Any VIF above>10:",any(vifs[[i]]>10),'\n')
+  
+}
+
+# Use shinyapp for better visualisation
+
+choices = 1:comp_long1$m
+
+names(choices) <- paste("Imputation",1:comp_long1$m)
+shinyApp(
+  ui = fluidPage(
+    titlePanel("PHA plot on each imputation"),
+    sidebarPanel(
+      selectInput("plot", "Choose plot:", choices=choices),
+      hr()),
+      #helpText("Trail plots")),
+    plotOutput("mainplot")
+  ),
+  server = function(input, output) {
+    output$mainplot<-renderPlot({
+      i<- as.integer(input$plot)
+      pha_plots[[i]]
+    }, height = 1000, width = 2000)
+  }
+)
+
+
+# Model 2: Multivariable model (With baseline LDL)
+
+pha_plots2<-list() #save PHA plot for each imputation
+vifs2<-list() #save multicollinearity results
+
+for (i in 1:comp_long1$m) {
+  ## 1. PHA
+  pha_plots2[[i]]<-ggcoxzph(cox.zph(rmodel_b$analyses[[i]]))
+  
+  ## 2. Multicollinearity
+  
+  vifs2[[i]]<-rms::vif(cph(as.formula(formula_b),data=complete(comp_long1,i)))
+  cat("Imputation",i,", Any VIF above>10:",any(vifs2[[i]]>10),'\n')
+  
+}
+
+# Use shinyapp for better visualisation
+
+choices = 1:comp_long1$m
+
+names(choices) <- paste("Imputation",1:comp_long1$m)
+shinyApp(
+  ui = fluidPage(
+    titlePanel("PHA plot on each imputation"),
+    sidebarPanel(
+      selectInput("plot", "Choose plot:", choices=choices),
+      hr()),
+    #helpText("Trail plots")),
+    plotOutput("mainplot")
+  ),
+  server = function(input, output) {
+    output$mainplot<-renderPlot({
+      i<- as.integer(input$plot)
+      pha_plots2[[i]]
+    }, height = 1000, width = 2000)
+  }
+)
+
+
+```
+
+### Model Checking (for both Model A and B on each imputed dataset):
+
+*	Proportional hazard assumption (PHA): Assessed by plotting Schoenfeld residuals against time and testing the significance of relationship between residuals and time. Schoenfeld residuals plots indicated no evidence of PHA violation.
+*	Multicollinearity: Assessed via ‘rms’ R package and VIFs across all covariates were below 10. No multicollinearity detected.
+
+## Cox regression of time until MI event (`r nrow(data[data$TEU_MACE_MI==1,])` events)
+
+MI event defined as diagnosis of myocardial infarction or MI prevention procedure in HES data, or MI recorded as primary cause of death (censoring at first MACE event applied)
+
+```{r Cox model MI, echo=FALSE}
+
+status <- "TEU_MACE_MI"
+
+<<cox-output>>
+
+```
+
+```{r, echo=FALSE}
+
+<<SBP_pval>>
+
+```
+
+### Overall p-value of SBP PRS
+
+* Model A: Based on likelihood ratio test, inclusion of SBP PRS `r if(SBP_p_a < 0.05){"**does**"}else{"does **not**"}` provide significant improvement in model fit (p = `r pretty_pval(SBP_p_a)`).
+* Model B: Based on likelihood ratio test, inclusion of SBP PRS `r if(SBP_p_b < 0.05){"**does**"}else{"does **not**"}` provide significant improvement in model fit (p = `r pretty_pval(SBP_p_b)`).
+
+### Model Checking (for both Model A and B on each imputed dataset):
+
+*	Proportional hazard assumption (PHA): Assessed by plotting Schoenfeld residuals against time and testing the significance of relationship between residuals and time. Schoenfeld residuals plots indicated no evidence of PHA violation.
+*	Multicollinearity: Assessed via ‘rms’ R package and VIFs across all covariates were below 10. No multicollinearity detected.
+
+## Cox regression of the time until stroke event (`r nrow(data[data$TEU_MACE_Stroke==1,])` events)
+
+Stroke event defined as diagnosis of stroke (any kind) or stroke prevention procedure in HES data, or stroke recorded as primary cause of death (censoring at first MACE event applied).
+
+```{r Cox model stroke, echo=FALSE}
+
+status <- "TEU_MACE_Stroke"
+
+<<cox-output>>
+
+```
+
+```{r, echo=FALSE}
+
+<<SBP_pval>>
+
+```
+
+### Overall p-value of SBP PRS
+
+* Model A: Based on likelihood ratio test, inclusion of SBP PRS `r if(SBP_p_a < 0.05){"**does**"}else{"does **not**"}` provide significant improvement in model fit (p = `r pretty_pval(SBP_p_a)`).
+* Model B: Based on likelihood ratio test, inclusion of SBP PRS `r if(SBP_p_b < 0.05){"**does**"}else{"does **not**"}` provide significant improvement in model fit (p = `r pretty_pval(SBP_p_b)`).
+
+### Model Checking (for both Model A and B on each imputed dataset):
+
+*	Proportional hazard assumption (PHA): Assessed by plotting Schoenfeld residuals against time and testing the significance of relationship between residuals and time. Schoenfeld residuals plots indicated no evidence of PHA violation.
+*	Multicollinearity: Assessed via ‘rms’ R package and VIFs across all covariates were below 10. No multicollinearity detected.
