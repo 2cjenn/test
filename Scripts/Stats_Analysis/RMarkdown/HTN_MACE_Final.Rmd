@@ -32,6 +32,7 @@ library(ResourceSelection)
 library(naniar)
 library(mice)
 library(gtools)
+library(epitools)
 
 # Specify the markdown format for knitr tables, otherwise they're not compatible with kableExtra
 options(knitr.kable.NA='', knitr.table.format = "markdown")
@@ -376,41 +377,27 @@ comp_long1<-as.mids(comp_long1)
 `r table <- table + 1`
 
 ```{r descriptive-table, include=TRUE, echo=FALSE}
-varlist=c("TEU_BaC_AgeCat", "BaC_Sex", "TEU_BlP_SBP_quintiles",
+varlist=c("TEU_BaC_AgeAtRec", "BaC_Sex", "TEU_BlP_SBP_quintiles",
           "TEU_BSM_BMIcat", "TEU_Smo_Status", "TEU_Alc_WeeklyCat", "TEU_Pha_METsover1200",
           "TEU_FaH_CVD", "Prosp_comorb_numcat", "TEU_VeI_numHTNmedscat", "TEU_LDL_Quintiles",
           "TEU_TownsendDepInd_Quint", "TEU_HouseholdIncome", "TEU_Emp_category", "TEU_Edu_ISCED", "TEU_Rec_Country"
           )
 
-tab_1 <- descriptivetable(df=data[data$TEU_SBP_PRS_quintiles=="Q1: Lowest score",], 
-                         varlist=varlist,
-                         contavg='median',
-                         pretty_names=pretty_names,
-                         singlecol=TRUE)
+data$age_standardise <- cut(data$TEU_BaC_AgeAtRec, seq(40, 70, by=1))
 
-tab_3 <- descriptivetable(df=data[data$TEU_SBP_PRS_quintiles=="Q3",], 
-                         varlist=varlist,
-                         contavg='median',
-                         pretty_names=pretty_names,
-                         singlecol=TRUE)
-
-tab_5 <- descriptivetable(df=data[data$TEU_SBP_PRS_quintiles=="Q5: Highest score",], 
-                         varlist=varlist,
-                         contavg='median',
-                         pretty_names=pretty_names,
-                         singlecol=TRUE)
-
-tab <- inner_join(tab_1, tab_3%>%select(-levels), by="V1")
-tab <- inner_join(tab, tab_5%>%select(-levels), by="V1")
+tab <- age_std(data=data, varlist=varlist, adj="age_standardise", 
+                 stratify="TEU_SBP_PRS_quintiles", strata=c("Q1: Lowest score", "Q3", "Q5: Highest score"),
+                 pretty_names=pretty_names, singlecol=TRUE)
 
 rownames(tab) <- NULL
 
+colnames(tab) <- c("Variable", 
                    paste0("Q1: Lowest score (N=", nrow(data[data$TEU_SBP_PRS_quintiles=="Q1: Lowest score",]), ")"), 
                    paste0("Q3 (N=", nrow(data[data$TEU_SBP_PRS_quintiles=="Q3",]), ")"), 
                    paste0("Q5: Highest score (N=", nrow(data[data$TEU_SBP_PRS_quintiles=="Q5: Highest score",]), ")"))
 
 # Output the resulting table
-kable(tab[,-1])
+kable(tab)
 
 ```
 

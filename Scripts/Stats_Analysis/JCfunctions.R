@@ -64,6 +64,43 @@ diagcollist <- function(colstring, sep="", ncols) {
   return(colstr)
 }
 
+age_std <- function(data, varlist, adj, stratify, strata=NULL, pretty_names=list(), singlecol=TRUE){
+  
+  if(is.null(strata)) { strata <- levels(data[[stratify]]) }
+  table <- c()
+  for(s in strata) {
+    col <- c()
+    for(var in varlist){
+      if(is.factor(data[[var]])){
+        if(singlecol){ col <- c(col, "") }
+        for(l in levels(data[[var]])){
+          count <- table(data[[adj]][data[[var]]==l & data[[stratify]]==s])
+          pop <- table(data[[adj]][data[[stratify]]==s])
+          stdpop <- table(data[[adj]])
+          
+          rates <- ageadjust.direct(count=count, pop=pop, stdpop=stdpop)
+          adj.rate <- pretty_dp(100*rates[["adj.rate"]],1)
+          
+          col <- c(col, adj.rate)
+        }
+      } else {
+        col <- c(col, paste0(pretty_dp(mean(data[[var]]),1), " (", pretty_dp(sd(data[[var]]),1), ")"))
+      }
+    }
+    table <- cbind(table, col)
+  }
+  coefflist <- list()
+  # Prepare the list of coefficients - variables and levels for factors or blanks for continuous
+  for(var in varlist){
+    coefflist[[var]] <- preparecoefflist(df=data, varname=var, pretty_names=pretty_names, onecol=singlecol)
+  }
+  coeffnames <- do.call(rbind, coefflist)
+  
+  colnames(table) <- strata
+  table <- cbind(coeffnames%>%select(-IDcol), table)
+  return(table)
+}
+
 # Print numbers and proportions for factors, median and IQR or mean and 95% CI for continuous variables
 # Optionally provide p-values from chi-squared (categorical) and t-test (continuous)
 descriptivetable <- function(df, varlist, contavg='mean', assocvar=NULL, singlecol=FALSE, 
