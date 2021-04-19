@@ -359,7 +359,8 @@ comp_long1<-long1%>%
   mutate(TEU_SBP_PRS_quintiles= quantcut(TEU_SBP_PRS,q=5,labels = c('Q1: Lowest score','Q2','Q3','Q4','Q5: Highest score')),
          TEU_TownsendDepInd_Quint= quantcut(TownsendDepInd,q=5,labels = c('Q1: least deprived','Q2','Q3','Q4','Q5: most deprived')),
          TEU_BlP_SBP_quintiles=quantcut(TEU_BlP_SBP.avg,q=5,labels=c('Q1: lowest','Q2','Q3','Q4','Q5: highest')),
-         TEU_LDL_Quintiles=quantcut(BBC_LDL_Result,q=5,labels=c('Q1: lowest','Q2','Q3','Q4','Q5: highest')))
+         TEU_LDL_Quintiles=quantcut(BBC_LDL_Result,q=5,labels=c('Q1: lowest','Q2','Q3','Q4','Q5: highest')),
+         GeP_Array=factor(GeP_Array, levels=c("Axiom", "BiLEVE")))
 
 comp_long1<-as.mids(comp_long1)
 
@@ -404,10 +405,9 @@ tab <- inner_join(tab, tab_5%>%select(-levels), by="V1")
 
 rownames(tab) <- NULL
 
-colnames(tab) <- c("", "Variable", 
-                   paste0("Q1: Lowest score (N=", nrow(data[data$TEU_SBP_PRS_quintiles=="Q1: lowest",]), ")"), 
+                   paste0("Q1: Lowest score (N=", nrow(data[data$TEU_SBP_PRS_quintiles=="Q1: Lowest score",]), ")"), 
                    paste0("Q3 (N=", nrow(data[data$TEU_SBP_PRS_quintiles=="Q3",]), ")"), 
-                   paste0("Q5: Highest score (N=", nrow(data[data$TEU_SBP_PRS_quintiles=="Q5: highest",]), ")"))
+                   paste0("Q5: Highest score (N=", nrow(data[data$TEU_SBP_PRS_quintiles=="Q5: Highest score",]), ")"))
 
 # Output the resulting table
 kable(tab[,-1])
@@ -499,14 +499,14 @@ varlist_a <- c("TEU_BaC_AgeCat", "BaC_Sex", "TEU_SBP_PRS_quintiles",
           "TEU_BSM_BMIcat", "TEU_Smo_Status", "TEU_Alc_WeeklyCat", "TEU_Pha_METsover1200",
           "TEU_FaH_CVD", "Prosp_comorb_numcat", "TEU_VeI_numHTNmedscat", "TEU_LDL_Quintiles",
           "TEU_TownsendDepInd_Quint", "TEU_HouseholdIncome", "TEU_Emp_category", "TEU_Edu_ISCED", "TEU_Rec_Country",
-          "GeP_PC_1", "GeP_PC_2", "GeP_PC_3", "GeP_PC_4"
+          "GeP_PC_1", "GeP_PC_2", "GeP_PC_3", "GeP_PC_4", "GeP_Array"
           )
 
 varlist_b <- c("TEU_BaC_AgeCat", "BaC_Sex", "TEU_SBP_PRS_quintiles", "TEU_BlP_SBP_quintiles", 
           "TEU_BSM_BMIcat", "TEU_Smo_Status", "TEU_Alc_WeeklyCat", "TEU_Pha_METsover1200",
           "TEU_FaH_CVD", "Prosp_comorb_numcat", "TEU_VeI_numHTNmedscat", "TEU_LDL_Quintiles",
           "TEU_TownsendDepInd_Quint", "TEU_HouseholdIncome", "TEU_Emp_category", "TEU_Edu_ISCED", "TEU_Rec_Country",
-          "GeP_PC_1", "GeP_PC_2", "GeP_PC_3", "GeP_PC_4"
+          "GeP_PC_1", "GeP_PC_2", "GeP_PC_3", "GeP_PC_4", "GeP_Array"
           )
 
 ```
