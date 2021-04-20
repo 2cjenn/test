@@ -49,7 +49,7 @@ digraph dot {
   
   [1]: paste0('UKB participants','\nn = ', excl$initial)
   [2]: paste0('UK participants aged between 40 and 70\nn = ', excl$agerange)
-  [3]: paste0('Complete information on core variables\nn = ', excl$BPimp)
+  [3]: paste0('Complete information on core variables\nn = ', excl$PRSmiss)
   [4]: paste0('Without serious comorbidities\nn = ', excl$seriouscomorb)
   [5]: paste0('Treated population: antihypertensive\nmedication users at baseline\nn = ', excl$treated)
   [6]: paste0('No prior MACE events at baseline\nn = ', excl$MACE)
