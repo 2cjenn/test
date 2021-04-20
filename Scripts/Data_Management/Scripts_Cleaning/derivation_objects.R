@@ -1531,6 +1531,7 @@ TEU_selfrepHTN_meds <- function() {
     source = c("TEU_VeI_HTNmeds_rubric", "TEU_HMH_Meds_BP"), 
     mapper = function(data) {
       VI <- data[["TEU_VeI_HTNmeds_rubric"]]
+      VI[is.na(VI)] <- FALSE
       TQ <- (data[["TEU_HMH_Meds_BP"]] == "Self-reported BP meds")
       y <- (VI | TQ)
       return(y)
