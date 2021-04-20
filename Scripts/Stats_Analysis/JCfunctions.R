@@ -112,7 +112,8 @@ table1_standardised <- function(data, varlist, adj, stratify, strata=NULL,
           }
         }
       } else {
-        col <- c(col, paste0(pretty_dp(mean(data[[var]]), dp), " (", pretty_dp(sd(data[[var]]), dp), ")"))
+        col <- c(col, paste0(pretty_dp(mean(data[[var]][data[[stratify]]==s]), dp), 
+                             " (", pretty_dp(sd(data[[var]][data[[stratify]]==s]), dp), ")"))
       }
     }
     table <- cbind(table, col)
