@@ -373,7 +373,7 @@ comp_long1<-as.mids(comp_long1)
 
 # Hypertension PRS cross-sectional analysis
 
-## Table `r table`. Descriptive statistics of analysis population by systolic BP PRS quintiles (N = `r nrow(data)`).
+## Table `r table`. Age-standardised descriptive statistics of analysis population by systolic BP PRS quintiles (N = `r nrow(data)`).
 `r table <- table + 1`
 
 ```{r descriptive-table, include=TRUE, echo=FALSE}
@@ -389,12 +389,7 @@ tab <- table1_standardised(data=data, varlist=varlist, adj="age_standardise",
                  stratify="TEU_SBP_PRS_quintiles", strata=c("Q1: Lowest score", "Q3", "Q5: Highest score"),
                  pretty_names=pretty_names, singlecol=TRUE)
 
-rownames(tab) <- NULL
-
-# colnames(tab) <- c("Variable", 
-#                    paste0("Q1: Lowest score (N=", nrow(data[data$TEU_SBP_PRS_quintiles=="Q1: Lowest score",]), ")"), 
-#                    paste0("Q3 (N=", nrow(data[data$TEU_SBP_PRS_quintiles=="Q3",]), ")"), 
-#                    paste0("Q5: Highest score (N=", nrow(data[data$TEU_SBP_PRS_quintiles=="Q5: Highest score",]), ")"))
+colnames(tab)[1] <- "Variable"
 
 # Output the resulting table
 kable(tab)
