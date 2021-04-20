@@ -85,6 +85,7 @@ specs <- function() {
     ID,
     GeP_UsedInPCA, # Identifies participants which met UKB QC for inclusion in PCA
     GeP_Outliers, # Identifies participants who are outliers for missingness and heterozygosity
+    GeP_Kinship,
     GeP_ethnic, # Identifies participants with genetic White British ancestry
     GeP_Array,
     GeP_Batch, # We may wish to adjust for batch effect

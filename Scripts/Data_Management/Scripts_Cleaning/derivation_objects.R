@@ -1464,6 +1464,17 @@ GeP_Sex <- function() {
   )
 }
 
+GeP_Kinship <- function() {
+  list(
+    name = "GeP_Kinship", 
+    source = c("GeP_Kinship.0.0"), 
+    mapper = FN_id,
+    post_exclusion = FALSE,
+    display_name = "string",
+    description = "text"
+  )
+}
+
 
 TEU_VeI_HTN_prevalent <- function(dx_codes = c(1065, 1072)) {
   list(
