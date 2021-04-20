@@ -86,6 +86,7 @@ specs <- function() {
     GeP_UsedInPCA, # Identifies participants which met UKB QC for inclusion in PCA
     GeP_Outliers, # Identifies participants who are outliers for missingness and heterozygosity
     GeP_ethnic, # Identifies participants with genetic White British ancestry
+    GeP_Array,
     GeP_Batch, # We may wish to adjust for batch effect
     # GeP_Plate, # We may wish to adjust for plate effect
     GeP_PC(pc=1),
@@ -151,7 +152,8 @@ specs <- function() {
       TEU_MACE_time_yrs,
       # MACE subtypes 
       TEU_HES_MACE_fucomp(record_level=TRUE),
-      TEU_MACE_fucomp
+      TEU_MACE_fucomp,
+      TEU_Dth_MACE_dthtype(record_level=TRUE)
     )
     
   )
@@ -170,6 +172,8 @@ specs <- function() {
       TEU_evidenceHTN,
       TEU_awareHTN,
       TEU_treatedHTN,
+      TEU_controlledHTN,
+      TEU_uncontrolledHTN,
       TEU_HMH_BowelCancerScreen,
       TEU_Edu_HighestQual,
       TEU_Edu_ISCED,
@@ -177,17 +181,23 @@ specs <- function() {
       TEU_Emp_JobCode_v2,
       TEU_HTN_Emp_category,
       TEU_HoH_PreTaxInc,
+      TEU_HouseholdIncome,
       TEU_Emp_CurrStat,
       TEU_Emp_JobCode_v2,
       TEU_HTN_Emp_category,
+      TownsendDepInd,
       TEU_TownsendDepInd_Quint,
+      TEU_CountryIncome,
       TEU_HMH_Meds_BP,
       TEU_Smo_Status,
       TEU_Alc_Status,
       TEU_Alc_WeeklyAlcUnits,
+      TEU_Alc_WeeklyCat,
       TEU_Alc_Binge,
+      PhA_METsWkAllAct,
       TEU_Pha_METsover1200,
       TEU_FaH_CVD,
+      BSM_BMI,
       TEU_BSM_BMIcat,
       TEU_BSM_WaistCircCat,
       TEU_SBP_PRS,
@@ -203,7 +213,10 @@ specs <- function() {
       HMH_HTNAge,
       TEU_BlP_HTNseverity,
       TEU_VeI_seriouscomb,
-      TEU_VeI_cancer
+      TEU_VeI_cancer,
+      HTN_comorb_num,
+      TEU_VeI_numHTNmeds,
+      TEU_VeI_numHTNmedscat
       
     )
   )
@@ -227,9 +240,21 @@ specs <- function() {
 
   HTN_control_MACE <- c(
     HTN_control,
+    HTN_control_comorb,
+    Prosp_comorb_num,
+    Prosp_comorb_numcat,
     UKB_genetic,
     MACE_recordlevel,
-    TEU_Emp_JobCode_v2 # When using v3 data until we grab emp_jobcode.0.0
+    BBC_LDL_Result,
+    TEU_LDL_Quintiles,
+    TEU_LDLctrl_v1,
+    TEU_Emp_JobCode_v2, # When using v3 data until we grab emp_jobcode.0.0
+    TEU_MACE_MI,
+    TEU_MACE_Stroke,
+    TEU_MACE_HaemStroke,
+    TEU_BlP_SBP_quintiles,
+    TEU_SBP_PRS_quintiles,
+    GeP_Array
   )
   
   Cholstrl_control<-c(

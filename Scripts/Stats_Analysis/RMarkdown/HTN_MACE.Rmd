@@ -1,10 +1,10 @@
 ---
-title: "HTN Prospective"
-author: "Jennifer Collister (JC)"
+title: "HTN PRS MACE prospective"
+author:  "Jennifer Collister"
 date: "`r format(Sys.time(), '%d %B %Y')`"
 output: 
   word_document:
-      reference_docx: "K:/TEU/TEU Guides/TEU_DocStyle_2020.dotx"
+      reference_docx: "K:/TEU/TEU_Guides/TEU_DocStyle_Rmd_2020.dotx"
 ---
 
 ```{r setup, include=FALSE}
@@ -14,28 +14,49 @@ library(kableExtra)
 library(knitr)
 library(yaml)
 library(here)
-library(Publish)
 library(DiagrammeR)
 library(DiagrammeRsvg)
-library(magrittr)
 library(svglite)
 library(rsvg)
 library(png)
-
+library(dplyr)
+library(ggplot2)
+library(survival)
+library(survminer)
+library(rms)
+library(shiny)
+library(rcompanion)
+library(Publish)
+library(gridExtra)
+library(ResourceSelection)
 
 # Specify the markdown format for knitr tables, otherwise they're not compatible with kableExtra
 options(knitr.kable.NA='', knitr.table.format = "markdown")
 options(kableExtra.auto_format = FALSE)
 # Set the root directory to the project directory (otherwise knitr works in the directory of the Rmd file by default)
 knitr::opts_knit$set(root.dir = here::here())
+knitr::opts_chunk$set(include=TRUE, echo=FALSE)
 
 # Load the project config file for filepaths etc
 config = yaml.load_file(here::here("./config.yml"))
+source(here::here(config$functions$JC))
+
+#-------------------------------------------------------------------------------------------------------------------
+# Setup
+
+figure <- 1
+table <- 1
+suppfig <- 1
+footnote_no <- 1
+
+# Check if the session is being knitted or run interactively
+# When we're knitting the documentation, we don't want to include the diagnostic checks
+live <- interactive()
 
 ```
 
-```{r}
-
+```{r data-derivation, include=FALSE, cache=TRUE}
+ 
 source(file.path(config$scripts$cleaning, "dataset_generator.R"))
 
 exclusions <- function(data){
@@ -112,22 +133,23 @@ exclusions <- function(data){
   
   excl$whiteBrit <<- nrow(data)
   
-  return(data)
+  return(data) 
 }
 
 excl <- list(initial=0)
+
 data <-
   evalWithMemoization(
     derive_variables(
-      database = "K:/TEU/UKB33952_Data/Data_Downloads/V2_database_duckdb0.2.1/ukb_v2.db",
+      database = "K:/TEU/UKB33952_Data/Data_Downloads/V3_database_duckdb0.2.1/ukb_v3.db",
       field_definitions = TEU_SPECS$HTN_control_MACE,
       exclusions = exclusions
     ),
-    key = c(TEU_SPECS$HTN_MACE, exclusions)
+    key = c(TEU_SPECS$HTN_control_MACE, exclusions)
   )
 
-
-pretty_names <- pretty_switch(field_definitions=TEU_SPECS$HTN_control_MACE)
+pretty_func <- pretty_switch(field_definitions=TEU_SPECS$HTN_control_MACE, return_type = "function")
+pretty_names <- pretty_switch(field_definitions=TEU_SPECS$HTN_control_MACE, return_type = "list")
 
 export_svg(DiagrammeR::grViz(here::here(file.path(config$outputs$flowcharts, "HTN_PRS_MACE.gv")))
            ) %>% charToRaw %>% rsvg %>% 
@@ -136,13 +158,437 @@ export_svg(DiagrammeR::grViz(here::here(file.path(config$outputs$flowcharts, "HT
 
 ```
 
-# MACE outcome
+```{r}
+# Temporary fix:
 
-Primary outcome is MACE composite outcome at follow-up. MACE is defined as a composite of the following:
+levels(data$TEU_TownsendDepInd_Quint) <- c(levels(data$TEU_TownsendDepInd_Quint), "Unavailable")
+data$TEU_TownsendDepInd_Quint[is.na(data$TEU_TownsendDepInd_Quint)] <- "Unavailable"
 
-* Non-fatal Myocardial Infraction (MI)
-* MI prevention procedure
-* Non-fatal Stroke
-* Stroke prevention procedure
-* Cardiovascular Death
+```
+
+
+# Hypertension PRS cross-sectional analysis
+
+## Table `r table`. Characteristics of participants included in the analysis, by Systolic BP PRS quintile (treated hypertensives, n = `r nrow(data)`).
+`r table <- table + 1`
+
+```{r descriptive-table, include=TRUE, echo=FALSE}
+varlist=c("TEU_BaC_AgeAtRec", "TEU_BaC_AgeCat", "BaC_Sex", "TEU_BlP_SBP_quintiles",
+          "TEU_BSM_BMIcat", "TEU_Smo_Status", "TEU_Alc_WeeklyCat", "TEU_Pha_METsover1200",
+          "TEU_FaH_CVD", "Prosp_comorb_numcat", "TEU_VeI_numHTNmedscat", "TEU_LDL_Quintiles",
+          "TEU_TownsendDepInd_Quint", "TEU_HouseholdIncome", "TEU_Emp_category", "TEU_Edu_ISCED", "TEU_Rec_Country"
+          )
+
+tab_all <- descriptivetable(df=data, 
+                         varlist=varlist,
+                         contavg='median',
+                         pretty_names=pretty_names)
+
+tab_1 <- descriptivetable(df=data[data$TEU_SBP_PRS_quintiles=="Q1: lowest",], 
+                         varlist=varlist,
+                         contavg='median',
+                         pretty_names=pretty_names)
+
+tab_3 <- descriptivetable(df=data[data$TEU_SBP_PRS_quintiles=="Q3",], 
+                         varlist=varlist,
+                         contavg='median',
+                         pretty_names=pretty_names)
+
+tab_5 <- descriptivetable(df=data[data$TEU_SBP_PRS_quintiles=="Q5: highest",], 
+                         varlist=varlist,
+                         contavg='median',
+                         pretty_names=pretty_names)
+
+tab <- inner_join(tab_all, tab_1%>%select(-Variable), by="IDcol")
+tab <- inner_join(tab, tab_3%>%select(-Variable), by="IDcol")
+tab <- inner_join(tab, tab_5%>%select(-Variable), by="IDcol")
+
+rownames(tab) <- NULL
+tab <- rbind(c("", "Variable", "n", "%", "n", "%", "n", "%", "n", "%"),
+              as.matrix(tab))
+colnames(tab) <- c("", "", "Overall", "", "Q1: lowest", "", "Q3", "", "Q5: highest", "")
+
+# Output the resulting table
+kable(tab[,-1])
+
+```
+
+## Table `r table`: Multivariable logistic regression identifying factors associated with hypertension control, among middle-aged UK adults on anti-hypertensive treatment (n=`r nrow(data)`)
+`r table <- table + 1`
+
+```{r logistic-regression, include=TRUE, echo=FALSE}
+
+varlist=c("TEU_BaC_AgeCat", "BaC_Sex", "TEU_SBP_PRS_quintiles",
+          "TEU_BSM_BMIcat", "TEU_Smo_Status", "TEU_Alc_WeeklyCat", "TEU_Pha_METsover1200",
+          "TEU_FaH_CVD", "Prosp_comorb_numcat", "TEU_VeI_numHTNmedscat", "TEU_LDL_Quintiles",
+          "TEU_TownsendDepInd_Quint", "TEU_HouseholdIncome", "TEU_Emp_category", "TEU_Edu_ISCED", "TEU_Rec_Country",
+          "GeP_PC_1", "GeP_PC_2", "GeP_PC_3", "GeP_PC_4"
+          )
+
+desctable2 <- function(df){
+  n <- nrow(df)
+  control <- prop.test(x=nrow(df[df$TEU_controlledHTN==TRUE & !is.na(df$TEU_controlledHTN),]),
+                           n=nrow(df), alternative="two.sided", conf.level=0.95)
+  pct_control <- pretty_dp(control$estimate, dp=1, pct=TRUE)
+  
+  table <- cbind(n, pct_control)
+  return(table)
+}
+
+pct_ctrl <- c()
+for(var in varlist){
+  header <- c(var, paste0("**", pretty_func(var), "**"), NA, NA)
+  pct_ctrl <- rbind(pct_ctrl, header)
+  for(level in levels(data[[var]])){
+    newrow <- desctable2(data[data[var]==level,])
+    IDcol <- paste0(var, level)
+    pct_ctrl <- rbind(pct_ctrl, cbind(IDcol, level, newrow))
+  }
+}
+pct_ctrl <- data.frame(pct_ctrl)
+
+adj <- regressiontable(df=data, outcome="TEU_controlledHTN", varlist=varlist, 
+                       regresstype="adjusted", adjvarlist=c("TEU_BaC_AgeCat", "BaC_Sex"))
+multi <- regressiontable(df=data, outcome="TEU_controlledHTN", varlist=varlist, 
+                         regresstype="multivariable")
+
+tab3 <- merge(adj, multi, by=c("IDcol", "Coefficient", "Levels"), sort=FALSE) %>% select(-Coefficient, -Levels)
+# Add n column
+
+tab3 <- left_join(pct_ctrl, tab3, by=c("IDcol")) %>% select(-IDcol)
+
+# Hide "unanswered"/"unknown"/"do not know" categories
+# tab3 <- tab3[-which(tab3$level %in% c("Unknown", "Unanswered", "Do not know", "Prefer not to answer")),]
+rownames(tab3) <- NULL
+
+tab3 <- rbind(c("Coefficient", "n^1^", "% Controlled^2^", "OR", "95% CI", "p", "OR", "95% CI", "p"),
+              as.matrix(tab3))
+colnames(tab3) <- c("","","", 
+                    "Age- and sex-adjusted", "", "", 
+                    "Multivariable- adjusted", "", "")
+
+# Output the resulting table
+kable(tab3)
+
+```
+
+```{r}
+
+# p-value of including PRS in model
+
+formula <- as.formula(paste0("TEU_controlledHTN ~ ", paste(varlist, collapse="+")))
+multi <- glm(formula=formula, data=data, family="binomial")
+
+
+anova <- as.formula(paste0("TEU_controlledHTN ~ ",
+                             paste(varlist[-which(varlist=="TEU_SBP_PRS_quintiles")], collapse="+")))
+SBP_p <- anova(multi, glm(anova, data=data, family="binomial"), test="Chisq")$`Pr(>Chi)`[2]
+
+```
+
+### Overall p-value of SBP PRS
+
+Based on likelihood ratio test, inclusion of SBP PRS `r if(SBP_p < 0.05){"**does**"}else{"does **not**"}` provide significant improvement in model fit (p = `r pretty_pval(SBP_p)`).
+
+```{r cross-sectional Model Check,echo=FALSE}
+
+## Assess model fit
+## 1. Hosmer-Lemeshow Test
+
+HL <- hoslem.test(multi$y,fitted(multi),g=10)
+
+# g is the number of groups into which to split the observations in the sample
+# For g in 5 to 15, check Hosmer Lemeshow p-vals
+HL_pvals=sapply(5:15,function(i) hoslem.test(multi$y, fitted(multi), g=i)$p.value)
+
+## 2. Multicollinearity
+# VIFs
+m2_vifs=data.frame(car::vif(multi))
+m2_vifs$squared=(m2_vifs$GVIF..1..2.Df..)^2
+max <- max(m2_vifs$squared)
+
+# Check correlation among covariates 
+corr <- data%>%select(any_of(varlist))%>%select(!starts_with("GeP_PC"))
+corr_matrix <- corr_mat(corr)
+# Find covariates with highest correlation
+inds <- which(corr_matrix==max(corr_matrix), arr.ind=TRUE)
+maxrow <- pretty_func(rownames(corr_matrix)[inds[1,1]])
+maxcol <- pretty_func(colnames(corr_matrix)[inds[1,2]])
+
+```
+
+### Model checks:
+
+**Hosmer-Lemeshow Test**: `r sum(HL_pvals<0.05)` p-values were above 5% significance level, across 5 to 15 groups. 
+
+**Multicollinearity**: 
+VIFs (or squared VIFs for categorical covariates) across all covariates `r if(max<10){"were"}else{"were not"}` below 10. The highest VIF was `r max`. 
+The highest correlation between any pair of variables in the model was `r max(corr_matrix)`, between *`r maxrow`* and *`r maxcol`*.
+
+# Hypertension PRS prospective analysis
+
+Including SBP PRS (quintiles), showing for each outcome:
+
+* Model A: without measured SBP at baseline
+* Model B: with measured SBP at baseline
+
+```{r varlists for models}
+
+varlist_a <- c("TEU_BaC_AgeCat", "BaC_Sex", "TEU_SBP_PRS_quintiles",
+          "TEU_BSM_BMIcat", "TEU_Smo_Status", "TEU_Alc_WeeklyCat", "TEU_Pha_METsover1200",
+          "TEU_FaH_CVD", "Prosp_comorb_numcat", "TEU_VeI_numHTNmedscat", "TEU_LDL_Quintiles",
+          "TEU_TownsendDepInd_Quint", "TEU_HouseholdIncome", "TEU_Emp_category", "TEU_Edu_ISCED", "TEU_Rec_Country",
+          "GeP_PC_1", "GeP_PC_2", "GeP_PC_3", "GeP_PC_4"
+          )
+
+varlist_b <- c("TEU_BaC_AgeCat", "BaC_Sex", "TEU_SBP_PRS_quintiles", "TEU_BlP_SBP_quintiles", 
+          "TEU_BSM_BMIcat", "TEU_Smo_Status", "TEU_Alc_WeeklyCat", "TEU_Pha_METsover1200",
+          "TEU_FaH_CVD", "Prosp_comorb_numcat", "TEU_VeI_numHTNmedscat", "TEU_LDL_Quintiles",
+          "TEU_TownsendDepInd_Quint", "TEU_HouseholdIncome", "TEU_Emp_category", "TEU_Edu_ISCED", "TEU_Rec_Country",
+          "GeP_PC_1", "GeP_PC_2", "GeP_PC_3", "GeP_PC_4"
+          )
+
+```
+
+## Cox regression of time until MACE event (`r nrow(data[data$TEU_MACE_status==1,])` events)
+
+MI event defined as diagnosis of MACE event or MACE prevention procedure in HES data, or MACE recorded as primary cause of death.
+
+```{r Cox model mace, echo=FALSE}
+
+status <- "TEU_MACE_status"
+
+```
+
+```{r, cox-output, eval=TRUE}
+
+# Model A
+formula_a <- as.formula(paste0("Surv(TEU_MACE_time_yrs,", status, ") ~ ", paste(varlist_a, collapse="+")))
+rmodel_a <- coxph(formula_a, data=data)
+
+routput_a <- printcoxresults(df=data, varlist=varlist_b, modeloutput=rmodel_a,
+                            pretty_names=pretty_names, onecol=FALSE, IDcol=TRUE)
+routput_a$HR[grepl("TEU_BlP_SBP_quintiles", routput_a$IDcol, fixed=TRUE)] <- NA
+
+# Model B
+formula_b <- as.formula(paste0("Surv(TEU_MACE_time_yrs,", status, ") ~ ", paste(varlist_b, collapse="+")))
+rmodel_b <- coxph(formula_b, data=data)
+
+routput_b <- printcoxresults(df=data, varlist=varlist_b, modeloutput=rmodel_b,
+                            pretty_names=pretty_names, onecol=FALSE, IDcol=TRUE)
+
+# Combine into one table
+tab4 <- left_join(routput_a, routput_b, by=c("IDcol", "Coefficient", "Levels")) %>%
+  select(-IDcol) %>%
+  replace(., is.na(.), "")
+
+rownames(tab4) <- NULL
+tab4 <- rbind(c("Coefficient", "Level", "HR", "95% CI", "p", "OR", "95% CI", "p"),
+              as.matrix(tab4))
+colnames(tab4) <- c("", "",
+                    "Model A", "", "", 
+                    "Model B", "", "")
+
+kable(tab4)
+
+```
+
+```{r, SBP_pval}
+
+anova_a <- as.formula(paste0("Surv(TEU_MACE_time_yrs,", status, ") ~ ",
+                             paste(varlist_a[-which(varlist_a=="TEU_SBP_PRS_quintiles")], collapse="+")))
+anova_b <- as.formula(paste0("Surv(TEU_MACE_time_yrs,", status, ") ~ ",
+                             paste(varlist_b[-which(varlist_b=="TEU_SBP_PRS_quintiles")], collapse="+")))
+
+SBP_p_a <- anova(rmodel_a, coxph(anova_a, data=data), test="Chisq")$`P(>|Chi|)`[2]
+SBP_p_b <- anova(rmodel_b, coxph(anova_b, data=data), test="Chisq")$`P(>|Chi|)`[2]
+
+```
+
+### Overall p-value of SBP PRS
+
+* Model A: Based on likelihood ratio test, inclusion of SBP PRS `r if(SBP_p_a < 0.05){"**does**"}else{"does **not**"}` provide significant improvement in model fit (p = `r pretty_pval(SBP_p_a)`).
+* Model B: Based on likelihood ratio test, inclusion of SBP PRS `r if(SBP_p_b < 0.05){"**does**"}else{"does **not**"}` provide significant improvement in model fit (p = `r pretty_pval(SBP_p_b)`).
+
+
+```{r, model-checks, echo=FALSE}
+
+## 1. PHA 
+ggsave(file.path(config$outputs$figures, paste0(status, "_modelA.pdf")), 
+       arrangeGrob(grobs = ggcoxzph(cox.zph(rmodel_a))), width=20, height=14, limitsize = FALSE)
+ggsave(file.path(config$outputs$figures, paste0(status, "_modelB.pdf")), 
+       arrangeGrob(grobs = ggcoxzph(cox.zph(rmodel_b))), width=20, height=14, limitsize = FALSE)
+
+## 2. Multicollinearity
+# VIF
+
+# Model A
+vif_a <- rms::vif(cph(formula_a,data=data))
+max_a <- max(vif_a)
+var_a <- names(vif_a)[which(vif_a == max(vif_a))]
+
+# Model B 
+vif_b <- rms::vif(cph(formula_b, data=data))
+max_b <- max(vif_b)
+var_b <- names(vif_b)[which(vif_b == max(vif_b))]
+
+if(max_a > max_b){
+  maxvif <- max_a
+  varvif <- var_a
+} else {
+  maxvif <- max_b
+  varvif <- var_b
+}
+prettyvif <- strsplit(varvif, "=")[[1]]
+
+# Check correlation among covariates 
+corr <- data%>%select(any_of(varlist_b))%>%select(!starts_with("GeP_PC"))
+corr_matrix <- corr_mat(corr)
+# Find covariates with highest correlation
+inds <- which(corr_matrix==max(corr_matrix), arr.ind=TRUE)
+maxrow <- pretty_func(rownames(corr_matrix)[inds[1,1]])
+maxcol <- pretty_func(colnames(corr_matrix)[inds[1,2]])
+
+```
+
+### Model checks:
+
+**Proportional hazards assumption**: Visual inspection of the Schoenfeld residuals gave no evidence of PHA violation.
+
+**Multicollinearity**: 
+VIFs across all covariates `r if(maxvif<10){"were"}else{"were not"}` below 10. The highest VIF was `r maxvif`, from level *`r prettyvif[2]`* of *`r pretty_func(prettyvif[1])`*. 
+The highest correlation between any pair of variables in the model was `r max(corr_matrix)`, between *`r maxrow`* and *`r maxcol`*.
+
+## Cox regression of time until MI event (`r nrow(data[data$TEU_MACE_MI==1,])` events)
+
+MI event defined as diagnosis of myocardial infarction or MI prevention procedure in HES data, or MI recorded as primary cause of death (censoring at first MACE event applied)
+
+```{r Cox model MI, echo=FALSE}
+
+status <- "TEU_MACE_MI"
+
+<<cox-output>>
+
+```
+
+```{r, echo=FALSE}
+
+<<SBP_pval>>
+
+```
+
+### Overall p-value of SBP PRS
+
+* Model A: Based on likelihood ratio test, inclusion of SBP PRS `r if(SBP_p_a < 0.05){"**does**"}else{"does **not**"}` provide significant improvement in model fit (p = `r pretty_pval(SBP_p_a)`).
+* Model B: Based on likelihood ratio test, inclusion of SBP PRS `r if(SBP_p_b < 0.05){"**does**"}else{"does **not**"}` provide significant improvement in model fit (p = `r pretty_pval(SBP_p_b)`).
+
+```{r, echo=FALSE}
+
+<<model-checks>>
+
+```
+
+### Model checks:
+
+**Proportional hazards assumption**: Visual inspection of the Schoenfeld residuals gave no evidence of PHA violation.
+
+**Multicollinearity**: 
+VIFs across all covariates `r if(maxvif<10){"were"}else{"were not"}` below 10. The highest VIF was `r maxvif`, from level *`r prettyvif[2]`* of *`r pretty_func(prettyvif[1])`*. 
+The highest correlation between any pair of variables in the model was `r max(corr_matrix)`, between *`r maxrow`* and *`r maxcol`*.
+
+## Cox regression of the time until stroke event (`r nrow(data[data$TEU_MACE_Stroke==1,])` events)
+
+Stroke event defined as diagnosis of stroke (any kind) or stroke prevention procedure in HES data, or stroke recorded as primary cause of death (censoring at first MACE event applied).
+
+```{r Cox model stroke, echo=FALSE}
+
+status <- "TEU_MACE_Stroke"
+
+<<cox-output>>
+
+```
+
+```{r, echo=FALSE}
+
+<<SBP_pval>>
+
+```
+
+### Overall p-value of SBP PRS
+
+* Model A: Based on likelihood ratio test, inclusion of SBP PRS `r if(SBP_p_a < 0.05){"**does**"}else{"does **not**"}` provide significant improvement in model fit (p = `r pretty_pval(SBP_p_a)`).
+* Model B: Based on likelihood ratio test, inclusion of SBP PRS `r if(SBP_p_b < 0.05){"**does**"}else{"does **not**"}` provide significant improvement in model fit (p = `r pretty_pval(SBP_p_b)`).
+
+```{r, echo=FALSE}
+
+<<model-checks>>
+
+```
+
+### Model checks:
+
+**Proportional hazards assumption**: Visual inspection of the Schoenfeld residuals gave no evidence of PHA violation.
+
+**Multicollinearity**: 
+VIFs across all covariates `r if(maxvif<10){"were"}else{"were not"}` below 10. The highest VIF was `r maxvif`, from level *`r prettyvif[2]`* of *`r pretty_func(prettyvif[1])`*. 
+The highest correlation between any pair of variables in the model was `r max(corr_matrix)`, between *`r maxrow`* and *`r maxcol`*.
+  
+# Appendix - including SBP PRS as an ordinal variable in regression model A with MACE outcome
+
+Please note all covariates from Model A have been included, but in the interests of saving space I've dropped all rows from the table below the SBP PRS
+
+## Ordered factor
+
+```{r}
+data$TEU_SBP_PRS_quintiles_o <- factor(data$TEU_SBP_PRS_quintiles, ordered=TRUE)
+
+varlist <- c("TEU_BaC_AgeCat", "BaC_Sex", "TEU_SBP_PRS_quintiles_o",
+          "TEU_BSM_BMIcat", "TEU_Smo_Status", "TEU_Alc_WeeklyCat", "TEU_Pha_METsover1200",
+          "TEU_FaH_CVD", "Prosp_comorb_numcat", "TEU_VeI_numHTNmedscat", "TEU_LDL_Quintiles",
+          "TEU_TownsendDepInd_Quint", "TEU_HouseholdIncome", "TEU_Emp_category", "TEU_Edu_ISCED", "TEU_Rec_Country",
+          "GeP_PC_1", "GeP_PC_2", "GeP_PC_3", "GeP_PC_4"
+          )
+
+formula <- as.formula(paste0("Surv(TEU_MACE_time_yrs, TEU_MACE_status) ~ ", paste(varlist, collapse="+")))
+rmodel <- coxph(formula, data=data)
+
+routput <- printcoxresults(df=data, varlist=varlist, modeloutput=rmodel,
+                            pretty_names=pretty_names, onecol=FALSE, IDcol=TRUE)
+
+kable(routput%>%select(-IDcol)%>%slice_head(n=10))
+
+```
+
+Note that when we include SBP PRS quintiles as an ordinal variable (ordered factor in R) we get linear, quadratic, cubic and quartic terms in R.
+
+Since there are 5 possible categories of SBP PRS quintile, a polynomial of degree 4 is used to replace it in the regression model. We can see that the linear term is statistically significant, but the higher order terms are not - this suggests that the PRS quintiles do have a linear relationship with the MACE outcome. However, we cannot just use the p-value of the linear term to describe the overall significance of the variable, because the higher order terms are present in the model.
+
+## Numeric $\in [1, 2, 3, 4, 5]$ 
+
+An alternative approach is to convert the quintile categories to numeric type, so Q1 will be the integer 1 and Q5 the integer 5, etc. Although we are now modelling this as a continuous variable, we have lost information from the original PRS score, with all scores being collapsed into these five integer values by quintile.
+
+```{r}
+data$TEU_SBP_PRS_quintiles_l <- as.numeric(data$TEU_SBP_PRS_quintiles)
+
+varlist <- c("TEU_BaC_AgeCat", "BaC_Sex", "TEU_SBP_PRS_quintiles_l",
+          "TEU_BSM_BMIcat", "TEU_Smo_Status", "TEU_Alc_WeeklyCat", "TEU_Pha_METsover1200",
+          "TEU_FaH_CVD", "Prosp_comorb_numcat", "TEU_VeI_numHTNmedscat", "TEU_LDL_Quintiles",
+          "TEU_TownsendDepInd_Quint", "TEU_HouseholdIncome", "TEU_Emp_category", "TEU_Edu_ISCED", "TEU_Rec_Country",
+          "GeP_PC_1", "GeP_PC_2", "GeP_PC_3", "GeP_PC_4"
+          )
+
+formula <- as.formula(paste0("Surv(TEU_MACE_time_yrs, TEU_MACE_status) ~ ", paste(varlist, collapse="+")))
+rmodel <- coxph(formula, data=data)
+
+routput <- printcoxresults(df=data, varlist=varlist, modeloutput=rmodel,
+                            pretty_names=pretty_names, onecol=FALSE, IDcol=TRUE)
+
+kable(routput%>%select(-IDcol)%>%slice_head(n=6))
+
+```
+
+We see a statistically significant HR of `r routput$HR[routput$IDcol=="TEU_SBP_PRS_quintiles_l"]` per quintile of PRS (p = `r routput$p[routput$IDcol=="TEU_SBP_PRS_quintiles_l"]`).
+
+
+
 

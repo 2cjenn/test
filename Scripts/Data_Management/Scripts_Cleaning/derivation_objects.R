@@ -61,7 +61,7 @@ BaC_Sex <- function() {
     source = "BaC_Sex.0.0",
     mapper = FN_unorder,
     post_exclusion = FALSE,
-    display_name = "gender",
+    display_name = "Gender",
     description = "Participant's self-reported gender"
   )
 }
@@ -72,7 +72,7 @@ Rec_DateAssess <- function() {
     source = c("Rec_DateAssess.0.0"),
     mapper = FN_toDate,
     post_exclusion = FALSE,
-    display_name = "DateBaselineAssess",
+    display_name = "Date of baseline assessment",
     description = "Date of baseline assessment"
   )
 }
@@ -108,7 +108,7 @@ Eth_Ethnicity <- function() {
       )
     ),
     post_exclusion = FALSE,
-    display_name = "ethnicity",
+    display_name = "Ethnic group",
     description = "The participant's self-reported ethnicity (raw UKB categories)"
   )
 }
@@ -119,7 +119,7 @@ BaC_RsnLostFU <- function() {
     source = "BaC_RsnLostFU.0.0",
     mapper = FN_unorder,
     post_exclusion = FALSE,
-    display_name = "lfu_reason",
+    display_name = "Reason lost to follow-up",
     description = "The reported reason for loss to follow-up"
   )
 }
@@ -134,7 +134,7 @@ TEU_BaC_DateOfBirth <- function() {
       yearField = "BaC_BirthYear.0.0"
     ),
     post_exclusion = FALSE,
-    display_name = "DateOfBirth",
+    display_name = "Date of Birth",
     description = "The participant's approximate date of birth, derived from self-reported month and year with date estimated as 15th"
   )
 }
@@ -149,7 +149,7 @@ TEU_BaC_AgeAtRec <- function() {
                        digits = 2))
     },
     post_exclusion = FALSE,
-    display_name = "AgeAtRecruitment",
+    display_name = "Age at recruitment, years",
     description = "The participant's approximate age at recruitment, derived from date of assessment centre visit and self-reported month and year of birth (date of birth estimated as 15th of the month)"
   )
 }
@@ -245,6 +245,17 @@ TEU_BlP_SBP.avg <- function() {
   )
 }
 
+TEU_BlP_SBP_quintiles <- function() {
+  list(
+    name = "TEU_BlP_SBP_quintiles", 
+    source = c("TEU_BlP_SBP.avg"), 
+    mapper = FN_quantiles(quant=5),
+    post_exclusion = TRUE,
+    display_name = "Measured systolic BP Quintiles",
+    description = "Quintiles of the measured systolic blood pressure at baseline"
+  )
+}
+
 TEU_BlP_DBP.avg <- function() {
   list(
     name = "TEU_BlP_DBP.avg",
@@ -267,7 +278,7 @@ TEU_BlP_measuredHTN <- function(SBPthreshold = 140, DBPthreshold = 90) {
         data[["TEU_BlP_DBP.avg"]] >= DBPthreshold
     },
     post_exclusion = FALSE,
-    display_name = "measuredHTN",
+    display_name = paste0("BP>=", SBPthreshold, "/", DBPthreshold, " at baseline"),
     description = paste0(
       "Whether the participant had hypertensive BP (>=",
       SBPthreshold,
@@ -286,7 +297,7 @@ Alc_Status <- function() {
       levelorder = c("Never", "Previous", "Current", "Prefer not to answer")
     ),
     post_exclusion = FALSE,
-    display_name = "Alc_Status",
+    display_name = "Alcohol status",
     description = "Self-reported alcohol status"
   )
 }
@@ -299,7 +310,7 @@ Smo_Status <- function() {
       levelorder = c("Never", "Previous", "Current", "Prefer not to answer")
     ),
     post_exclusion = FALSE,
-    display_name = "Smo_Status",
+    display_name = "Smoking status",
     description = "Self-reported smoking status"
   )
 }
@@ -338,8 +349,19 @@ TEU_HoH_PreTaxInc <- function() {
       return(y)
     },
     post_exclusion = FALSE,
-    display_name = "HouseholdIncome",
+    display_name = "Household Income, GBP",
     description = "Participant's pre-tax household income"
+  )
+}
+
+TEU_HouseholdIncome <- function() {
+  list(
+    name = "TEU_HouseholdIncome", 
+    source = c("TEU_HoH_PreTaxInc"), 
+    mapper = FN_MissingCategory(missingvals=c("Do not know"), categ_name="Unanswered"),
+    post_exclusion = FALSE,
+    display_name = "Household Income, GBP",
+    description = "Participant's pre-tax houshold income, self-reported. The 'do not know' and 'prefer not to answer' categories have been combined with NAs into 'unanswered'"
   )
 }
 
@@ -349,7 +371,7 @@ Sle_Duration <- function() {
     source = "Sle_Duration.0.0",
     mapper = FN_id,
     post_exclusion = FALSE,
-    display_name = "SleepDuration_h",
+    display_name = "Sleep Duration, hours",
     description = "Participant's self-reported average sleep duration in hours"
   )
 }
@@ -382,7 +404,7 @@ TEU_BSM_BMIcat <- function() {
       return(y)
     },
     post_exclusion = FALSE,
-    display_name = "BMIcat",
+    display_name = "BMI (categorical)",
     description = "BMI below 18.5 was considered “underweight”, between 18.5 and 25 was “normal”, between 25 and 30 was “overweight” and above 30 was “obese”"
   )
 }
@@ -406,7 +428,7 @@ TEU_BSM_WaistCircCat <- function() {
       return(y)
     },
     post_exclusion = FALSE,
-    display_name = "WaistCirc",
+    display_name = "Waist Circumference",
     description = "Categorised waist circumference.\nFemales with a waist circumference between 80 and 88cm were considered overweight, greater than 88cm was considered obese.\nMales with a waist circumference between 94 and 102cm were considered overweight, greater than 102cm was considered obese."
   )
 }
@@ -417,7 +439,7 @@ PhA_METsWkAllAct <- function() {
     source = "PhA_METsWkAllAct.0.0",
     mapper = FN_id,
     post_exclusion = FALSE,
-    display_name = "WeeklyMETs",
+    display_name = "Weekly METs",
     description = paste0("Summed MET minutes per week for all activity, derived from participant self-reported weekly exercise. This variable was generated as part of ",
                          text_spec("UKB application 12184", link = "http://bmjopen.bmj.com/content/6/3/e010038"), 
                          " and made available on the Data Showcase.")
@@ -430,7 +452,7 @@ CoF_RTTTimeID <- function() {
     source = "CoF_RTTTimeID.0.0",
     mapper = FN_id,
     post_exclusion = FALSE,
-    display_name = "ReactionTime",
+    display_name = "Reaction Time, s",
     description = "Reaction time in a game of snap, in seconds"
   )
 }
@@ -464,7 +486,7 @@ Edu_HighestQual<-function(){
       return(y)
     },
     post_exclusion = FALSE,
-    display_name = 'HighestQualification',
+    display_name = 'Highest Qualification',
     description = "Highest of a participant's self-reported educational qualidications"
   )
 }
@@ -497,7 +519,7 @@ TEU_Edu_HighestQual <- function() {
       return(y)
     },
     post_exclusion = FALSE,
-    display_name = "HighestQualification",
+    display_name = "Highest Qualification",
     description = "Highest of a participant's self-reported educational qualifications"
   )
 }
@@ -524,7 +546,8 @@ TEU_Rec_AssessCentre <- function() {
                  map,
                  by.x = "x",
                  by.y = "Code",
-                 all.x = TRUE)
+                 all.x = TRUE,
+                 sort = FALSE)
       y <- y[["meaning"]]
     },
     post_exclusion = FALSE,
@@ -574,7 +597,7 @@ TEU_Rec_Country <- function() {
       return(y)
     },
     post_exclusion = FALSE,
-    display_name = "CountryResidence",
+    display_name = "UK country of residence",
     description = "Which country does the participant live in"
   )
 }
@@ -614,7 +637,7 @@ TEU_BaC_AgeCat <- function() {
       right = FALSE
     ),
     post_exclusion = FALSE,
-    display_name = "AgeCategory",
+    display_name = "Age group, years",
     description = "Categorised age in years"
   )
 }
@@ -674,6 +697,19 @@ TEU_HMH_Meds_Chol <- function() {
   )
 }
 
+TEU_HMH_Meds_Diab <- function() {
+  list(
+    name = "TEU_HMH_Meds_Diab",
+    source = c(paste0("HMH_MedCholBPDiabHorm.0.", c(0:3)),
+               paste0("HMH_MedCholBPDiab.0.", c(0:2))
+    ),
+    mapper = FN_HMHmeds_type(medtype = "Insulin", string = "Insulin"),
+    post_exclusion = FALSE,
+    display_name = "Self-reported insulin (TQ)",
+    description = "Participant self-reported taking insulin medication in the touchscreen questionnaire"
+  )
+}
+
 TEU_ethnicgrp <- function() {
   list(
     name = "TEU_ethnicgrp",
@@ -715,7 +751,7 @@ TEU_ethnicgrp <- function() {
       return(y)
     },
     post_exclusion = FALSE,
-    display_name = "ethnic_group",
+    display_name = "Ethnic group",
     description = "The participant's self-reported ethnicity, condensed into categories.\n'White', 'British', 'Irish' and 'Any other white background' were coded as 'White'.\n'Indian', 'Pakinstani' and 'Bangladeshi' were coded as 'S. Asian'.\n'Black or Black British', 'Carribean', 'African' and 'Any other Black background' were coded as 'Black'.\n'Mixed', 'White and Black Caribbean', 'White and Black African', 'White and Asian' and 'Any other mixed background' were coded as 'Mixed'.\n'Other ethnic group', 'Asian or Asian British', 'Any other Asian background' and 'Chinese' were coded as 'Other'"
   )
 }
@@ -772,12 +808,12 @@ TEU_Alc_Status <- function() {
   list(
     name = "TEU_Alc_Status",
     source = "Alc_Status.0.0",
-    mapper = FN_MissingCategory(
-      missingvals = c("Prefer not to answer"),
-      categ_name = "Unanswered"
-    ),
+    mapper = function(x) {
+      y <- FN_MissingCategory(missingvals = c("Prefer not to answer"), categ_name = "Unanswered")(x)
+      y <- FN_factor(levelorder = c("Never", "Previous", "Current", "Prefer not to answer"))(y)
+      },
     post_exclusion = FALSE,
-    display_name = "AlcoholStatus",
+    display_name = "Alcohol status",
     description = "Self-reported alcohol drinking status"
   )
 }
@@ -786,12 +822,12 @@ TEU_Smo_Status <- function() {
   list(
     name = "TEU_Smo_Status",
     source = "Smo_Status.0.0",
-    mapper = FN_MissingCategory(
-      missingvals = c("Prefer not to answer"),
-      categ_name = "Unanswered"
-    ),
+    mapper = function(x) {
+      y <- FN_MissingCategory(missingvals = c("Prefer not to answer"), categ_name = "Unanswered")(x)
+      y <- FN_factor(levelorder = c("Never", "Previous", "Current", "Unanswered"))(y)
+      },
     post_exclusion = FALSE,
-    display_name = "SmokingStatus",
+    display_name = "Smoking status",
     description = "Self-reported smoking status"
   )
 }
@@ -842,7 +878,7 @@ TEU_Alc_WeeklyAlcUnits <- function() {
       return(weekly_alcunits)
     },
     post_exclusion = FALSE,
-    display_name = "WeeklyAlcUnits",
+    display_name = "Alcohol units per week",
     description = "Total weekly units of alcohol, derived from self-reported average weekly consumption of each different type alcohol and truncated at the upper 95th percentile. This data was available for participants who said they drank alcohol more than once or twice a week."
   )
 }
@@ -850,14 +886,21 @@ TEU_Alc_WeeklyAlcUnits <- function() {
 TEU_Alc_WeeklyCat <- function() {
   list(
     name = "TEU_Alc_WeeklyCat", 
-    source = c("TEU_Alc_WeeklyAlcUnits"), 
-    mapper = FN_buckets(breaks=c(-1, 0, 5, 10, 20, 30, 100),
-                        labels=c("None reported", "Less than 5 units", "5 to 10 units", 
-                                 "10 to 20 units", "20 to 30 units", "30 units or more"),
-                        right=FALSE),
+    source = c("Alc_Freq.0.0",
+               "TEU_Alc_WeeklyAlcUnits"), 
+    mapper = function(data) {
+      cat <- cut(x=data[["TEU_Alc_WeeklyAlcUnits"]],
+                 breaks=c(-1, 0, 5, 10, 20, 30, 100),
+                 labels=c("None reported", "Less than 5 units", "5 to 10 units", 
+                          "10 to 20 units", "20 to 30 units", "30 units or more"),
+                 right=FALSE)
+      cat[is.na(data[["Alc_Freq.0.0"]])] <- "None reported"
+      cat[data[["Alc_Freq.0.0"]] %in% c("Never", "Special occasions only", "Prefer not to answer")] <- "None reported"
+      return(cat)
+      },
     post_exclusion = FALSE,
-    display_name = "Weekly alcohol, categorical",
-    description = "Categorised weekly alcohol intake, derived from self-reported average weekly consumption of different types of alcohol. This data was available for participants who said they drank alcohol more than once or twice a week."
+    display_name = "Alcohol units per week",
+    description = "Categorised weekly alcohol intake, derived from self-reported average weekly consumption of different types of alcohol. This data was available for participants who said they drank alcohol more than once or twice a week, and categorised as 'None reported' otherwise."
   )
 }
 
@@ -873,7 +916,7 @@ TEU_Alc_Binge <- function() {
                             TRUE ~ FALSE)
     },
     post_exclusion = FALSE,
-    display_name = "HarmfulAlcohol",
+    display_name = "Harmful alcohol consumption",
     description = "Does the patient's self-reported weekly alcohol consumption exceed the threshold for binge drinking. Data on weekly alcohol consumption was available for participants who said they drank alcohol more than once or twice a week, those who drank less frequently were not considered to have harmful alcohol consumption."
   )
 }
@@ -902,13 +945,11 @@ TEU_Pha_METsover1200 <- function() {
         x <= 1200 ~ "Low (MET minutes <= 1200)",
         TRUE ~ "Other"
       )
-      y <-
-        factor(y,
-               levels = c("High (MET minutes > 1200)", "Low (MET minutes <= 1200)", "Unanswered"))
+      y <- factor(y, levels = c("Low (MET minutes <= 1200)", "High (MET minutes > 1200)", "Unanswered"))
       return(y)
     },
     post_exclusion = FALSE,
-    display_name = "Sufficient_METs",
+    display_name = "Weekly physical activity",
     description = paste0("Indicates whether the participant is exceeding 1200 MET minutes per week. The source variable (summed MET minutes per week for all activity, derived from participant self-reported weekly exercise) was generated as part of ",
                          text_spec("UKB application 12184", link = "http://bmjopen.bmj.com/content/6/3/e010038"), 
                          " and made available on the Data Showcase.")
@@ -946,7 +987,7 @@ TEU_Edu_ISCED <- function() {
       return(y)
     },
     post_exclusion = FALSE,
-    display_name = "ISCED",
+    display_name = "Highest level of education (ISCED)",
     description = "ISCED category of participant's highest attained qualification"
   )
 }
@@ -999,7 +1040,7 @@ TEU_HMH_BowelCancerScreen <- function() {
       return(y)
     },
     post_exclusion = FALSE,
-    display_name = "BowelCancerScreen",
+    display_name = "Ever screened for bowel cancer",
     description = "Whether the individual has been screened for bowel cancer - used as a proxy for engagement with healthcare"
   )
 }
@@ -1017,7 +1058,7 @@ TEU_FaH_CVD <- function() {
       label = "CVD"
     ),
     post_exclusion = FALSE,
-    display_name = "FamilyHistoryCVD",
+    display_name = "Family history of CVD",
     description = "Family history of CVD (Heart disease, high blood pressure, stroke), derived by combining reported medical history of father, mother and siblings (adopted relatives were not included)"
   )
 }
@@ -1037,7 +1078,7 @@ TEU_SBP_PRS <- function() {
   list(
     name = "TEU_SBP_PRS", 
     source = c("ID"), 
-    mapper = FN_JoinPRS(filepath="K:/TEU/UKB_Genetic_Data/bmrc-ukb-repo/prs/projects/htn-evangelou2018/outputs/htn-evangelou2018_PRS_QC1.rds",
+    mapper = FN_JoinPRS(filepath="K:/TEU/UKB_Genetic_Data/PRS_Pipeline/prs/projects/htn-evangelou2018/outputs/htn-evangelou2018_PRS_QC1.rds",
                         colname="PRS_SBP"),
     post_exclusion = FALSE,
     display_name = "SBP polygenic risk score",
@@ -1049,7 +1090,7 @@ TEU_DBP_PRS <- function() {
   list(
     name = "TEU_DBP_PRS", 
     source = c("ID"), 
-    mapper = FN_JoinPRS(filepath="K:/TEU/UKB_Genetic_Data/bmrc-ukb-repo/prs/projects/htn-evangelou2018/outputs/htn-evangelou2018_PRS_QC1.rds",
+    mapper = FN_JoinPRS(filepath="K:/TEU/UKB_Genetic_Data/PRS_Pipeline/prs/projects/htn-evangelou2018/outputs/htn-evangelou2018_PRS_QC1.rds",
                         colname="PRS_DBP"),
     post_exclusion = FALSE,
     display_name = "DBP polygenic risk score",
@@ -1072,9 +1113,24 @@ TEU_BP_PRS_quintiles <- function() {
   list(
     name = "TEU_BP_PRS_quintiles", 
     source = c("TEU_BP_PRS"), 
-    mapper = FN_quantiles(quant=5),
+    mapper = FN_quantiles(quant=5, 
+                          labels = c("Q1: Lowest score", "Q2", "Q3", "Q4", "Q5: Highest score")
+    ),
     post_exclusion = TRUE,
     display_name = "BP PRS Quintiles",
+    description = "Quintiles of the BP PRS score"
+  )
+}
+
+TEU_SBP_PRS_quintiles <- function() {
+  list(
+    name = "TEU_SBP_PRS_quintiles", 
+    source = c("TEU_SBP_PRS"), 
+    mapper = FN_quantiles(quant=5, 
+                          labels = c("Q1: Lowest score", "Q2", "Q3", "Q4", "Q5: Highest score")
+    ),
+    post_exclusion = TRUE,
+    display_name = "Systolic BP PRS Quintiles",
     description = "Quintiles of the BP PRS score"
   )
 }
@@ -1083,7 +1139,7 @@ TEU_LDL_C_PRS <- function() {
   list(
     name = "TEU_LDL_C_PRS", 
     source = c("ID"), 
-    mapper = FN_JoinPRS(filepath="K:/TEU/UKB_Genetic_Data/bmrc-ukb-repo/prs/projects/PGS000115/outputs/PGS000115_PRS_QC1.rds",
+    mapper = FN_JoinPRS(filepath="K:/TEU/UKB_Genetic_Data/PRS_Pipeline/prs/projects/PGS000115/outputs/PGS000115_PRS_QC1.rds",
                         colname="PRS"),
     post_exclusion = FALSE,
     display_name = "LDL Cholesterol polygenic risk score",
@@ -1095,7 +1151,9 @@ TEU_LDL_C_PRS_quintiles <- function() {
   list(
     name = "TEU_LDL_C_PRS_quintiles", 
     source = c("TEU_LDL_C_PRS"), 
-    mapper = FN_quantiles(quant=5),
+    mapper = FN_quantiles(quant=5, 
+                          labels = c("Q1: Lowest score", "Q2", "Q3", "Q4", "Q5: Highest score")
+    ),
     post_exclusion = TRUE,
     display_name = "LDL Cholesterol PRS Quintiles",
     description = "Quintiles of the LDL Cholesterol PRS score"
@@ -1121,6 +1179,29 @@ TEU_LDL_C_PRS_centiles <- function() {
     post_exclusion = TRUE,
     display_name = "LDL Cholesterol PRS centiles",
     description = "Centiles of the LDL Cholesterol PRS score"
+  )
+}
+
+TEU_T2DM_PRS <- function() {
+  list(
+    name = "TEU_T2DM_PRS", 
+    source = c("ID"), 
+    mapper = FN_JoinPRS(filepath="K:/TEU/UKB_Genetic_Data/PRS_Pipeline/prs/projects/diab-mahajan2018/outputs/diab-mahajan2018_PRS_sampleQC.rds",
+                        colname="PRS"),
+    post_exclusion = FALSE,
+    display_name = "T2DM PRS",
+    description = "Type 2 Diabetes Mellitus polygenic risk score from Mahajan 2018 paper"
+  )
+}
+
+TEU_T2DM_PRS_quintiles <- function() {
+  list(
+    name = "TEU_T2DM_PRS_quintiles", 
+    source = c("TEU_T2DM_PRS"), 
+    mapper = FN_quantiles(quant=5),
+    post_exclusion = TRUE,
+    display_name = "T2DM PRS Quintiles",
+    description = "Quintiles of the Type 2 Diabetes Mellitus PRS score"
   )
 }
 
@@ -1204,6 +1285,17 @@ HMH_Diabetes <- function() {
   )
 }
 
+HMH_DiabetesAge <- function() {
+  list(
+    name = "HMH_DiabetesAge",
+    source = c("HMH_DiabetesAge.0.0"),
+    mapper = FN_id,
+    post_exclusion = FALSE,
+    display_name = "Self-reported age at diagnosis of diabetes",
+    description = "Participant self-reported age at diagnosis of diabetes on the touchscreen questionnaire"
+  )
+}
+
 HMH_HTNAge <- function() {
   list(
     name = "HTN_HTNAge", 
@@ -1260,6 +1352,22 @@ BBC_LDL_Result <- function() {
   )
 }
 
+TEU_LDL_Quintiles <- function() {
+  list(
+    name = "TEU_LDL_Quintiles",
+    source = c("BBC_LDL_Result"),
+    mapper = function(x){
+      y <- FN_quantiles(quant = 5,labels = c("Q1: lowest", "Q2", "Q3", "Q4", "Q5: highest"))(x)
+      levels(y) <- c(levels(y), "Unavailable")
+      y[is.na(y)] <- "Unavailable"
+      return(y)
+    },
+    post_exclusion = TRUE,
+    display_name = "Baseline LDL-C quintiles",
+    description = "Quintiles of measured LDL cholesterol assay from baseline blood serum"
+  )
+}
+
 
 GeP_PC <- function(pc=1) {
   list(
@@ -1276,10 +1384,27 @@ GeP_Batch <- function() {
   list(
     name = "GeP_Batch", 
     source = "GeP_Batch.0.0", 
-    mapper = FN_toNumeric,
+    mapper = function(x) {
+      coding <- read.csv(file.path(config$cleaning$coding, "coding22000_flat_GenotypingArray.csv"))
+      y <- coding$L1[match(x, coding$Code)]
+    },
     post_exclusion = FALSE,
     display_name = "Genotype measurement batch",
     description = "Genotype measurement batch"
+  )
+}
+
+GeP_Array <- function() {
+  list(
+    name = "GeP_Array", 
+    source = "GeP_Batch.0.0", 
+    mapper = function(x){
+      coding <- read.csv(file.path(config$cleaning$coding, "coding22000_flat_GenotypingArray.csv"))
+      y <- coding$L0[match(x, coding$Code)]
+    },
+    post_exclusion = FALSE,
+    display_name = "Genotype array",
+    description = "Genotype array - UK BiLEVE or Biobank Axiom Array"
   )
 }
 
@@ -1419,6 +1544,42 @@ TEU_VeI_HTNmeds_rubric <- function() {
   )
 }
 
+TEU_VeI_numHTNmeds <- function() {
+  list(
+    name = "TEU_VeI_numHTNmeds", 
+    source = c("ID"), 
+    mapper = function(x) {
+      rubric <- readRDS(file.path(config$data$derived, "HTNMedsRubric.rds"))
+      y <- rubric[["hypmedsno"]][match(x, rubric$ID)]
+    },
+    post_exclusion = FALSE,
+    display_name = "Number of antihypertensive medications",
+    description = "Number of classes of hypertension medication (under our rubric) self-reported by the participant at verbal interview"
+  )
+}
+
+
+TEU_VeI_numHTNmedscat <- function() {
+  list(
+    name = "TEU_VeI_numHTNmedscat", 
+    source = c("TEU_VeI_numHTNmeds"), 
+    mapper = function(x) {
+      y <- dplyr::case_when(
+        is.na(x) ~ "None reported",
+        x == 0 ~ "None reported",
+        x == 1 ~ "1",
+        x == 2 ~ "2",
+        x >= 3 ~ "3 or more",
+        TRUE ~ as.character(x)
+      )
+      y <- factor(y, levels=c("None reported", "1", "2", "3 or more"))
+    },
+    post_exclusion = FALSE,
+    display_name = "Number of hypertensive medications",
+    description = "Number of classes of hypertension medication (under our rubric) self-reported by the participant at verbal interview, categorised"
+  )
+}
+
 
 TEU_evidenceHTN <- function() {
   list(
@@ -1460,6 +1621,36 @@ TEU_treatedHTN <- function() {
     post_exclusion = FALSE,
     display_name = "Treated hypertension",
     description = "Was the participant taking treatment for their hypertension, defined as self-reported HTN meds among those who were aware of their hypertension"
+  )
+}
+
+TEU_controlledHTN <- function() {
+  list(
+    name = "TEU_controlledHTN", 
+    source = c("TEU_BlP_measuredHTN", "TEU_treatedHTN"), 
+    mapper = function(data) {
+      y <- !data[["TEU_BlP_measuredHTN"]]
+      y[(data[["TEU_treatedHTN"]] == FALSE | is.na(data[["TEU_treatedHTN"]]))] <- NA
+      return(y)
+    },
+    post_exclusion = FALSE,
+    display_name = "Controlled hypertension",
+    description = "Was the participant's BP below 140/90 while on medication for their hypertension"
+  )
+}
+
+TEU_uncontrolledHTN <- function() {
+  list(
+    name = "TEU_uncontrolledHTN", 
+    source = c("TEU_BlP_measuredHTN", "TEU_treatedHTN"), 
+    mapper = function(data) {
+      y <- data[["TEU_BlP_measuredHTN"]]
+      y[(data[["TEU_treatedHTN"]] == FALSE | is.na(data[["TEU_treatedHTN"]]))] <- NA
+      return(y)
+    },
+    post_exclusion = FALSE,
+    display_name = "Controlled hypertension",
+    description = "Was the participant's BP above 140/90 while on medication for their hypertension"
   )
 }
 
@@ -1730,6 +1921,74 @@ TEU_VeI_diab <- function(condition='diabetes'){
   )
 }
 
+TEU_VeI_T2DM_prevalent <- function(dx_codes = c(1220, 1223)) {
+  list(
+    list(
+      name = "TEU_VeI_T2DM",
+      source = c("ID", "Rec_DateAssess",
+                 paste0("VeI_NonCancerCode.0.", seq(0, 33, by=1)),
+                 paste0("VeI_NonCancerYear.0.", seq(0, 33, by=1))),
+      mapper = FN_VI_filtercodes(dx_codes = dx_codes,
+                                 colname = "VeI_NonCancer",
+                                 instance = 0,
+                                 return_label = "dx",
+                                 mapper = file.path(config$cleaning$coding,"coding6_flat_NonCancerIllness.csv")),
+      post_exclusion = FALSE,
+      display_name = "Self-reported Type 2 diabetes, verbal interview",
+      description = "Whether type 2 diabetes was reported in verbal interview at baseline"
+    ),
+    list(
+      name = "TEU_VeI_T2DM_age",
+      source = c("ID", "Rec_DateAssess",
+                 paste0("VeI_NonCancerCode.0.", seq(0, 33, by=1)),
+                 paste0("VeI_NonCancerYear.0.", seq(0, 33, by=1)),
+                 paste0("VeI_NonCancerAge.0.", seq(0, 33, by=1))),
+      mapper = FN_VI_filtercodes(dx_codes = dx_codes,
+                                 colname = "VeI_NonCancer",
+                                 instance = 0, 
+                                 return_label = "Age",
+                                 mapper = file.path(config$cleaning$coding,"coding6_flat_NonCancerIllness.csv")),
+      post_exclusion = FALSE,
+      display_name = "Self-reported age at diagnosis of Type 2 diabetes, verbal interview",
+      description = "Age at diagnosis of Type 2 diabetes reported in verbal interview at baseline"
+    )
+  )
+}
+
+## Type 1 diabetes
+TEU_VeI_T1D <- function(condition='Type1'){
+  list(
+    name = 'TEU_VeI_T1D',
+    source = c("ID", "Rec_DateAssess",
+               paste0("VeI_NonCancerCode.0.", seq(0, 33, by=1)),
+               paste0("VeI_NonCancerYear.0.", seq(0, 33, by=1))),
+    mapper = FN_VI_comorb(condition=condition,
+                          returned_mapping = read.xlsx_kdrive(file.path(config$cleaning$mapping,'coding6_flat_NonCancerIllness.xlsx'))%>%
+                            rename(Conditions=Diabetes, coding=Code))
+    ,
+    post_exclusion=FALSE,
+    display_name = 'Type 1 diabetes status at baseline (VI)',
+    description = 'Whether participant self reported type 1 diabetes at baseline in verbal interview'
+  )
+}
+
+### Other diabetes
+TEU_VeI_Diab_other <- function(condition='other'){
+  list(
+    name = 'TEU_VeI_Diab_other',
+    source = c("ID", "Rec_DateAssess",
+               paste0("VeI_NonCancerCode.0.", seq(0, 33, by=1)),
+               paste0("VeI_NonCancerYear.0.", seq(0, 33, by=1))),
+    mapper = FN_VI_comorb(condition=condition,
+                          returned_mapping = read.xlsx_kdrive(file.path(config$cleaning$mapping,'coding6_flat_NonCancerIllness.xlsx'))%>%
+                            rename(Conditions=Diabetes, coding=Code))
+    ,
+    post_exclusion=FALSE,
+    display_name = 'Other diabetes status at baseline (VI)',
+    description = 'Whether participant self reported other diabetes (gestational or diabetes insipidus) at baseline in verbal interview'
+  )
+}
+
 ## afib or aflutter
 TEU_VeI_arrhy <- function(condition="afib or aflutter"){
   list(
@@ -1895,7 +2154,7 @@ HTN_comorb_numcat<- function(){
       factor(ifelse(x>=3,'>=3',x),levels = c('0','1','2','>=3'),ordered = FALSE)
     },
     post_exclusion = FALSE,
-    display_name = 'Number of comorbidities (Categorical)',
+    display_name = 'Number of comorbidities',
     description = 'Number of comorbidities participants self-reported at baseline'
   )
 }
@@ -2121,9 +2380,9 @@ TEU_HES_MACE_prev<-function(record_level=FALSE){
         paste0("HES_OPCS4Code.0.",seq(0,116,by=1)),
         paste0("HES_OPCS4DateFirst.0.",seq(0,116,by=1)))
     },
-    mapper=FN_HES_First(ICD9_xlsx = file.path(config$cleaning$mapping,'MACE/HES_ICD9_Mapping_20210112.xlsx'),
-                        ICD10_xlsx = file.path(config$cleaning$mapping,'MACE/HES_ICD10_Mapping_20210121.xlsx'),
-                        OPCS4_xlsx = file.path(config$cleaning$mapping,'MACE/HES_OPCS4_Mapping_XL_V1.1_20210121.xlsx'),
+    mapper=FN_HES_First(ICD9_xlsx = file.path(config$cleaning$mapping,'MACE/HES_ICD9_Mapping_20210128.xlsx'),
+                        ICD10_xlsx = file.path(config$cleaning$mapping,'MACE/HES_ICD10_Mapping_20210128.xlsx'),
+                        OPCS4_xlsx = file.path(config$cleaning$mapping,'MACE/HES_OPCS4_Mapping_20210128.xlsx'),
                         condition = 'MACE',
                         return_label = 'baseline',
                         record_level = record_level),
@@ -2143,7 +2402,7 @@ TEU_VeI_MACE_nonc<-function(condition='MACE'){
       paste0("VeI_NonCancerYear.0.", seq(0, 33, by=1))),
     mapper= function(data){
       # read in analysis codings xlsx
-      mapping=read.xlsx_kdrive(file.path(config$cleaning$mapping,'MACE/VI_NonCancerIllness_Mapping_20210112.xlsx'),col_types = c('text'))
+      mapping=read.xlsx_kdrive(file.path(config$cleaning$mapping,'MACE/VI_NonCancerIllness_Mapping_20210128.xlsx'),col_types = c('text'))
       
       dx_codes<-as.numeric(mapping[which(mapping$Conditions==condition),]$Code)
       
@@ -2172,7 +2431,7 @@ TEU_VeI_MACE_op<-function(condition='MACE'){
                paste0("VeI_OperationYear.0.", seq(0, 31, by=1))),
     mapper = function(data){
       
-      mapping=read.xlsx_kdrive(file.path(config$cleaning$mapping,'MACE/VI_Operations_Mapping_XL_V1.1_20210121.xlsx'),col_types = c('text'))
+      mapping=read.xlsx_kdrive(file.path(config$cleaning$mapping,'MACE/VI_Operations_Mapping_20210128.xlsx'),col_types = c('text'))
       
       dx_codes<-as.numeric(mapping[which(mapping$Conditions==condition),]$Code)
       y<- FN_VI_filtercodes(dx_codes = dx_codes,
@@ -2250,9 +2509,9 @@ TEU_HES_MACE_fudate<-function(record_level=FALSE){
           paste0("HES_OPCS4Code.0.",seq(0,116,by=1)),
           paste0("HES_OPCS4DateFirst.0.",seq(0,116,by=1)))
         },
-    mapper=FN_HES_First(ICD9_xlsx = file.path(config$cleaning$mapping,'MACE/HES_ICD9_Mapping_20210112.xlsx'),
-                        ICD10_xlsx = file.path(config$cleaning$mapping,'MACE/HES_ICD10_Mapping_20210121.xlsx'),
-                        OPCS4_xlsx = file.path(config$cleaning$mapping,'MACE/HES_OPCS4_Mapping_XL_V1.1_20210121.xlsx'),
+    mapper=FN_HES_First(ICD9_xlsx = file.path(config$cleaning$mapping,'MACE/HES_ICD9_Mapping_20210128.xlsx'),
+                        ICD10_xlsx = file.path(config$cleaning$mapping,'MACE/HES_ICD10_Mapping_20210128.xlsx'),
+                        OPCS4_xlsx = file.path(config$cleaning$mapping,'MACE/HES_OPCS4_Mapping_20210128.xlsx'),
                         condition = 'MACE',
                         return_label = 'followup_date',
                         record_level = record_level),
@@ -2280,9 +2539,9 @@ TEU_HES_MACE_fucomp<-function(record_level=FALSE){
              paste0("HES_OPCS4Code.0.",seq(0,116,by=1)),
              paste0("HES_OPCS4DateFirst.0.",seq(0,116,by=1)))
         },
-    mapper=FN_HES_First(ICD9_xlsx = file.path(config$cleaning$mapping,'MACE/HES_ICD9_Mapping_20210112.xlsx'),
-                        ICD10_xlsx = file.path(config$cleaning$mapping,'MACE/HES_ICD10_Mapping_20210121.xlsx'),
-                        OPCS4_xlsx = file.path(config$cleaning$mapping,'MACE/HES_OPCS4_Mapping_XL_V1.1_20210121.xlsx'),
+    mapper=FN_HES_First(ICD9_xlsx = file.path(config$cleaning$mapping,'MACE/HES_ICD9_Mapping_20210128.xlsx'),
+                        ICD10_xlsx = file.path(config$cleaning$mapping,'MACE/HES_ICD10_Mapping_20210128.xlsx'),
+                        OPCS4_xlsx = file.path(config$cleaning$mapping,'MACE/HES_OPCS4_Mapping_20210128.xlsx'),
                         condition = 'MACE',
                         return_label = 'followup_comp',
                         record_level = record_level),
@@ -2301,7 +2560,7 @@ TEU_Dth_MACE_dthdate <-function(record_level=FALSE){
       name = 'TEU_Dth_MACE_dthdate',
       source = if(record_level){c("ID")} else {c('ID',"Dth_ICD10Underlying.0.0", "Dth_ICD10Underlying.1.0","Dth_Date.0.0", "Dth_Date.1.0")},
       mapper = function(data){
-        mapping=read.xlsx_kdrive(file.path(config$cleaning$mapping,'MACE/HES_ICD10_Mapping_20210121.xlsx'),col_types = c('text'))
+        mapping=read.xlsx_kdrive(file.path(config$cleaning$mapping,'MACE/HES_ICD10_Mapping_20210128.xlsx'),col_types = c('text'))
         ICD10_codes<-mapping[which(mapping$Conditions=='MACE'),]$Code
         
         y<-FN_Dth_filtercodes(ICD10_codes = ICD10_codes,return_label = 'dth_date', record_level=record_level)(data)
@@ -2314,6 +2573,30 @@ TEU_Dth_MACE_dthdate <-function(record_level=FALSE){
                            'The data used was ', if(record_level) {'record-level data from the UKB data portal.'} 
                            else {'summary data from the UKB data showcase'})
     )
+}
+
+# MACE Dth type
+TEU_Dth_MACE_dthtype <-function(record_level=FALSE){
+  list(
+    name = 'TEU_Dth_MACE_dthtype',
+    source = if(record_level){c("ID")} else {c('ID',"Dth_ICD10Underlying.0.0", "Dth_ICD10Underlying.1.0","Dth_Date.0.0", "Dth_Date.1.0")},
+    mapper = function(data){
+      mapping=read.xlsx_kdrive(file.path(config$cleaning$mapping,'MACE/HES_ICD10_Mapping_20210128.xlsx'),col_types = c('text'))
+      ICD10_codes<-mapping$Code[!is.na(mapping$ConditionsType)]
+      
+      y<-FN_Dth_filtercodes(ICD10_codes = ICD10_codes,return_label = 'dth_code', record_level=record_level)(data)
+
+      y <- as.character(sapply(y, function(i) { if(!is.na(i)){mapping$ConditionsType[mapping$Code==i]}}))
+      y <- str_remove(y, "Nonfatal ")
+      
+      return(y)
+    },
+    post_exclusion = FALSE,
+    display_name = 'MACE death type',
+    description = paste0('Death type caused by MACE from Death Registry data',
+                         'The data used was ', if(record_level) {'record-level data from the UKB data portal.'} 
+                         else {'summary data from the UKB data showcase'})
+  )
 }
 
 
@@ -2343,7 +2626,7 @@ TEU_Dth_NotMACE_dthdate <-function(record_level=FALSE){
       name = 'TEU_Dth_NotMACE_dthdate',
       source = if(record_level){c("ID")} else {c('ID',"Dth_ICD10Underlying.0.0", "Dth_ICD10Underlying.1.0","Dth_Date.0.0", "Dth_Date.1.0")},
       mapper = function(data){
-        mapping=read.xlsx_kdrive(file.path(config$cleaning$mapping,'MACE/HES_ICD10_Mapping_20210121.xlsx'),col_types = c('text'))
+        mapping=read.xlsx_kdrive(file.path(config$cleaning$mapping,'MACE/HES_ICD10_Mapping_20210128.xlsx'),col_types = c('text'))
         ICD10_codes<-mapping[which(is.na(mapping$Conditions)),]$Code
         
         y<-FN_Dth_filtercodes(ICD10_codes = ICD10_codes,return_label = 'dth_date', record_level=record_level)(data)
@@ -2462,6 +2745,71 @@ TEU_MACE_fucomp<-function(){
   )
 }
 
+# Myocardial Infarction status (Secondary outcome)
+TEU_MACE_MI<-function(){
+  list(
+    name = 'TEU_MACE_MI',
+    source = c('TEU_MACE_fucomp', "TEU_Dth_MACE_dthtype"),
+    mapper = function(data){
+      
+      HES <- ifelse(data[["TEU_MACE_fucomp"]] %in% c("Nonfatal MI",
+                                                     "MI prevention procedure"), 1,0)
+      death <- ifelse((data[["TEU_MACE_fucomp"]]=="CVD death" & !is.na(data[["TEU_MACE_fucomp"]])) & 
+                        data[["TEU_Dth_MACE_dthtype"]] %in% c("MI"), 1,0)
+      y <- as.numeric(HES|death)
+      
+    },
+    post_exclusion = FALSE,
+    display_name = 'MI status',
+    description = 'MI status from HES diagnoses, stroke prevention operations, and primary causes of death (0=censored, 1=stroke)'
+    
+  )
+}
+
+# Stroke status (Secondary outcome)
+TEU_MACE_Stroke<-function(){
+  list(
+    name = 'TEU_MACE_Stroke',
+    source = c('TEU_MACE_fucomp', "TEU_Dth_MACE_dthtype"),
+    mapper = function(data){
+      
+      HES <- ifelse(data[["TEU_MACE_fucomp"]] %in% c("Nonfatal Stroke - Haemorrhagic",
+                                                     "Nonfatal Stroke - Ischaemic",
+                                                     "Nonfatal Stroke - Type unspecified",
+                                                     "Stroke prevention procedure"), 1,0)
+      death <- ifelse((data[["TEU_MACE_fucomp"]]=="CVD death" & !is.na(data[["TEU_MACE_fucomp"]])) & 
+                         data[["TEU_Dth_MACE_dthtype"]] %in% c("Stroke - Haemorrhagic",
+                                                               "Stroke - Ischaemic",
+                                                               "Stroke - Type unspecified"), 1,0)
+      y <- as.numeric(HES|death)
+      
+    },
+    post_exclusion = FALSE,
+    display_name = 'Stroke status',
+    description = 'Stroke status from HES diagnoses, stroke prevention operations, and primary causes of death (0=censored, 1=stroke)'
+    
+  )
+}
+
+# Haemorrhagic Stroke status (Secondary outcome)
+TEU_MACE_HaemStroke<-function(){
+  list(
+    name = 'TEU_MACE_HaemStroke',
+    source = c('TEU_MACE_fucomp', "TEU_Dth_MACE_dthtype"),
+    mapper = function(data){
+      
+      HES <- ifelse(data[["TEU_MACE_fucomp"]] %in% c("Nonfatal Stroke - Haemorrhagic"), 1,0)
+      death <- ifelse((data[["TEU_MACE_fucomp"]]=="CVD death" & !is.na(data[["TEU_MACE_fucomp"]])) & 
+                        data[["TEU_Dth_MACE_dthtype"]] %in% c("Stroke - Haemorrhagic"), 1,0)
+      y <- as.numeric(HES|death)
+      
+    },
+    post_exclusion = FALSE,
+    display_name = 'Haemorrhagic stroke status',
+    description = 'Haemorrhagic stroke status from HES diagnoses and primary causes of death (0=censored, 1=haemorrhagic stroke)'
+    
+  )
+}
 
 
 # MACE follow-up time
@@ -2500,6 +2848,119 @@ TEU_MACE_time_yrs<-function(){
   )
 }
 
+TEU_HMH_gest_diabetes <- function() {
+  list(
+    name = "TEU_HMH_gest_diabetes", 
+    source = c("HMH_DiabetesGest.0.0", "HMH_DiabetesGest_p.0.0"), 
+    mapper = function(data) {
+      coalesce(data[["HMH_DiabetesGest.0.0"]], data[["HMH_DiabetesGest_p.0.0"]])
+    },
+    post_exclusion = FALSE,
+    display_name = "Gestational diabetes",
+    description = "Did the participant self-report gestational diabetes"
+  )
+}
 
 
+TEU_HES_T2DM_base<-function(record_level=FALSE){
+  list(
+    name='TEU_HES_T2DM_base',
+    source=if(record_level){
+      c("ID","Rec_DateAssess")
+    } else {
+      c("ID", "Rec_DateAssess",
+        paste0("HES_ICD9Diag.0.", seq(0, 46, by=1)),
+        paste0("HES_ICD9DateFirst.0.",seq(0,46,by=1)),
+        paste0("HES_ICD10Diag.0.", seq(0, 212, by=1)),
+        paste0("HES_ICD10DateFirst.0.",seq(0,212,by=1)),
+        paste0("HES_OPCS4Code.0.",seq(0,116,by=1)),
+        paste0("HES_OPCS4DateFirst.0.",seq(0,116,by=1)))
+    },
+    mapper=FN_HES_First(ICD9_xlsx = file.path(config$cleaning$mapping,'coding87_ICD9_Diabetes.xlsx'),
+                        ICD10_xlsx = file.path(config$cleaning$mapping,'coding19_ICD10_Diabetes.xlsx'),
+                        #OPCS4_xlsx = file.path(config$cleaning$mapping,'MACE/HES_OPCS4_Mapping_20210128.xlsx'),
+                        condition = 'T2DM',
+                        return_label = 'baseline',
+                        record_level = record_level),
+    post_exclusion=FALSE,
+    display_name='T2DM diagnoses at baseline',
+    description='T2DM diagnoses identified from HES (ICD-9, ICD-10) data prior to or at baseline'
+  )
+}
 
+TEU_HES_T2DM_excl<-function(record_level=FALSE){
+  list(
+    name='TEU_HES_T2DM_excl',
+    source=if(record_level){
+      c("ID","Rec_DateAssess")
+    } else {
+      c("ID", "Rec_DateAssess",
+        paste0("HES_ICD9Diag.0.", seq(0, 46, by=1)),
+        paste0("HES_ICD9DateFirst.0.",seq(0,46,by=1)),
+        paste0("HES_ICD10Diag.0.", seq(0, 212, by=1)),
+        paste0("HES_ICD10DateFirst.0.",seq(0,212,by=1)),
+        paste0("HES_OPCS4Code.0.",seq(0,116,by=1)),
+        paste0("HES_OPCS4DateFirst.0.",seq(0,116,by=1)))
+    },
+    mapper=FN_HES_First(ICD9_xlsx = file.path(config$cleaning$mapping,'coding87_ICD9_Diabetes.xlsx'),
+                        ICD10_xlsx = file.path(config$cleaning$mapping,'coding19_ICD10_Diabetes.xlsx'),
+                        #OPCS4_xlsx = file.path(config$cleaning$mapping,'MACE/HES_OPCS4_Mapping_20210128.xlsx'),
+                        condition = 'Exclude',
+                        return_label = 'baseline',
+                        record_level = record_level),
+    post_exclusion=FALSE,
+    display_name='T2DM exclusions at baseline',
+    description='T2DM exclusions identified from HES (ICD-9, ICD-10) data prior to or at baseline'
+  )
+}
+
+TEU_VeI_Diabetes_meds <- function(){
+  list(
+    list(
+      name = 'TEU_VeI_T2DM_meds',
+      source = c('ID',paste0("VeI_MedCode.0.",c(0:47))),
+      mapper = FN_VImed_filtercodes(med_codes = read.xlsx_kdrive(file.path(config$cleaning$mapping, "coding4_VImedications.xlsx")) %>%
+                                    filter(!is.na(Drug_type)) %>%
+                                    pull(value),
+                                  med_name = 'T2DM_meds',
+                                  colname = "VeI_Med", 
+                                  instance = 0,
+                                  return_label = 'T2DM_meds',
+                                  mapper = file.path(config$cleaning$coding,'coding4_Treatments.csv')),
+      post_exclusion = FALSE,
+      display_name = 'T2DM meds',
+      description = 'Whether people self reported taking T2DM_meds at baseline during verbal interview (Does NOT include insulin, glucagon)'
+    ),
+    list(
+      name = 'TEU_VeI_T2DM_medsnum',
+      source = c('ID',paste0("VeI_MedCode.0.",c(0:47))),
+      mapper = FN_VImed_filtercodes(med_codes = read.xlsx_kdrive(file.path(config$cleaning$mapping, "coding4_VImedications.xlsx")) %>%
+                                           filter(!is.na(Drug_type)) %>%
+                                           pull(value),
+                                         med_name = 'T2DM_meds',
+                                         colname = "VeI_Med", 
+                                         instance = 0,
+                                         return_label = 'T2DM_meds_num',
+                                         mapper = file.path(config$cleaning$coding,'coding4_Treatments.csv')),
+      post_exclusion = FALSE,
+      display_name = 'Number of T2DM_meds taken at baseline',
+      description = 'Number of T2DM_meds people self reported taking at baseline during verbal interview'
+    ),
+    list(
+      name = 'TEU_VeI_Insulin',
+      source = c('ID',paste0("VeI_MedCode.0.",c(0:47))),
+      mapper = FN_VImed_filtercodes(med_codes = read.xlsx_kdrive(file.path(config$cleaning$mapping, "coding4_VImedications.xlsx")) %>%
+                                      filter(!is.na(Insulin)) %>%
+                                      pull(value),
+                                  med_name = 'Insulin',
+                                  colname = "VeI_Med", 
+                                  instance = 0,
+                                  return_label = 'Insulin',
+                                  mapper = file.path(config$cleaning$coding,'coding4_Treatments.csv')),
+      post_exclusion = FALSE,
+      display_name = 'Insulin',
+      description = 'Whether people self reported taking insulin at baseline during verbal interview (Does NOT include insulin, glucagon)'
+    )
+  )
+  
+}

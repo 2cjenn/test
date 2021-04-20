@@ -210,17 +210,20 @@ DBfunc$make_dict <- function(data, objects, na.rm=TRUE) {
 }
 
 # Create a switch function from variable names to display names
-pretty_switch <- function(field_definitions){
+pretty_switch <- function(field_definitions, return_type="function"){
   
   objects <- Map(function(p) {if(is.function(p)) {p()} else {p}}, field_definitions)
   colnames <- lapply(objects, function(x) x$name)
   prettynames <- lapply(objects, function(x) x$display_name)
   names(prettynames) <- colnames
   
-  TEUswitch <- function(x) {
-    do.call("switch", c(x, prettynames))
+  if(return_type=="function") {
+    TEUswitch <- function(x) {
+      do.call("switch", c(x, prettynames))
+    }
+    return(TEUswitch)
+  } else if(return_type=="list"){
+    return(prettynames)
   }
-  
-  return(TEUswitch)
-  
 }
+

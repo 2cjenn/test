@@ -64,68 +64,138 @@ diagcollist <- function(colstring, sep="", ncols) {
   return(colstr)
 }
 
+table1_standardised <- function(data, varlist, adj, stratify, strata=NULL, 
+                                pretty_names=list(), singlecol=TRUE, dp=1, show_crude=FALSE){
+  #' Create age-standardised Table 1
+  #'
+  #' @param data The data
+  #' @param varlist The list of variables to include in the table
+  #' @param adj The variable to adjust by, as a factor. Eg age in single-year brackets.
+  #' @param stratify The variable to stratify by, as a factor
+  #' @param strata If you don't want to use all levels of the stratifying variable, specify desired levels here
+  #' @param pretty_names List of human readable names corresponding to variable names
+  #' @param singlecol Whether to stack variable names and levels into one column (TRUE - default) or spread across two columns (FALSE)
+  #' @param dp Number of decimal places to display in the table (default 1)
+  #' @param show_crude Include crude proportions in the form "crude (adjusted)". Advisable for sanity check but not for final presentation.
+  #' 
+  #' @return A dataframe formatted appropriately to output as Table 1
+  #' @export
+  #'
+  #' @examples
+  #' 
+  if(is.null(strata)) { strata <- levels(data[[stratify]]) }
+  
+  table <- c()
+  colnames <- c()
+  
+  for(s in strata) {
+    colnames <- c(colnames, paste0(s, " (N=", nrow(data[data[[stratify]]==s,]), ")"))
+    col <- c()
+    
+    for(var in varlist){
+      if(is.factor(data[[var]])){
+        if(singlecol){ col <- c(col, "") }
+        for(l in levels(data[[var]])){
+          
+          count <- table(data[[adj]][data[[var]]==l & data[[stratify]]==s])
+          pop <- table(data[[adj]][data[[stratify]]==s])
+          stdpop <- table(data[[adj]])
+          
+          proportions <- ageadjust.direct(count=count, pop=pop, stdpop=stdpop)
+          crude.prop <- pretty_dp(100*proportions[["crude.rate"]],dp)
+          adj.prop <- pretty_dp(100*proportions[["adj.rate"]],dp)
+          
+          if(show_crude){
+            col <- c(col, paste0(crude.prop, " (", adj.prop, ")"))
+          } else {
+            col <- c(col, adj.prop)
+          }
+        }
+      } else {
+        col <- c(col, paste0(pretty_dp(mean(data[[var]]), dp), " (", pretty_dp(sd(data[[var]]), dp), ")"))
+      }
+    }
+    table <- cbind(table, col)
+  }
+  coefflist <- list()
+  # Prepare the list of coefficients - variables and levels for factors or blanks for continuous
+  for(var in varlist){
+    coefflist[[var]] <- preparecoefflist(df=data, varname=var, pretty_names=pretty_names, onecol=singlecol)
+  }
+  coeffnames <- do.call(rbind, coefflist)
+  
+  colnames(table) <- colnames
+  table <- cbind(coeffnames%>%select(-IDcol), table)
+  rownames(table) <- NULL
+  
+  return(table)
+}
+
+# Normal Table 1
 # Print numbers and proportions for factors, median and IQR or mean and 95% CI for continuous variables
 # Optionally provide p-values from chi-squared (categorical) and t-test (continuous)
-descriptivetable <- function(df, varlist, contavg='mean', assocvar=NULL, pretty_names=list(), footnote_list=c()){
+descriptivetable <- function(df, varlist, contavg='mean', assocvar=NULL, singlecol=FALSE, 
+                             pretty_names=list(), footnote_list=c()){
   if(!exists("footnote_no")){footnote_no <<- 1} # Note use of <<- instead of <- to assign this globally
   outtable <- c()
   for(var in varlist){
     if(is.factor(df[[var]])){ # Categorical variables (factors) need a row per level, n's and %'s
       n <- table(df[[var]], useNA='ifany')
       pct <- pretty_dp(prop.table(n), dp=1, pct=TRUE)
-      variable <- c(prettyfunc(var, pnames=pretty_names, upper=TRUE, flist=footnote_list), rep(NA, dim(n)-1))
+      npct <- paste0(n, " (", pct, "%)")
+      variable <- c(prettyfunc(var, pnames=pretty_names, upper=TRUE, flist=footnote_list))
       levels <- names(n)
       if(!is.null(assocvar)){
         tab <- table(df[[assocvar]], df[[var]])
         chi <- chisq.test(tab)
         pval <- c(ifelse(chi$p.value<0.001, "<0.001", round(chi$p.value,3)))
         outtable <- rbind(outtable, 
-                          c(var, paste0("**", variable, "**"), "", "", pval), 
-                          cbind(paste0(var, levels), levels, n, pct, ""))
+                          c(var, paste0("**", variable, "**"), "", "", "", pval), 
+                          cbind(paste0(var, levels), levels, n, pct, npct, ""))
       } else{
         outtable<- rbind(outtable, 
-                         c(var, paste0("**", variable, "**"), "", ""), 
-                         cbind(paste0(var, levels), levels, n, pct))
+                         c(var, paste0("**", variable, "**"), "", "", ""), 
+                         cbind(paste0(var, levels), levels, n, pct, npct))
       }
     } else { # Continuous variables need the mean (and SD) or median (and IQR)
       if(contavg=="mean"){
         n <- pretty_dp(mean(df[[var]], na.rm=TRUE), dp=1, comma=TRUE)
         pct <- pretty_dp(sd(df[[var]], na.rm=TRUE), dp=1, comma=TRUE)
+        npct <- paste0(n, " (", pct, ")")
         variable <- paste0("Mean ", prettyfunc(var, pretty_names, upper=FALSE, flist=footnote_list), " (SD)")
       } else if (contavg=="median"){
         n <- pretty_dp(median(df[[var]], na.rm=TRUE), dp=1, comma=TRUE)
         IQR <- pretty_dp(quantile(df[[var]], na.rm=TRUE), dp=1, comma=TRUE)
         pct <- paste0("(", IQR[2], "-", IQR[4], ")")
+        npct <- paste0(n, " ", pct)
         variable <- paste0("Median ", prettyfunc(var, pnames=pretty_names, upper=FALSE, flist=footnote_list), " (IQR)")
       } else if(contavg=="n"){
         n <- nrow(df[!is.na(df[[var]]),])
         pct <- NA
+        npct <- NA
         variable <- prettyfunc(var, pnames=pretty_names, upper=TRUE, flist=footnote_list)
       }
       if(!is.null(assocvar)){
         tt <- t.test(df[[var]][df[[assocvar]]==TRUE], df[[var]][df[[assocvar]]==FALSE])
-        pval <- pretty_pval(tt$p.value)
-        outtable <- rbind(outtable, cbind(var, paste0("**", variable, "**"), n, pct, pval))
+        p <- pretty_pval(tt$p.value)
+        outtable <- rbind(outtable, cbind(var, paste0("**", variable, "**"), n, pct, npct, p))
       } else {
-        outtable<- rbind(outtable, cbind(var, paste0("**", variable, "**"), n, pct))
+        outtable<- rbind(outtable, cbind(var, paste0("**", variable, "**"), n, pct, npct))
       }
     }
   }
   rownames(outtable) <- c()
-  if(!is.null(assocvar)){
-    colnames(outtable) <- c("IDcol", "Variable", "n", "%", "p")
-  } else {
-    colnames(outtable) <- c("IDcol", "Variable", "n", "%")
-    }
+
   outdf <- as.data.frame(outtable, stringsAsFactors=FALSE)
+  if(singlecol){
+    outdf <- outdf %>% select(-c(n, pct))
+  } else {
+    outdf <- outdf %>% select(-npct)
+  }
   return(outdf)
 }
 
-# Prettyprint the results from a Cox model
-# To use this, 
-# model <- coxph(Surv(time_to_dementia, dementia_status) ~ age, data=data)
-# kable(printcoxresults(model), caption="")
-printcoxresults <- function(df, surv, varlist, pretty_names=list(), onecol=FALSE, IDcol=FALSE){
+printMIresults <- function(df, varlist, modeloutput, pretty_names=list(), onecol=FALSE, IDcol=FALSE){
   require(dplyr)
   
   coefflist <- list()
@@ -135,8 +205,49 @@ printcoxresults <- function(df, surv, varlist, pretty_names=list(), onecol=FALSE
   }
   coeffnames <- do.call(rbind, coefflist)
   
-  formula <- paste0("surv ~ ", paste(varlist, collapse=" + "))
-  modeloutput <- coxph(as.formula(formula), data=df)
+  regression <- data.frame(
+    IDcol=modeloutput$term,
+    HR=pretty_dp(exp(modeloutput$estimate),dp=2),
+    CI=pretty_confint(exp(modeloutput$estimate-1.96*modeloutput$std.error),
+                            exp(modeloutput$estimate+1.96*modeloutput$std.error),
+                            dp=2),
+    p=pretty_pval(modeloutput$p.value),
+    stringsAsFactors=FALSE
+  )
+  
+  results <- left_join(coeffnames, regression, by="IDcol")
+  if(onecol){
+    results$HR[is.na(results$HR) & (results$IDcol != results$Coefficient & !is.na(results$Coefficient))] <- "1"
+  } else {
+    results$HR[is.na(results$HR) & !is.na(results$Coefficient)] <- "1"
+  }
+  
+  coeffcols <- colnames(coeffnames)
+  if(IDcol==FALSE){
+    coeffcols <- coeffcols[coeffcols != "IDcol"]
+  }
+  results <- results[,c(coeffcols, "HR", "CI", "p")]
+  names(results) <- c(coeffcols, "HR", "95% CI", "p")
+  
+  
+  rownames(results) <- NULL
+  # https://www.r-bloggers.com/regression-on-categorical-variables/
+  return(results)
+}
+
+# Prettyprint the results from a Cox model
+# To use this, 
+# model <- coxph(Surv(time_to_dementia, dementia_status) ~ age, data=data)
+# kable(printcoxresults(model), caption="")
+printcoxresults <- function(df, varlist, modeloutput, pretty_names=list(), onecol=FALSE, IDcol=FALSE){
+  require(dplyr)
+  
+  coefflist <- list()
+  # Prepare the list of coefficients - variables and levels for factors or blanks for continuous
+  for(var in varlist){
+    coefflist[[var]] <- preparecoefflist(df=df, varname=var, pretty_names=pretty_names, onecol=onecol)
+  }
+  coeffnames <- do.call(rbind, coefflist)
   
   summ <- summary(modeloutput)
   coeff <- summ$coefficients
@@ -151,7 +262,11 @@ printcoxresults <- function(df, surv, varlist, pretty_names=list(), onecol=FALSE
   )
   
   results <- left_join(coeffnames, regression, by="IDcol")
-  results$HR[is.na(results$HR) & (results$IDcol != results$Coefficient & !is.na(results$Coefficient))] <- "1"
+  if(onecol){
+    results$HR[is.na(results$HR) & (results$IDcol != results$Coefficient & !is.na(results$Coefficient))] <- "1"
+  } else {
+    results$HR[is.na(results$HR) & !is.na(results$Coefficient)] <- "1"
+  }
   
   coeffcols <- colnames(coeffnames)
   if(IDcol==FALSE){
@@ -172,7 +287,7 @@ printlogresults <- function(model, coeffnames=NULL, IDcol=FALSE){
   coeff <- summ$coefficients
   # NOMVAR <- rownames(coeff)
   regression <- data.frame(
-    coeffname=(rownames(coeff)),
+    IDcol=(rownames(coeff)),
     OR=pretty_dp(exp(coeff[,1]), dp=2), # OR
     CI=pretty_confint(exp(coeff[,1]-(1.96*coeff[,2])),
                       exp(coeff[,1]+(1.96*coeff[,2])),
@@ -186,7 +301,7 @@ printlogresults <- function(model, coeffnames=NULL, IDcol=FALSE){
   } else {
     results <- merge(coeffnames, regression, all.x=TRUE)
     results$OR[is.na(results$OR)] <- "1"
-    results <- results[match(coeffnames$coeffname, results$coeffname),]
+    results <- results[match(coeffnames$IDcol, results$IDcol),]
     
     coeffcols <- colnames(coeffnames)
     if(IDcol==FALSE){
@@ -228,12 +343,44 @@ propped <- function(table, margin=NULL) {
   return(tabsums)
 }
 
+# Check correlation among all pairs of covariates in a given dataframe 
+# (this will need extending to be more robust if I want to use it for non-categorical covariates)
+corr_mat <- function(data){
+  corr_matrix <- matrix(0L, nrow=ncol(data), ncol=ncol(data))
+  colnames(corr_matrix) <- colnames(data)
+  rownames(corr_matrix) <- colnames(data)
+  for(i in c(1:(ncol(data)-1))){
+    x <- data[[i]]
+    for(j in c((i+1):ncol(data))){
+      y <- data[[j]]
+      if(is.factor(x) & is.factor(y)){
+        corr_matrix[i, j] <- (cramerV(table(x, y)))
+      } else if (is.numeric(x) & is.numeric(y)) {
+        corr_matrix[i, j] <- cor(x, y, method="pearson")
+      } else {
+        print("Unanticipated type")
+      }
+    }
+  }
+  return(corr_matrix)
+}
+
 preparecoefflist_1col <- function(df, varname, pretty_names=list()){
   pretty_varname <- prettyfunc(varname, pnames=pretty_names, bold=TRUE, upper=TRUE)
   if(is.factor(df[[varname]])){
-    levels <- levels(df[[varname]])
+    if(is.ordered(df[[varname]])){
+      poly <- length(levels(df[[varname]]))
+      levels <- c("Ref", ".L", ".Q", ".C")
+      if(poly > 4){
+        powers <- c(4:(poly-1))
+        levels <- c(levels, paste0("^", powers))
+      }
+      levels <- levels[1:poly]
+    } else {
+      levels <- levels(df[[varname]])
+    }
     variable <- c(pretty_varname, levels)
-    coeffname <- c(pretty_varname, paste0(varname,levels))
+    coeffname <- c(pretty_varname, paste0(varname, levels))
   } else {
     variable <- pretty_varname
     coeffname <- varname
@@ -247,7 +394,17 @@ preparecoefflist_1col <- function(df, varname, pretty_names=list()){
 preparecoefflist_2col <- function(df, varname, pretty_names=list()){
   pretty_varname <- prettyfunc(varname, pnames=pretty_names, upper=TRUE)
   if(is.factor(df[[varname]])){
-    levels <- levels(df[[varname]])
+    if(is.ordered(df[[varname]])){
+      poly <- length(levels(df[[varname]]))
+      levels <- c("Ref", ".L", ".Q", ".C")
+      if(poly > 4){
+        powers <- c(4:(poly-1))
+        levels <- c(levels, paste0("^", powers))
+      }
+      levels <- levels[1:poly]
+    } else {
+      levels <- levels(df[[varname]])
+    }
     variable <- c(pretty_varname,
                   rep(NA, length(levels)-1))
     coeffname <- paste0(varname,levels)
