@@ -64,27 +64,55 @@ diagcollist <- function(colstring, sep="", ncols) {
   return(colstr)
 }
 
-age_std <- function(data, varlist, adj, stratify, strata=NULL, pretty_names=list(), singlecol=TRUE){
-  
+table1_standardised <- function(data, varlist, adj, stratify, strata=NULL, 
+                                pretty_names=list(), singlecol=TRUE, dp=1, show_crude=FALSE){
+  #' Create age-standardised Table 1
+  #'
+  #' @param data The data
+  #' @param varlist The list of variables to include in the table
+  #' @param adj The variable to adjust by, as a factor. Eg age in single-year brackets.
+  #' @param stratify The variable to stratify by, as a factor
+  #' @param strata If you don't want to use all levels of the stratifying variable, specify desired levels here
+  #' @param pretty_names List of human readable names corresponding to variable names
+  #' @param singlecol Whether to stack variable names and levels into one column (TRUE - default) or spread across two columns (FALSE)
+  #' @param dp Number of decimal places to display in the table (default 1)
+  #' @param show_crude Include crude proportions in the form "crude (adjusted)". Advisable for sanity check but not for final presentation.
+  #' 
+  #' @return A dataframe formatted appropriately to output as Table 1
+  #' @export
+  #'
+  #' @examples
+  #' 
   if(is.null(strata)) { strata <- levels(data[[stratify]]) }
+  
   table <- c()
+  colnames <- c()
+  
   for(s in strata) {
+    colnames <- c(colnames, paste0(s, " (N=", nrow(data[data[[stratify]]==s,]), ")"))
     col <- c()
+    
     for(var in varlist){
       if(is.factor(data[[var]])){
         if(singlecol){ col <- c(col, "") }
         for(l in levels(data[[var]])){
+          
           count <- table(data[[adj]][data[[var]]==l & data[[stratify]]==s])
           pop <- table(data[[adj]][data[[stratify]]==s])
           stdpop <- table(data[[adj]])
           
-          rates <- ageadjust.direct(count=count, pop=pop, stdpop=stdpop)
-          adj.rate <- pretty_dp(100*rates[["adj.rate"]],1)
+          proportions <- ageadjust.direct(count=count, pop=pop, stdpop=stdpop)
+          crude.prop <- pretty_dp(100*proportions[["crude.rate"]],dp)
+          adj.prop <- pretty_dp(100*proportions[["adj.rate"]],dp)
           
-          col <- c(col, adj.rate)
+          if(show_crude){
+            col <- c(col, paste0(crude.prop, " (", adj.prop, ")"))
+          } else {
+            col <- c(col, adj.prop)
+          }
         }
       } else {
-        col <- c(col, paste0(pretty_dp(mean(data[[var]]),1), " (", pretty_dp(sd(data[[var]]),1), ")"))
+        col <- c(col, paste0(pretty_dp(mean(data[[var]]), dp), " (", pretty_dp(sd(data[[var]]), dp), ")"))
       }
     }
     table <- cbind(table, col)
@@ -96,11 +124,14 @@ age_std <- function(data, varlist, adj, stratify, strata=NULL, pretty_names=list
   }
   coeffnames <- do.call(rbind, coefflist)
   
-  colnames(table) <- strata
+  colnames(table) <- colnames
   table <- cbind(coeffnames%>%select(-IDcol), table)
+  rownames(table) <- NULL
+  
   return(table)
 }
 
+# Normal Table 1
 # Print numbers and proportions for factors, median and IQR or mean and 95% CI for continuous variables
 # Optionally provide p-values from chi-squared (categorical) and t-test (continuous)
 descriptivetable <- function(df, varlist, contavg='mean', assocvar=NULL, singlecol=FALSE, 

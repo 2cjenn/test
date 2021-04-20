@@ -385,16 +385,16 @@ varlist=c("TEU_BaC_AgeAtRec", "BaC_Sex", "TEU_BlP_SBP_quintiles",
 
 data$age_standardise <- cut(data$TEU_BaC_AgeAtRec, seq(40, 70, by=1))
 
-tab <- age_std(data=data, varlist=varlist, adj="age_standardise", 
+tab <- table1_standardised(data=data, varlist=varlist, adj="age_standardise", 
                  stratify="TEU_SBP_PRS_quintiles", strata=c("Q1: Lowest score", "Q3", "Q5: Highest score"),
                  pretty_names=pretty_names, singlecol=TRUE)
 
 rownames(tab) <- NULL
 
-colnames(tab) <- c("Variable", 
-                   paste0("Q1: Lowest score (N=", nrow(data[data$TEU_SBP_PRS_quintiles=="Q1: Lowest score",]), ")"), 
-                   paste0("Q3 (N=", nrow(data[data$TEU_SBP_PRS_quintiles=="Q3",]), ")"), 
-                   paste0("Q5: Highest score (N=", nrow(data[data$TEU_SBP_PRS_quintiles=="Q5: Highest score",]), ")"))
+# colnames(tab) <- c("Variable", 
+#                    paste0("Q1: Lowest score (N=", nrow(data[data$TEU_SBP_PRS_quintiles=="Q1: Lowest score",]), ")"), 
+#                    paste0("Q3 (N=", nrow(data[data$TEU_SBP_PRS_quintiles=="Q3",]), ")"), 
+#                    paste0("Q5: Highest score (N=", nrow(data[data$TEU_SBP_PRS_quintiles=="Q5: Highest score",]), ")"))
 
 # Output the resulting table
 kable(tab)
