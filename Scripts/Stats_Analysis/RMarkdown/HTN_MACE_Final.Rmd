@@ -378,6 +378,8 @@ comp_long1<-as.mids(comp_long1)
 ## Table `r table`. Age-standardised descriptive statistics of analysis population by systolic BP PRS quintiles (N = `r nrow(data)`).
 `r table <- table + 1`
 
+Age is presented as mean (SD) in each PRS quintile, all categorical variables are given as percentages standardised to the age distribution (in 1 year brackets) of the analysis population.
+
 ```{r descriptive-table, include=TRUE, echo=FALSE}
 varlist=c("TEU_BaC_AgeAtRec", "BaC_Sex", "TEU_BlP_SBP_quintiles",
           "TEU_BSM_BMIcat", "TEU_Smo_Status", "TEU_Alc_WeeklyCat", "TEU_Pha_METsover1200",
@@ -397,6 +399,7 @@ colnames(tab)[1] <- "Variable"
 kable(tab)
 
 ```
+
 
 ## Table `r table`: Multivariable logistic regression exploring association of systolic BP PRS with uncontrolled hypertension (N =`r nrow(data)`)
 `r table <- table + 1`

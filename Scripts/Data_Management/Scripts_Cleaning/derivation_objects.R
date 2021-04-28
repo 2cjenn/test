@@ -1114,7 +1114,8 @@ TEU_BP_PRS_quintiles <- function() {
     name = "TEU_BP_PRS_quintiles", 
     source = c("TEU_BP_PRS"), 
     mapper = FN_quantiles(quant=5, 
-                          labels = c("Q1: Lowest score", "Q2", "Q3", "Q4", "Q5: Highest score")
+                          labels = c("Q1: Lowest score", "Q2", "Q3", "Q4", "Q5: Highest score"),
+                          recodeNA="Unavailable"
     ),
     post_exclusion = TRUE,
     display_name = "BP PRS Quintiles",
@@ -1127,7 +1128,8 @@ TEU_SBP_PRS_quintiles <- function() {
     name = "TEU_SBP_PRS_quintiles", 
     source = c("TEU_SBP_PRS"), 
     mapper = FN_quantiles(quant=5, 
-                          labels = c("Q1: Lowest score", "Q2", "Q3", "Q4", "Q5: Highest score")
+                          labels = c("Q1: Lowest score", "Q2", "Q3", "Q4", "Q5: Highest score"),
+                          recodeNA="Unavailable"
     ),
     post_exclusion = TRUE,
     display_name = "Systolic BP PRS Quintiles",
@@ -1152,7 +1154,8 @@ TEU_LDL_C_PRS_quintiles <- function() {
     name = "TEU_LDL_C_PRS_quintiles", 
     source = c("TEU_LDL_C_PRS"), 
     mapper = FN_quantiles(quant=5, 
-                          labels = c("Q1: Lowest score", "Q2", "Q3", "Q4", "Q5: Highest score")
+                          labels = c("Q1: Lowest score", "Q2", "Q3", "Q4", "Q5: Highest score"),
+                          recodeNA="Unavailable"
     ),
     post_exclusion = TRUE,
     display_name = "LDL Cholesterol PRS Quintiles",
@@ -1356,12 +1359,10 @@ TEU_LDL_Quintiles <- function() {
   list(
     name = "TEU_LDL_Quintiles",
     source = c("BBC_LDL_Result"),
-    mapper = function(x){
-      y <- FN_quantiles(quant = 5,labels = c("Q1: lowest", "Q2", "Q3", "Q4", "Q5: highest"))(x)
-      levels(y) <- c(levels(y), "Unavailable")
-      y[is.na(y)] <- "Unavailable"
-      return(y)
-    },
+    mapper = FN_quantiles(quant = 5,
+                          labels = c("Q1: lowest", "Q2", "Q3", "Q4", "Q5: highest"),
+                          recodeNA="Unavailable"
+                          ),
     post_exclusion = TRUE,
     display_name = "Baseline LDL-C quintiles",
     description = "Quintiles of measured LDL cholesterol assay from baseline blood serum"

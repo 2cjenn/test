@@ -117,14 +117,19 @@ FN_buckets <- function(breaks, labels=NULL, right=TRUE){
   }
 }
 
-FN_quantiles <- function(quant=4, labels=NULL, na.rm=TRUE){
+FN_quantiles <- function(quant=4, labels=NULL, na.rm=TRUE, recodeNA="Unknown"){
   function(x){
     # if(anyNA(x)){warning("This vector contains NA values")}
     quantiles <- quantile(x, probs=seq(0, 1, 1/quant), na.rm=na.rm)
     if(is.null(labels)){
       labels <- c("Q1: lowest", paste0("Q", seq(2, quant-1)), paste0("Q", quant, ": highest"))
       }
-    test <- cut(x, breaks=quantiles, labels=labels, right=TRUE, include.lowest=TRUE)
+    y <- cut(x, breaks=quantiles, labels=labels, right=TRUE, include.lowest=TRUE)
+    if(any(is.na(y))) {
+      levels(y) <- c(levels(y), recodeNA)
+      y[is.na(y)] <- recodeNA
+    }
+    return(y)
   }
 }
 

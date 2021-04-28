@@ -97,9 +97,9 @@ table1_standardised <- function(data, varlist, adj, stratify, strata=NULL,
         if(singlecol){ col <- c(col, "") }
         for(l in levels(data[[var]])){
           
-          count <- table(data[[adj]][data[[var]]==l & data[[stratify]]==s])
-          pop <- table(data[[adj]][data[[stratify]]==s])
-          stdpop <- table(data[[adj]])
+          count <- table(data[[adj]][data[[var]]==l & data[[stratify]]==s], useNA='ifany')
+          pop <- table(data[[adj]][data[[stratify]]==s], useNA='ifany')
+          stdpop <- table(data[[adj]], useNA='ifany')
           
           proportions <- ageadjust.direct(count=count, pop=pop, stdpop=stdpop)
           crude.prop <- pretty_dp(100*proportions[["crude.rate"]],dp)
