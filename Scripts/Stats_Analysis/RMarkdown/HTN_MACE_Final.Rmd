@@ -67,6 +67,11 @@ exclusions <- function(data){
   
   excl$initial <<- nrow(data)
   
+  # Restrict to genetically white British
+  data <- data[!is.na(data$GeP_ethnic),]
+  
+  excl$whiteBrit <<- nrow(data)
+  
   # Exclude those outside the 40-70 age range
   data <- data[data$TEU_BaC_AgeAtRec >= 40 & data$TEU_BaC_AgeAtRec < 70,]
   
@@ -109,10 +114,10 @@ exclusions <- function(data){
   
   excl$seriouscomorb <<- nrow(data)
   
-  # Any durations less than 0 are clearly errors (only 2)
-  # Any diagnoses before the age of about 20 are probably due to other causes
-  data$TEU_VeI_HTN_dur[data$TEU_VeI_HTN_dur < 0] <- NA
-  # data[data$TEU_VeI_HTN_dur > data$TEU_BaC_AgeAtRec-20,]
+  # Exclude MACE at baseline
+  data <- data[!data$TEU_MACE_prev=="Yes",]
+  
+  excl$MACE <<- nrow(data)
   
   # Exclude those who were not hypertensive
   data <- data[data$TEU_evidenceHTN == TRUE & !is.na(data$TEU_evidenceHTN),]
@@ -128,16 +133,6 @@ exclusions <- function(data){
   data <- data[data$TEU_treatedHTN == TRUE & !is.na(data$TEU_treatedHTN),]
   
   excl$treated <<- nrow(data)
-  
-  # Exclude MACE at baseline
-  data <- data[!data$TEU_MACE_prev=="Yes",]
-  
-  excl$MACE <<- nrow(data)
-  
-  # Restrict to genetically white British
-  data <- data[!is.na(data$GeP_ethnic),]
-  
-  excl$whiteBrit <<- nrow(data)
   
   return(data) 
 }
@@ -164,7 +159,13 @@ export_svg(DiagrammeR::grViz(here::here(file.path(config$outputs$flowcharts, "HT
 
 ```
 
-# Multiple Imputation
+# Analysis Population
+
+## Figure `r figure`. Flowchart illustrating selection of analytic dataset (n = `r nrow(data)`).
+`r figure <- figure + 1`
+![Missing BP data was defined as fewer than 2 BP measurements at baseline. Hypertension was defined as self-report of hypertensive medication use, or self-report of a prior diagnosis of hypertension, or mean BP >= 140 /90 mmHg at baseline assessment. Awareness was defined as self-report of a prior diagnosis of hypertension among those who were hypertensive. Treatment was defined as self-report of hypertensive medication among those who were aware. Control was defined as mean BP < 140/90 mmHg at baseline assessment, among those who were treated.](Figures/HTN_PRS_MACE.png){height=700px}
+
+## Multiple Imputation
 
 **Multiple imputation (MI)** was used to impute missing values for covariates fitted in the analysis model under missing at random (MAR) assumption. We constructed imputation model using rawest format of covariates from the analysis model and performed 10 imputations (ran for 20 iterations) using default imputation method according to covariate type. 
 
