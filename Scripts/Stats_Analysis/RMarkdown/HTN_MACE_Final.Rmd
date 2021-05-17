@@ -33,6 +33,7 @@ library(naniar)
 library(mice)
 library(gtools)
 library(epitools)
+library(tools)
 
 # Specify the markdown format for knitr tables, otherwise they're not compatible with kableExtra
 options(knitr.kable.NA='', knitr.table.format = "markdown")
@@ -257,7 +258,7 @@ if(live) {
   
   saveRDS(imp1,file=file.path(config$data$derived, paste0("imputation", format(Sys.time(), '%d%B%Y'), ".rds")))
 } else {
-  imp1 <- readRDS(file.path(config$data$derived, "imputation30March2021.rds"))
+  imp1 <- readRDS(file.path(config$data$derived, "imputation14May2021_newPRS.rds"))
 }
 ```
 

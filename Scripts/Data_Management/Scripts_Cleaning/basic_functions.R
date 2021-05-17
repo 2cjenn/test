@@ -285,7 +285,14 @@ FN_MissingCategory <- function(missingvals, categ_name){
 
 FN_JoinPRS <- function(filepath, colname) {
   function(x) {
-    prs <- readRDS(filepath)
+    if(file_ext(filepath)=="rds"){
+      prs <- readRDS(filepath)
+    } else if(file_ext(filepath)=="sscore"){
+      prs <- read.delim(filepath, header=TRUE) %>%
+        rename(ID = IID)
+    } else {
+      warning("Unidentified file type for PRS")
+    }
     y <- prs[[colname]][match(x, prs$ID)]
     return(y)
   }
