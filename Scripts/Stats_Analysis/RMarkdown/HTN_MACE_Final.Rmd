@@ -383,9 +383,9 @@ comp_long1<-as.mids(comp_long1)
 Age is presented as mean (SD) in each PRS quintile, all categorical variables are given as percentages standardised to the age distribution (in 1 year brackets) of the analysis population.
 
 ```{r descriptive-table, include=TRUE, echo=FALSE}
-varlist=c("TEU_BaC_AgeAtRec", "BaC_Sex", "TEU_BlP_SBP_quintiles",
+varlist=c("TEU_BaC_AgeAtRec", "BaC_Sex", "TEU_BlP_SBP_quintiles", "TEU_LDL_Quintiles",
           "TEU_BSM_BMIcat", "TEU_Smo_Status", "TEU_Alc_WeeklyCat", "TEU_Pha_METsover1200",
-          "TEU_FaH_CVD", "Prosp_comorb_numcat", "TEU_VeI_numHTNmedscat", "TEU_LDL_Quintiles",
+          "TEU_FaH_CVD", "Prosp_comorb_numcat", "TEU_VeI_numHTNmedscat",
           "TEU_TownsendDepInd_Quint", "TEU_HouseholdIncome", "TEU_Emp_category", "TEU_Edu_ISCED", "TEU_Rec_Country"
           )
 
@@ -419,11 +419,11 @@ formula <- paste0("TEU_uncontrolledHTN  ~ ", paste(varlist, collapse="+"))
 rmodel <- with(comp_long1, glm(as.formula(formula), family="binomial"))
 
 routput <- printMIresults(df=comp_long1$data, varlist=varlist, modeloutput=summary(pool(rmodel)),
-                            pretty_names=pretty_names, onecol=FALSE, IDcol=FALSE)
+                            pretty_names=pretty_names, onecol=TRUE, IDcol=FALSE)
 
 rownames(routput) <- NULL
 
-colnames(routput) <- c("Coefficient", "Level", "OR", "95% CI", "p")
+colnames(routput) <- c("Variable", "OR", "95% CI", "p")
 
 # Output the resulting table
 kable(routput)
