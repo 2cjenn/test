@@ -98,7 +98,7 @@ exclusions <- function(data){
   excl$BPimp <<- nrow(data)
   
   # Only keep those with genetic data
-  data <- data[!is.na(data$TEU_BP_PRS),]
+  data <- data[!is.na(data$TEU_SBP_PRS),]
   
   excl$PRSmiss <<- nrow(data)
 
@@ -177,16 +177,18 @@ Table 1 shows the descriptive statistics of the original dataset (i.e. before mu
 ```{r}
 
 MI_data=data%>%
-  select(ID,TEU_MACE_status,TEU_MACE_time_yrs, TEU_MACE_MI, TEU_MACE_Stroke, TEU_controlledHTN, TEU_uncontrolledHTN,
-         TEU_BaC_AgeAtRec,BaC_Sex,
+  select(ID,TEU_MACE_status,TEU_MACE_time_yrs, TEU_MACE_MI, TEU_MACE_Stroke,
+         TEU_BaC_AgeAtRec,
+         BaC_Sex,
          TEU_SBP_PRS,
-         BSM_BMI,TEU_Smo_Status,
-         TEU_Alc_WeeklyCat,
-         TEU_Alc_WeeklyAlcUnits,
-         PhA_METsWkAllAct,TEU_FaH_CVD,
+         BSM_BMI,
+         TEU_Smo_Status,
+         TEU_Alc_WeeklyCat, TEU_Alc_WeeklyAlcUnits,
+         PhA_METsWkAllAct,
+         TEU_FaH_CVD,
          Prosp_comorb_numcat,
          TEU_VeI_numHTNmeds,
-         TEU_BlP_SBP.avg, 
+         TEU_BlP_SBP.avg, TEU_BlP_DBP.avg,  
          BBC_LDL_Result,
          TownsendDepInd, TEU_HouseholdIncome,TEU_Emp_category,TEU_Edu_ISCED,
          TEU_Rec_Country,
@@ -195,9 +197,12 @@ MI_data=data%>%
   # Change missing categories to NA
   mutate_if(is.factor, list(~na_if(., "Unanswered")))%>%
   mutate_if(is.factor, list(~na_if(., "Prefer not to answer")))%>%
+  mutate(TEU_SBP_PRS=1740*TEU_SBP_PRS) %>% 
   droplevels()
             
-            
+# Because PRS is scaled by number of non-missing SNPs it takes values between 0.09 and 0.1 - we're guessing that since this is on a much smaller scale to the other variables in the dataset, the MI treats it as a constant and removes it from the imputation.    
+# We therefore scale it up by the number of SNPs in the score x the ploidy = 870 * 2 = 1740
+# This is ok here because in all our analyses, we use quintiles of PRS, which don't change when the underlying values are scaled by a constant.
 
 
 # Check missing percentage 
@@ -240,8 +245,8 @@ if(live){plot_list}
 
 ```{r}
 
-# Create Imputations (iter=20, M=5)
-iter <- 20
+# Create Imputations (iter=10, M=10)
+iter <- 10
 M <- 10
 
 # Using default imputation method based on variable type
@@ -258,7 +263,7 @@ if(live) {
   
   saveRDS(imp1,file=file.path(config$data$derived, paste0("imputation", format(Sys.time(), '%d%B%Y'), ".rds")))
 } else {
-  imp1 <- readRDS(file.path(config$data$derived, "imputation14May2021_newPRS.rds"))
+  imp1 <- readRDS(file.path(config$data$derived, "imputation18May2021_newPRS.rds"))
 }
 ```
 
@@ -346,10 +351,16 @@ comp_long1<-long1%>%
     
     TEU_LDLctrl_v1=factor(ifelse(BBC_LDL_Result<3,1,0),levels=c(0,1), 
                           labels=c("Not controlled", "Controlled")),
+    
+    TEU_uncontrolledHTN=factor(ifelse(TEU_BlP_SBP.avg >= 140 | TEU_BlP_DBP.avg >= 90, 1, 0), 
+                               levels=c(0, 1), labels=c("Controlled", "Uncontrolled")),
+    
     TEU_Smo_Status=factor(TEU_Smo_Status,levels = c('Never','Previous','Current')),
+    
     TEU_Pha_METsover1200 = factor(ifelse(PhA_METsWkAllAct<=1200,"Low (MET minutes <= 1200)",
                                          "High (MET minutes > 1200)"),
                                   levels = c("Low (MET minutes <= 1200)", "High (MET minutes > 1200)")),
+    
     TEU_VeI_numHTNmedscat = factor( dplyr::case_when(
         is.na(TEU_VeI_numHTNmeds) ~ "None reported",
         TEU_VeI_numHTNmeds == 0 ~ "None reported",
