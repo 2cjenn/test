@@ -1078,7 +1078,7 @@ TEU_SBP_PRS <- function() {
   list(
     name = "TEU_SBP_PRS", 
     source = c("ID"), 
-    mapper = FN_JoinPRS(filepath="K:/TEU/UKB_Genetic_Data/PRS_Pipeline/prs/projects/htn-evangelou2018/outputs/prs_SBP.sscore",
+    mapper = FN_JoinPRS(filepath="K:/TEU/UKB_Genetic_Data/PRS_Pipeline/prs/projects/htn-evangelou2018/outputs/prs_SBP_20210517.sscore",
                         colname="SCORE1_AVG"),
     post_exclusion = FALSE,
     display_name = "SBP polygenic risk score",
@@ -1090,7 +1090,7 @@ TEU_DBP_PRS <- function() {
   list(
     name = "TEU_DBP_PRS", 
     source = c("ID"), 
-    mapper = FN_JoinPRS(filepath="K:/TEU/UKB_Genetic_Data/PRS_Pipeline/prs/projects/htn-evangelou2018/outputs/prs_DBP.sscore",
+    mapper = FN_JoinPRS(filepath="K:/TEU/UKB_Genetic_Data/PRS_Pipeline/prs/projects/htn-evangelou2018/outputs/prs_DBP_20210517.sscore",
                         colname="SCORE1_AVG"),
     post_exclusion = FALSE,
     display_name = "DBP polygenic risk score",
@@ -1141,7 +1141,7 @@ TEU_LDL_C_PRS <- function() {
   list(
     name = "TEU_LDL_C_PRS", 
     source = c("ID"), 
-    mapper = FN_JoinPRS(filepath="K:/TEU/UKB_Genetic_Data/PRS_Pipeline/prs/projects/PGS000115/outputs/prs.sscore",
+    mapper = FN_JoinPRS(filepath="K:/TEU/UKB_Genetic_Data/PRS_Pipeline/prs/projects/PGS000115/outputs/prs_20210517.sscore",
                         colname="SCORE1_AVG"),
     post_exclusion = FALSE,
     display_name = "LDL Cholesterol polygenic risk score",
