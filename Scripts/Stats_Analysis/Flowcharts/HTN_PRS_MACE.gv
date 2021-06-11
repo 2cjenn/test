@@ -1,26 +1,24 @@
-digraph dot {
+digraph dot {{
   graph[layout=dot, rankdir=UD]
   
   # define the global styles of the nodes. We can override these in box if we wish
   node [shape = rectangle, style = filled, fillcolor = Azure, fontname=Calibri];
-  wholepop; agerange; corevars; notsick; nomace; treated; 
-  ex_agerange; ex_corevars; ex_reallysick; ex_mace; ex_untreated;
+  wholepop [label='{label1}']
+  agerange [label='{label2}']
+  corevars [label='{label3}']
+  notsick [label='{label4}']
+  nomace [label='{label5}']
+  treated [label='{label6}']
+  
+  ex_agerange [label='{label7}']
+  ex_corevars [label='{label8}']
+  ex_reallysick [label='{label9}']
+  ex_mace [label='{label10}']
+  ex_untreated [label='{label11}']
   
   node [shape=point, width=0, height=0]
   i1 i2 i3 i4 i5
-  
-  wholepop [label='@@1']
-  agerange [label='@@2']
-  corevars [label='@@3']
-  notsick [label='@@4']
-  nomace [label='@@5']
-  treated [label='@@6']
-  
-  ex_agerange [label='@@7']
-  ex_corevars [label='@@8']
-  ex_reallysick [label='@@9']
-  ex_mace [label='@@10']
-  ex_untreated [label='@@11']
+
   
   wholepop -> i1 [arrowhead='none']
   i1 -> agerange 
@@ -34,23 +32,10 @@ digraph dot {
   i5 -> treated
   
   edge [arrowhead='none']
-  i1 -> ex_agerange; {rank=same i1 ex_agerange}
-  i2 -> ex_corevars; {rank=same i2 ex_corevars}
-  i3 -> ex_reallysick; {rank=same i3 ex_reallysick}
-  i4 -> ex_mace; {rank=same i4 ex_mace}
-  i5 -> ex_untreated; {rank=same i5 ex_untreated}
+  i1 -> ex_agerange; {{rank=same i1 ex_agerange}}
+  i2 -> ex_corevars; {{rank=same i2 ex_corevars}}
+  i3 -> ex_reallysick; {{rank=same i3 ex_reallysick}}
+  i4 -> ex_mace; {{rank=same i4 ex_mace}}
+  i5 -> ex_untreated; {{rank=same i5 ex_untreated}}
   
-  }
-  
-  [1]: paste0('UKB participants','\nn = ', excl$initial)
-  [2]: paste0('White British participants aged between 40 and 70\nn = ', excl$agerange)
-  [3]: paste0('Complete information on core variables\nn = ', excl$PRSmiss)
-  [4]: paste0('Without serious comorbidities\nn = ', excl$seriouscomorb)
-  [5]: paste0('No prior MACE events at baseline\nn = ', excl$MACE)
-  [6]: paste0('Study population: antihypertensive\nmedication users at baseline\nn = ', excl$treated)
-  [7]: paste0(excl$initial-excl$whiteBrit, ' not of genetically White British ancestry', '\n', excl$whiteBrit-excl$agerange,' outside the age range of [40,70) years')
-  [8]: paste0(excl$agerange-excl$BPmiss,' missing BP data from baseline assessment', '\n', excl$BPmiss-excl$BPimp, ' implausible BP data from baseline assessment', '\n', excl$BPimp-excl$PRSmiss, ' missing genotyping data or excluded in genetic quality control')
-  [9]: paste0(excl$PRSmiss-excl$pregnant, ' possibly pregnant at baseline\n', excl$pregnant-excl$seriouscomorb,' serious comorbidities, including cancer\n(except skin cancer)')
-  [10]: paste0(excl$seriouscomorb-excl$MACE, ' prevalent MACE at baseline')
-  [11]: paste0(excl$MACE-excl$evidenceHTN, ' no evidence of hypertension', '\n', excl$evidenceHTN-excl$aware, ' unaware hypertensives', '\n', excl$aware-excl$treated, ' untreated hypertensives')
-  
+  }}

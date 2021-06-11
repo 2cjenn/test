@@ -61,22 +61,27 @@ live <- interactive()
 ```
 
 ```{r data-derivation, include=FALSE, cache=TRUE}
-
+ 
 source(file.path(config$scripts$cleaning, "dataset_generator.R"))
-
+ 
 exclusions <- function(data){
   
   excl$initial <<- nrow(data)
+    
+  # Exclude those outside the 40-70 age range
+  data <- data[data$TEU_BaC_AgeAtRec >= 40 & data$TEU_BaC_AgeAtRec < 70,]
+  
+  excl$agerange <<- nrow(data)
+  
+  # Only keep those with genetic data
+  data <- data[!is.na(data$GeP_Array),]
+  
+  excl$genetic <<- nrow(data)
   
   # Restrict to genetically white British
   data <- data[!is.na(data$GeP_ethnic),]
   
   excl$whiteBrit <<- nrow(data)
-  
-  # Exclude those outside the 40-70 age range
-  data <- data[data$TEU_BaC_AgeAtRec >= 40 & data$TEU_BaC_AgeAtRec < 70,]
-  
-  excl$agerange <<- nrow(data)
 
   # Exclude individuals with missing BP data
   data <- data[!is.na(data$TEU_BlP_SBP.avg),]
@@ -97,7 +102,7 @@ exclusions <- function(data){
   
   excl$BPimp <<- nrow(data)
   
-  # Only keep those with genetic data
+  # Only keep those who met genetic QC and were included in PRS
   data <- data[!is.na(data$TEU_SBP_PRS),]
   
   excl$PRSmiss <<- nrow(data)
@@ -153,12 +158,31 @@ data <-
 pretty_func <- pretty_switch(field_definitions=TEU_SPECS$HTN_control_MACE, return_type = "function")
 pretty_names <- pretty_switch(field_definitions=TEU_SPECS$HTN_control_MACE, return_type = "list")
 
-export_svg(DiagrammeR::grViz(here::here(file.path(config$outputs$flowcharts, "HTN_PRS_MACE.gv")))
-           ) %>% charToRaw %>% rsvg %>% 
-  png::writePNG(here::here(file.path(config$outputs$figures, "HTN_PRS_MACE.png")))
-
 
 ```
+
+```{r}
+label1 <- paste0('UKB participants\\nn = ', excl$initial)
+label2 <- paste0('Genetically White British participants\\nwith genotyping data, aged between 40 and 70\\nn = ', excl$whiteBrit)
+label3 <- paste0('Complete information on core variables\\nn = ', excl$PRSmiss)
+label4 <- paste0('Without serious comorbidities\\nn = ', excl$seriouscomorb)
+label5 <- paste0('No prior MACE events at baseline\\nn = ', excl$MACE)
+label6 <- paste0('Study population: antihypertensive\nmedication users at baseline\\nn = ', excl$treated)
+
+label7 <- paste0(excl$initial-excl$agerange,' outside the age range of [40,70) years\\l ', excl$agerange-excl$genetic, ' missing genotyping data\\l', excl$genetic-excl$whiteBrit, ' not of genetically White British ancestry\\l')
+label8 <- paste0(excl$whiteBrit-excl$BPmiss,' missing BP data from baseline assessment\\l', excl$BPmiss-excl$BPimp, ' implausible BP data from baseline assessment\\l', excl$BPimp-excl$PRSmiss, ' excluded in genetic quality control\\l')
+label9 <- paste0(excl$PRSmiss-excl$pregnant, ' possibly pregnant at baseline\\l', excl$pregnant-excl$seriouscomorb,' serious comorbidities, including cancer\\l(except skin cancer)\\l')
+label10 <- paste0(excl$seriouscomorb-excl$MACE, ' prevalent MACE at baseline\\l')
+label11 <- paste0(excl$MACE-excl$evidenceHTN, ' no evidence of hypertension\\l', excl$evidenceHTN-excl$aware, ' unaware hypertensives\\l', excl$aware-excl$treated, ' untreated hypertensives\\l')
+
+gv <- read_file(here::here(file.path(config$outputs$flowcharts, "HTN_PRS_MACE.gv")))
+
+export_svg(DiagrammeR::grViz(glue(gv))
+           ) %>% charToRaw %>% rsvg %>%
+  png::writePNG(here::here(file.path(config$outputs$figures, "HTN_PRS_MACE.png")))
+```
+
+
 
 # Introduction
 
@@ -510,13 +534,11 @@ cox_a_b <- function(varlist_a, varlist_b, status, label,
 ```{r, SBP_pval}
 
 pval_check <- function(varlist_a, varlist_b, status, rmodel_a, rmodel_b) {
-  anova_a <- with(comp_long1, 
-anova_a <- with(comp_long1, 
+ 
   anova_a <- with(comp_long1, 
                   coxph(as.formula(paste0("Surv(TEU_MACE_time_yrs,", status, ") ~ ",
                                           paste(varlist_a[-which(varlist_a=="TEU_SBP_PRS_quintiles")], collapse="+")))))
-  anova_b <- with(comp_long1, 
-anova_b <- with(comp_long1, 
+
   anova_b <- with(comp_long1, 
                   coxph(as.formula(paste0("Surv(TEU_MACE_time_yrs,", status, ") ~ ",
                                           paste(varlist_b[-which(varlist_b=="TEU_SBP_PRS_quintiles")], collapse="+")))))
