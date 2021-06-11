@@ -30,7 +30,8 @@ DB_extract <- function(extract_cols, db = config$data$database,
   withdrawn_ids <- withdrawals$V1
   
   # Connect to the database
-  con <- dbConnect(duckdb::duckdb(), db)
+  con <- dbConnect(duckdb::duckdb(), db, read_only=TRUE,
+                   config.temporary_directory)
   on.exit(dbDisconnect(con, shutdown=TRUE))
   
   # List all tables available in the database
