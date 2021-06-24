@@ -14,6 +14,7 @@ library(kableExtra)
 library(knitr)
 library(yaml)
 library(here)
+library(glue)
 library(DiagrammeR)
 library(DiagrammeRsvg)
 library(svglite)
@@ -34,6 +35,8 @@ library(mice)
 library(gtools)
 library(epitools)
 library(tools)
+library(readr)
+library(tibble)
 
 # Specify the markdown format for knitr tables, otherwise they're not compatible with kableExtra
 options(knitr.kable.NA='', knitr.table.format = "markdown")
@@ -555,18 +558,57 @@ pval_check <- function(varlist_a, varlist_b, status, rmodel_a, rmodel_b) {
 
 ```{r Cox models trio, echo=FALSE}
 
-tab_mace <- cox_a_b(varlist_a, varlist_b, status="TEU_MACE_status", displaycols="TEU_SBP_PRS_quintiles")$tab
-tab_mi <- cox_a_b(varlist_a, varlist_b, status="TEU_MACE_MI", displaycols="TEU_SBP_PRS_quintiles")$tab
-tab_stroke <- cox_a_b(varlist_a, varlist_b, status="TEU_MACE_Stroke", displaycols="TEU_SBP_PRS_quintiles")$tab
+cox_mace <- cox_a_b(varlist_a, varlist_b, status="TEU_MACE_status", displaycols="TEU_SBP_PRS_quintiles")
+cox_mi <- cox_a_b(varlist_a, varlist_b, status="TEU_MACE_MI", displaycols="TEU_SBP_PRS_quintiles")
+cox_stroke <- cox_a_b(varlist_a, varlist_b, status="TEU_MACE_Stroke", displaycols="TEU_SBP_PRS_quintiles")
+
+
 
 tab <- rbind(c("Outcome", "Variable", "HR", "95% CI", "p", "HR", "95% CI", "p"),
-             cbind(c(paste0("MACE, n=", nrow(data[data$TEU_MACE_status==1,])), rep("", nrow(tab_mace)-2)),tab_mace[-1,]), 
-             cbind(c(paste0("MI, n=", nrow(data[data$TEU_MACE_MI==1,])), rep("", nrow(tab_mi)-2)),tab_mi[-1,]), 
-             cbind(c(paste0("Stroke, n=", nrow(data[data$TEU_MACE_Stroke==1,])), rep("", nrow(tab_stroke)-2)),tab_stroke[-1,]))
+             cbind(c(paste0("MACE, n=", nrow(data[data$TEU_MACE_status==1,])), 
+                     rep("", nrow(cox_mace$tab)-2)),
+                   cox_mace$tab[-1,]), 
+             cbind(c(paste0("MI, n=", nrow(data[data$TEU_MACE_MI==1,])), 
+                     rep("", nrow(cox_mi$tab)-2)),
+                   cox_mi$tab[-1,]), 
+             cbind(c(paste0("Stroke, n=", nrow(data[data$TEU_MACE_Stroke==1,])), 
+                     rep("", nrow(cox_stroke$tab)-2)),
+                   cox_stroke$tab[-1,]))
 
 colnames(tab) <- c("", "", "Model A", "", "", "Model B", "", "")
 kable(tab, caption=paste0("Multivariable model included ", paste(pretty_names[varlist_a], collapse=", "), " and, in model B, measured SBP at baseline."))
 ```
+
+```{r Table 3 plots,echo=FALSE}
+
+# Create visualisation of Table 3
+
+MACE=printMIresults(df=comp_long1$data,varlist = "TEU_SBP_PRS_quintiles",
+                    modeloutput = summary(pool(cox_mace$rmodel_b)),
+                    pretty_names = pretty_names,onecol = FALSE,IDcol = FALSE,forplot=TRUE)%>%
+  add_column(Outcome=rep(paste0('MACE n=',sum(comp_long1$data$TEU_MACE_status)),5),.before = 1)
+
+MI=printMIresults(df=comp_long1$data,varlist = "TEU_SBP_PRS_quintiles",
+                  modeloutput = summary(pool(cox_mi$rmodel_b)),
+                  pretty_names = pretty_names,onecol = FALSE,IDcol = FALSE,forplot=TRUE)%>%
+  add_column(Outcome=rep(paste0('MI n=',sum(comp_long1$data$TEU_MACE_MI)),5),.before = 1)
+
+Stroke=printMIresults(df=comp_long1$data,varlist = "TEU_SBP_PRS_quintiles",
+                      modeloutput = summary(pool(cox_stroke$rmodel_b)),
+                      pretty_names = pretty_names,onecol = FALSE,IDcol = FALSE,forplot=TRUE)%>%
+  add_column(Outcome=rep(paste0('Stroke n=',sum(comp_long1$data$TEU_MACE_Stroke)),5),.before = 1)
+
+
+tot=rbind(MACE,MI,Stroke)
+
+ggplot(tot,aes(x=Levels,y=HR_num,group=Outcome))+
+  geom_errorbar(aes(ymin=L_CI,ymax=U_CI,color=Outcome),width=.1,position=position_dodge(0.10),linetype="dotted") +
+  geom_line(aes(color=Outcome),size=0.8) + geom_point(aes(color=Outcome))+ theme_classic()+
+  labs(x="SBP PRS Quintiles", y="Hazard Ratio (95% CI)")+theme(legend.position = "top",legend.title = element_blank())
+
+
+```
+
 
 # Full tables
 

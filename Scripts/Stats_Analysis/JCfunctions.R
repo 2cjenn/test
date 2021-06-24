@@ -196,7 +196,7 @@ descriptivetable <- function(df, varlist, contavg='mean', assocvar=NULL, singlec
   return(outdf)
 }
 
-printMIresults <- function(df, varlist, modeloutput, pretty_names=list(), onecol=FALSE, IDcol=FALSE){
+printMIresults <- function(df, varlist, modeloutput, pretty_names=list(), onecol=FALSE, IDcol=FALSE, forplot=FALSE){
   require(dplyr)
   
   coefflist <- list()
@@ -209,9 +209,12 @@ printMIresults <- function(df, varlist, modeloutput, pretty_names=list(), onecol
   regression <- data.frame(
     IDcol=modeloutput$term,
     HR=pretty_dp(exp(modeloutput$estimate),dp=2),
+    HR_num=exp(modeloutput$estimate),
     CI=pretty_confint(exp(modeloutput$estimate-1.96*modeloutput$std.error),
                             exp(modeloutput$estimate+1.96*modeloutput$std.error),
                             dp=2),
+    L_CI=exp(modeloutput$estimate-1.96*modeloutput$std.error),
+    U_CI=exp(modeloutput$estimate+1.96*modeloutput$std.error),
     p=pretty_pval(modeloutput$p.value),
     stringsAsFactors=FALSE
   )
@@ -219,17 +222,23 @@ printMIresults <- function(df, varlist, modeloutput, pretty_names=list(), onecol
   results <- left_join(coeffnames, regression, by="IDcol")
   if(onecol){
     results$HR[is.na(results$HR) & (results$IDcol != results$Coefficient & !is.na(results$Coefficient))] <- "1"
+    results$HR_num[is.na(results$HR_num) & (results$IDcol != results$Coefficient & !is.na(results$Coefficient))] <- 1
   } else {
     results$HR[is.na(results$HR) & !is.na(results$Coefficient)] <- "1"
+    results$HR_num[is.na(results$HR_num) & !is.na(results$Coefficient)] <- 1
   }
   
   coeffcols <- colnames(coeffnames)
   if(IDcol==FALSE){
     coeffcols <- coeffcols[coeffcols != "IDcol"]
   }
-  results <- results[,c(coeffcols, "HR", "CI", "p")]
-  names(results) <- c(coeffcols, "HR", "95% CI", "p")
   
+  if(forplot==FALSE){
+    results <- results[,c(coeffcols, "HR", "CI", "p")]
+    names(results) <- c(coeffcols, "HR", "95% CI", "p")
+  } else {
+    results <- results[,c(coeffcols, "HR_num", "L_CI", "U_CI")]
+  }
   
   rownames(results) <- NULL
   # https://www.r-bloggers.com/regression-on-categorical-variables/
