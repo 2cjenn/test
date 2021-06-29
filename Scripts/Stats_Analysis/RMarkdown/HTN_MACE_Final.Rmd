@@ -458,7 +458,7 @@ formula <- paste0("TEU_uncontrolledHTN  ~ ", paste(varlist, collapse="+"))
 rmodel <- with(comp_long1, glm(as.formula(formula), family="binomial"))
 
 routput <- printMIresults(df=comp_long1$data, varlist=varlist[!(varlist %in% hidelist)], modeloutput=summary(pool(rmodel)),
-                            pretty_names=pretty_names, onecol=TRUE, IDcol=FALSE)
+                            expon=TRUE, pretty_names=pretty_names, onecol=TRUE, IDcol=FALSE)
 
 rownames(routput) <- NULL
 
@@ -510,14 +510,14 @@ cox_a_b <- function(varlist_a, varlist_b, status, label,
   rmodel_a <- with(comp_long1, coxph(as.formula(formula_a)))
   
   routput_a <- printMIresults(df=comp_long1$data, varlist=displaycols, modeloutput=summary(pool(rmodel_a)),
-                              pretty_names=pretty_names, onecol=TRUE, IDcol=TRUE)
+                              expon=TRUE, pretty_names=pretty_names, onecol=TRUE, IDcol=TRUE)
   
   # Model B
   formula_b <- paste0("Surv(TEU_MACE_time_yrs,", status, ") ~ ", paste(varlist_b, collapse="+"))
   rmodel_b <- with(comp_long1, coxph(as.formula(formula_b)))
   
   routput_b <- printMIresults(df=comp_long1$data, varlist=displaycols, modeloutput=summary(pool(rmodel_b)),
-                              pretty_names=pretty_names, onecol=TRUE, IDcol=TRUE)
+                              expon=TRUE, pretty_names=pretty_names, onecol=TRUE, IDcol=TRUE)
   
   # Combine into one table
   tab <- left_join(routput_a, routput_b, by=c("IDcol", "Coefficient")) %>%
@@ -584,17 +584,17 @@ kable(tab, caption=paste0("Multivariable model included ", paste(pretty_names[va
 # Create visualisation of Table 3
 
 MACE=printMIresults(df=comp_long1$data,varlist = "TEU_SBP_PRS_quintiles",
-                    modeloutput = summary(pool(cox_mace$rmodel_b)),
+                    modeloutput = summary(pool(cox_mace$rmodel_b)), expon=TRUE,
                     pretty_names = pretty_names,onecol = FALSE,IDcol = FALSE,forplot=TRUE)%>%
   add_column(Outcome=rep(paste0('MACE n=',sum(comp_long1$data$TEU_MACE_status)),5),.before = 1)
 
 MI=printMIresults(df=comp_long1$data,varlist = "TEU_SBP_PRS_quintiles",
-                  modeloutput = summary(pool(cox_mi$rmodel_b)),
+                  modeloutput = summary(pool(cox_mi$rmodel_b)), expon=TRUE,
                   pretty_names = pretty_names,onecol = FALSE,IDcol = FALSE,forplot=TRUE)%>%
   add_column(Outcome=rep(paste0('MI n=',sum(comp_long1$data$TEU_MACE_MI)),5),.before = 1)
 
 Stroke=printMIresults(df=comp_long1$data,varlist = "TEU_SBP_PRS_quintiles",
-                      modeloutput = summary(pool(cox_stroke$rmodel_b)),
+                      modeloutput = summary(pool(cox_stroke$rmodel_b)), expon=TRUE,
                       pretty_names = pretty_names,onecol = FALSE,IDcol = FALSE,forplot=TRUE)%>%
   add_column(Outcome=rep(paste0('Stroke n=',sum(comp_long1$data$TEU_MACE_Stroke)),5),.before = 1)
 
@@ -628,7 +628,7 @@ formula <- paste0("TEU_uncontrolledHTN  ~ ", paste(varlist, collapse="+"))
 rmodel <- with(comp_long1, glm(as.formula(formula), family="binomial"))
 
 routput <- printMIresults(df=comp_long1$data, varlist=varlist, modeloutput=summary(pool(rmodel)),
-                            pretty_names=pretty_names, onecol=TRUE, IDcol=FALSE)
+                            expon=TRUE, pretty_names=pretty_names, onecol=TRUE, IDcol=FALSE)
 
 rownames(routput) <- NULL
 

@@ -196,7 +196,7 @@ descriptivetable <- function(df, varlist, contavg='mean', assocvar=NULL, singlec
   return(outdf)
 }
 
-printMIresults <- function(df, varlist, modeloutput, pretty_names=list(), onecol=FALSE, IDcol=FALSE, forplot=FALSE){
+printMIresults <- function(df, varlist, modeloutput, expon=FALSE, pretty_names=list(), onecol=FALSE, IDcol=FALSE, forplot=FALSE){
   require(dplyr)
   
   coefflist <- list()
@@ -206,15 +206,20 @@ printMIresults <- function(df, varlist, modeloutput, pretty_names=list(), onecol
   }
   coeffnames <- do.call(rbind, coefflist)
   
+  modeloutput <- modeloutput %>% 
+    mutate(
+      LCI = estimate - 1.96*std.error,
+      UCI = estimate + 1.96*std.error
+    ) %>% 
+    mutate(., across(.cols=c(estimate, LCI, UCI), .fns=if(expon) exp else NULL))
+  
   regression <- data.frame(
     IDcol=modeloutput$term,
-    HR=pretty_dp(exp(modeloutput$estimate),dp=2),
-    HR_num=exp(modeloutput$estimate),
-    CI=pretty_confint(exp(modeloutput$estimate-1.96*modeloutput$std.error),
-                            exp(modeloutput$estimate+1.96*modeloutput$std.error),
-                            dp=2),
-    L_CI=exp(modeloutput$estimate-1.96*modeloutput$std.error),
-    U_CI=exp(modeloutput$estimate+1.96*modeloutput$std.error),
+    HR=pretty_dp(modeloutput$estimate,dp=2),
+    HR_num=modeloutput$estimate,
+    CI=pretty_confint(modeloutput$LCI, modeloutput$UCI, dp=2),
+    L_CI=modeloutput$LCI,
+    U_CI=modeloutput$UCI,
     p=pretty_pval(modeloutput$p.value),
     stringsAsFactors=FALSE
   )
