@@ -81,6 +81,14 @@ FN_toNumeric <- function(x) {
   as.numeric(x)
 }
 
+# Make certain values (e.g. -1,-3) as NA 
+FN_toNA <- function(values=c(-1,-3)){
+  function(x){
+    x[x%in%values]=NA
+    x
+  }
+}
+
 FN_toDate <- function(x){
   as.Date(x, origin=as.Date("1970-01-01"))
 }
