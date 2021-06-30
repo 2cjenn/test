@@ -1301,11 +1301,11 @@ HMH_DiabetesAge <- function() {
 
 HMH_HTNAge <- function() {
   list(
-    name = "HTN_HTNAge", 
+    name = "HMH_HTNAge", 
     source = c("HMH_HBPAge.0.0"), 
-    mapper = FN_id,
+    mapper = FN_toNA(values = c(-1,-3)),
     post_exclusion = FALSE,
-    display_name = "Age HTN diagnosed",
+    display_name = "Age HTN diagnosed (TQ)",
     description = "Participant self-reported age of hypertension diagnosis on the touchscreen questionnaire"
   )
 }
@@ -1476,6 +1476,38 @@ GeP_Kinship <- function() {
   )
 }
 
+TEU_VeI_HCL_prevalent <- function(dx_codes = c(1473)) {
+  list(
+    list(
+      name = "TEU_VeI_HCL",
+      source = c("ID", "Rec_DateAssess",
+                 paste0("VeI_NonCancerCode.0.", seq(0, 33, by=1)),
+                 paste0("VeI_NonCancerYear.0.", seq(0, 33, by=1))),
+      mapper = FN_VI_filtercodes(dx_codes = dx_codes,
+                                 colname = "VeI_NonCancer",
+                                 instance = 0,
+                                 return_label = "dx",
+                                 mapper = file.path(config$cleaning$coding,"coding6_flat_NonCancerIllness.csv")),
+      post_exclusion = FALSE,
+      display_name = "Self-reported HCL (VI)",
+      description = "Whether high cholesterol was reported in verbal interview at baseline"
+    ),
+    list(
+      name = "TEU_VeI_HCL_dur",
+      source = c("ID", "Rec_DateAssess",
+                 paste0("VeI_NonCancerCode.0.", seq(0, 33, by=1)),
+                 paste0("VeI_NonCancerYear.0.", seq(0, 33, by=1))),
+      mapper = FN_VI_filtercodes(dx_codes = dx_codes,
+                                 colname = "VeI_NonCancer",
+                                 instance = 0, 
+                                 return_label = "duration",
+                                 mapper = file.path(config$cleaning$coding,"coding6_flat_NonCancerIllness.csv")),
+      post_exclusion = FALSE,
+      display_name = "Self-reported duration of HCL (VI)",
+      description = "Duration of high cholesterol reported in verbal interview at baseline (in years)"
+    )
+  )
+}
 
 TEU_VeI_HTN_prevalent <- function(dx_codes = c(1065, 1072)) {
   list(
@@ -1490,7 +1522,7 @@ TEU_VeI_HTN_prevalent <- function(dx_codes = c(1065, 1072)) {
                                  return_label = "dx",
                                  mapper = file.path(config$cleaning$coding,"coding6_flat_NonCancerIllness.csv")),
       post_exclusion = FALSE,
-      display_name = "Self-reported HTN, verbal interview",
+      display_name = "Self-reported HTN, (VI)",
       description = "Whether hypertension was reported in verbal interview at baseline"
     ),
     list(
@@ -1504,9 +1536,34 @@ TEU_VeI_HTN_prevalent <- function(dx_codes = c(1065, 1072)) {
                                  return_label = "duration",
                                  mapper = file.path(config$cleaning$coding,"coding6_flat_NonCancerIllness.csv")),
       post_exclusion = FALSE,
-      display_name = "Self-reported duration of hypertension, verbal interview",
-      description = "Duration of hypertension reported in verbal interview at baseline"
+      display_name = "Self-reported duration of hypertension, (VI)",
+      description = "Duration of hypertension reported in verbal interview at baseline (in years)"
     )
+  )
+}
+
+TEU_HTN_dur<-function(){
+  list(
+    name = "TEU_HTN_dur",
+    source = c("TEU_BaC_AgeAtRec","HMH_HTNAge","TEU_VeI_HTN_dur"),
+    mapper = function(data){
+      data=data%>%
+        mutate(
+          # Duration from TQ
+          TEU_TQ_HTN_dur=TEU_BaC_AgeAtRec-HMH_HTNAge,
+          # Combine duration from TQ & VI
+          # Only take values from TQ when VI is not available, otherwise always take values from VI
+          dur=ifelse(!is.na(TEU_TQ_HTN_dur) & is.na(TEU_VeI_HTN_dur),TEU_TQ_HTN_dur,TEU_VeI_HTN_dur)
+          )
+      # Should set duration<0 to be NA
+      y<-data[['dur']];y[y<0]=NA
+      
+      return(y)
+    },
+    post_exclusion = FALSE,
+    display_name = "Self-reported duration of HTN",
+    description = "Duration of hypertension, combined from both touchscreen and verbal interview at baseline (in years).
+    (Note: We only take TQ values when VI is not available)"
   )
 }
 

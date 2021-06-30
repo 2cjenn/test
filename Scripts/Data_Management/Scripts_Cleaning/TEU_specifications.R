@@ -164,6 +164,7 @@ specs <- function() {
     TEUvars_BP,
     TEU_VeI_HTN_prevalent(),
     list(
+      TEU_HTN_dur,
       TEU_selfrepHTN_dx,
       TEU_VeI_HTNmeds_rubric,
       TEU_selfrepHTN_meds,
