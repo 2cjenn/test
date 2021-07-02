@@ -25,7 +25,7 @@ pretty_confint <- function(lci, uci, dp, pct=FALSE){
   paste0("(", pretty_dp(x=lci, dp=dp, pct=pct), ", ", pretty_dp(x=uci, dp=dp, pct=pct), ")")
 }
 
-pretty_pval <- function(p, cutoff=0.001, string="<0.001", dp=3){
+pretty_pval <- function(p, cutoff=0.01, string="<0.01", dp=2){
   ifelse(p<cutoff, string, pretty_dp(p, dp))
 }
 
