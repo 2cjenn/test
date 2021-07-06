@@ -469,7 +469,20 @@ kable(routput, caption=paste0("Multivariable model included ", paste(pretty_name
 
 ```
 
+```{r}
 
+# p-value of including PRS in model
+
+anova <- with(comp_long1, glm(as.formula(paste0("TEU_uncontrolledHTN ~ ",
+                             paste(varlist[-which(varlist=="TEU_SBP_PRS_quintiles")], collapse="+"))), family="binomial"))
+
+LRT <- anova(rmodel, anova, method = 'D2',use = 'likelihood')
+
+SBP_p <- LRT$out$`1 ~~ 2`$result[4]
+
+```
+
+Overall p value: Based on likelihood ratio test, inclusion of SBP PRS `r if(SBP_p < 0.05){"**does**"}else{"does **not**"}` provide significant improvement in model fit (p = `r pretty_pval(SBP_p)`).
 
 ## Table `r table`: Multivariable Cox regression of time until MACE/MI/Stroke event (N=`r nrow(data)`)
 `r table <- table + 1`
@@ -606,6 +619,30 @@ ggplot(tot,aes(x=Levels,y=HR_num,group=Outcome))+
   geom_line(aes(color=Outcome),size=0.8) + geom_point(aes(color=Outcome))+ theme_classic()+
   labs(x="SBP PRS Quintiles", y="Hazard Ratio (95% CI)")+theme(legend.position = "top",legend.title = element_blank())
 
+
+```
+
+
+## LRT for inclusion of SPB PRS quintiles
+
+```{r}
+
+mace <- cox_a_b(varlist_a, varlist_b, status="TEU_MACE_status", displaycols=varlist_b)
+mace_p <- pval_check(varlist_a, varlist_b, status="TEU_MACE_status", mace$rmodel_a, mace$rmodel_b)
+
+mi <- cox_a_b(varlist_a, varlist_b, status="TEU_MACE_MI", displaycols=varlist_b)
+mi_p <- pval_check(varlist_a, varlist_b, status="TEU_MACE_MI", mi$rmodel_a, mi$rmodel_b)
+
+stroke <- cox_a_b(varlist_a, varlist_b, status="TEU_MACE_Stroke", displaycols=varlist_b)
+stroke_p <- pval_check(varlist_a, varlist_b, status="TEU_MACE_Stroke", stroke$rmodel_a, stroke$rmodel_b)
+
+out <- data.frame(
+  outcome=c("Outcome", "MACE", "MI", "Stroke"),
+  modelA=c("Model A", pretty_pval(mace_p$a), pretty_pval(mi_p$a), pretty_pval(stroke_p$a)),
+  modelB=c("Model B", pretty_pval(mace_p$b), pretty_pval(mi_p$b), pretty_pval(stroke_p$b))
+)
+
+kable(out)
 
 ```
 
