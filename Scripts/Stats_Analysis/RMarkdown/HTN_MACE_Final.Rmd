@@ -71,20 +71,25 @@ exclusions <- function(data){
   
   excl$initial <<- nrow(data)
     
-  # Exclude those outside the 40-70 age range
-  data <- data[data$TEU_BaC_AgeAtRec >= 40 & data$TEU_BaC_AgeAtRec < 70,]
-  
-  excl$agerange <<- nrow(data)
-  
   # Only keep those with genetic data
   data <- data[!is.na(data$GeP_Array),]
   
   excl$genetic <<- nrow(data)
   
+  # Only keep those who met genetic QC and were included in PRS
+  data <- data[!is.na(data$TEU_SBP_PRS),]
+  
+  excl$PRSmiss <<- nrow(data)
+  
   # Restrict to genetically white British
   data <- data[!is.na(data$GeP_ethnic),]
   
   excl$whiteBrit <<- nrow(data)
+  
+  # Exclude those outside the 40-70 age range
+  data <- data[data$TEU_BaC_AgeAtRec >= 40 & data$TEU_BaC_AgeAtRec < 70,]
+  
+  excl$agerange <<- nrow(data)
 
   # Exclude individuals with missing BP data
   data <- data[!is.na(data$TEU_BlP_SBP.avg),]
@@ -104,11 +109,6 @@ exclusions <- function(data){
   data <- data[data$TEU_BlP_DBP.avg >= 50 & data$TEU_BlP_DBP.avg <= 150,]
   
   excl$BPimp <<- nrow(data)
-  
-  # Only keep those who met genetic QC and were included in PRS
-  data <- data[!is.na(data$TEU_SBP_PRS),]
-  
-  excl$PRSmiss <<- nrow(data)
 
   # Exclude pregnant women ("Yes" or "Unsure")
   data <- data[is.na(data$VeI_PregnantNow) | data$VeI_PregnantNow == "No",]
@@ -166,15 +166,15 @@ pretty_names <- pretty_switch(field_definitions=TEU_SPECS$HTN_control_MACE, retu
 
 ```{r}
 label1 <- paste0('UKB participants\\nn = ', excl$initial)
-label2 <- paste0('Genetically White British participants\\nwith genotyping data, aged between 40 and 70\\nn = ', excl$whiteBrit)
-label3 <- paste0('Complete information on core variables\\nn = ', excl$PRSmiss)
+label2 <- paste0('Unrelated White British participants with\\ngood quality genotyping data, aged between 40 and 70\\nn = ', excl$agerange)
+label3 <- paste0('Complete information on core variables\\nn = ', excl$BPimp)
 label4 <- paste0('Without serious comorbidities\\nn = ', excl$seriouscomorb)
 label5 <- paste0('No prior MACE events at baseline\\nn = ', excl$MACE)
 label6 <- paste0('Study population: antihypertensive\nmedication users at baseline\\nn = ', excl$treated)
 
-label7 <- paste0(excl$initial-excl$agerange,' outside the age range of [40,70) years\\l ', excl$agerange-excl$genetic, ' missing genotyping data\\l', excl$genetic-excl$whiteBrit, ' not of genetically White British ancestry\\l')
-label8 <- paste0(excl$whiteBrit-excl$BPmiss,' missing BP data from baseline assessment\\l', excl$BPmiss-excl$BPimp, ' implausible BP data from baseline assessment\\l', excl$BPimp-excl$PRSmiss, ' excluded in genetic quality control\\l')
-label9 <- paste0(excl$PRSmiss-excl$pregnant, ' possibly pregnant at baseline\\l', excl$pregnant-excl$seriouscomorb,' serious comorbidities, including cancer\\l(except skin cancer)\\l')
+label7 <- paste0(excl$initial-excl$genetic, ' missing genotyping data\\l', excl$genetic-excl$PRSmiss, ' excluded in genetic quality control\\l', excl$PRSmiss-excl$whiteBrit, ' not of genetically White British ancestry\\l', excl$whiteBrit-excl$agerange,' outside the age range of [40,70) years\\l')
+label8 <- paste0(excl$agerange-excl$BPmiss,' missing BP data from baseline assessment\\l', excl$BPmiss-excl$BPimp, ' implausible BP data from baseline assessment\\l')
+label9 <- paste0(excl$BPimp-excl$pregnant, ' possibly pregnant at baseline\\l', excl$pregnant-excl$seriouscomorb,' serious comorbidities, including cancer\\l(except skin cancer)\\l')
 label10 <- paste0(excl$seriouscomorb-excl$MACE, ' prevalent MACE at baseline\\l')
 label11 <- paste0(excl$MACE-excl$evidenceHTN, ' no evidence of hypertension\\l', excl$evidenceHTN-excl$aware, ' unaware hypertensives\\l', excl$aware-excl$treated, ' untreated hypertensives\\l')
 
