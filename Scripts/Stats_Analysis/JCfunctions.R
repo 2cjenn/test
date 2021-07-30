@@ -26,7 +26,13 @@ pretty_confint <- function(lci, uci, dp, pct=FALSE){
 }
 
 pretty_pval <- function(p, cutoff=0.01, string="<0.01", dp=2){
-  ifelse(p<cutoff, string, pretty_dp(p, dp))
+  # ifelse(p<cutoff, string, pretty_dp(p, dp))
+  dplyr::case_when(
+    p >= 0.01 ~ pretty_dp(p, 2),
+    p >= 0.001 ~ pretty_dp(p,3),
+    p < 0.001 ~ "<0.001",
+    TRUE ~ "Something broke"
+  )
 }
 
 lower <- function(x){
