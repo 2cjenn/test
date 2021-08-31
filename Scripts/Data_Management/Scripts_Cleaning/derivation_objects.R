@@ -498,23 +498,23 @@ TEU_Edu_HighestQual <- function() {
                paste0("Edu_Qualif_p.0.", seq(0, 4, by=1))),
     mapper = function(data) {
       qual_list <- c(
-        "College or University degree",
-        "NVQ or HND or HNC or equivalent",
-        "Other professional qualifications eg: nursing, teaching",
-        "A levels/AS levels or equivalent",
-        "O levels/GCSEs or equivalent",
-        "CSEs or equivalent",
+        "Prefer not to answer",
         "None of the above",
-        "Unanswered"
+        "CSEs or equivalent",
+        "O levels/GCSEs or equivalent",
+        "A levels/AS levels or equivalent",
+        "Other professional qualifications eg: nursing, teaching",
+        "NVQ or HND or HNC or equivalent",
+        "College or University degree" 
       )
-      for(i in seq(length(qual_list), 1, by=-1)) {
+      for(i in seq(1, length(qual_list), by=1)) {
         data[data == qual_list[i]] <- as.character(i)
       }
       y <- do.call(pmax, c(data, list(na.rm=TRUE)))
       y[is.na(y)] <- 1
       y <- factor(y,
-                  levels = seq(1, length(qual_list), by=1),
-                  labels = qual_list
+                  levels = seq(length(qual_list), 1, by=-1),
+                  labels = qual_list[seq(length(qual_list), 1, by=-1)]
                   )
       return(y)
     },
@@ -971,7 +971,7 @@ TEU_Edu_ISCED <- function() {
         x == "CSEs or equivalent" ~ "2-3: Secondary",
         x == "None of the above" ~ "1: Primary",
         x == "Prefer not to answer" ~ "Unanswered",
-        is.na(x) ~ "Unanswered"
+        is.na(x) ~ NA_character_
       )
       y <- factor(
         y,

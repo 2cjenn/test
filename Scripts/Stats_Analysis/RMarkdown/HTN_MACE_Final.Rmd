@@ -149,13 +149,13 @@ exclusions <- function(data){
 excl <- list(initial=0)
 
 data <-
-  evalWithMemoization(
+  # evalWithMemoization(
     derive_variables(
       database = "K:/TEU/UKB33952_Data/Data_Downloads/V3_database_duckdb0.2.1/ukb_v3.db",
       field_definitions = TEU_SPECS$HTN_control_MACE,
       exclusions = exclusions
-    ),
-    key = c(TEU_SPECS$HTN_control_MACE, exclusions)
+    # ),
+    # key = c(TEU_SPECS$HTN_control_MACE, exclusions)
   )
 
 pretty_func <- pretty_switch(field_definitions=TEU_SPECS$HTN_control_MACE, return_type = "function")
@@ -278,14 +278,14 @@ if(live) {
   pred <- ini$predictorMatrix
   
   # Remove predictors: ID; TEU_MACE_MI; TEU_MACE_Stroke; TEU_Alc_WeeklyCat (want to use alc continuous variables instead)
-  pred[,c("ID","TEU_MACE_MI","TEU_MACE_Stroke")] <- 0
+  pred[,c("ID","TEU_MACE_MI","TEU_MACE_Stroke", "TEU_Alc_WeeklyCat")] <- 0
   
   
   imp1<-mice(MI_data,pred=pred, m = M, maxit = iter,seed = 100)
   
-  saveRDS(imp1,file=file.path(config$data$derived, paste0("imputation", format(Sys.time(), '%d%B%Y'), "_noCallRateHWE.rds")))
+  saveRDS(imp1,file=file.path(config$data$derived, paste0("imputation", format(Sys.time(), '%d%B%Y'), "_fixEduISCED.rds")))
 } else {
-  imp1 <- readRDS(file.path(config$data$derived, "imputation19July2021_noCallRateHWE.rds"))
+  imp1 <- readRDS(file.path(config$data$derived, "imputation31August2021_fixEduISCED.rds"))
 }
 ```
 
