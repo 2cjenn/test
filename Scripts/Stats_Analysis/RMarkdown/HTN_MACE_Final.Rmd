@@ -149,13 +149,10 @@ exclusions <- function(data){
 excl <- list(initial=0)
 
 data <-
-  # evalWithMemoization(
     derive_variables(
       database = "K:/TEU/UKB33952_Data/Data_Downloads/V3_database_duckdb0.2.1/ukb_v3.db",
       field_definitions = TEU_SPECS$HTN_control_MACE,
       exclusions = exclusions
-    # ),
-    # key = c(TEU_SPECS$HTN_control_MACE, exclusions)
   )
 
 pretty_func <- pretty_switch(field_definitions=TEU_SPECS$HTN_control_MACE, return_type = "function")
@@ -223,7 +220,7 @@ MI_data=data%>%
   droplevels()
             
 # Because PRS is scaled by number of non-missing SNPs it takes values between 0.09 and 0.1 - we're guessing that since this is on a much smaller scale to the other variables in the dataset, the MI treats it as a constant and removes it from the imputation.    
-# We therefore scale it up by the number of SNPs in the score x the ploidy = 870 * 2 = 1740
+# We therefore scale it up by the number of SNPs in the score x the ploidy
 # This is ok here because in all our analyses, we use quintiles of PRS, which don't change when the underlying values are scaled by a constant.
 
 

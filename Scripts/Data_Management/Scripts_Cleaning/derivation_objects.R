@@ -12,24 +12,9 @@ if (!exists("config")) {
 }
 
 # Source the function definitions
-# XL: Remove 'Reorganise' in the file path
 source(file.path(config$scripts$cleaning, "basic_functions.R"), local = TRUE)
 
-# makeEnum <- function(inputList) {
-#   # Borrowed from https://stackoverflow.com/a/41509345
-#   myEnum <- as.list(inputList)
-#   enumNames <- names(myEnum)
-#   if (is.null(enumNames)) {
-#     names(myEnum) <- myEnum
-#   } else if ("" %in% enumNames) {
-#     stop("The inputList has some but not all names assigned. They must be all assigned or none assigned")
-#   }
-#   return(myEnum)
-# }
-# visits <- makeEnum(list(baseline = c("0", "baseline assessment"), 
-#                     repeat_visit = c("1", "repeat visit"), 
-#                     imaging = c("2", "imaging visit"), 
-#                     repeat_imaging = c("3","repeat imaging visit")))
+
 
 # Formatting of existing UKB variables
 
