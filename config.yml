@@ -4,6 +4,7 @@ data:
   HES: "K:/TEU/UKB33952_Data/Data_Portal/HES_diagnoses/20210129"
   deaths: "K:/TEU/UKB33952_Data/Data_Portal/Death_Registry/20210129"
  derived: "Data/Derived"
+ dictionary: "Data/Data_Dictionary"
  prs: "Data/PRS"
 cleaning:
  withdrawals: "K:/TEU/UKB33952_Data/Data_Downloads/Withdrawals/w33952_20210201.csv"
