@@ -10,7 +10,7 @@ cleaning:
  withdrawals: "K:/TEU/UKB33952_Data/Data_Downloads/Withdrawals/w33952_20210201.csv"
  renaming: "K:/TEU/UKB33952_Data/Data_Dictionary/Renaming_List_UPDATE_Sep2020_TEU.csv"
  coding: "K:/TEU/UKB33952_Data/Data_Dictionary/Mappings/Encoding_files"
- mapping: "K:/TEU/UKB33952_Data/Data_Dictionary/Mappings/Analysis_codings_xlsx"
+ mapping: "Data/Mappings"
 outputs:
  figures: "Scripts/Stats_Analysis/RMarkdown/Figures"
  flowcharts: "Scripts/Stats_Analysis/Flowcharts"
