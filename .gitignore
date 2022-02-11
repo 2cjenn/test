@@ -18,6 +18,7 @@
 **.wal
 **duck.db.tmp/
 **.Rcache
+**.sscore
 
 # Note excel and csv could be important mapping tables, so worth tracking these! #
 # Except this one which is data#

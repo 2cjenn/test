@@ -4,8 +4,7 @@ data:
   HES: "K:/TEU/UKB33952_Data/Data_Portal/HES_diagnoses/20210129"
   deaths: "K:/TEU/UKB33952_Data/Data_Portal/Death_Registry/20210129"
  derived: "Data/Derived"
- analysed: "Data/Analysed"
- prs: "K:/TEU/UKB_Genetic_Data/PRS_Pipeline/prs/projects/htn-evangelou2018/outputs"
+ prs: "Data/PRS"
 cleaning:
  withdrawals: "K:/TEU/UKB33952_Data/Data_Downloads/Withdrawals/w33952_20210201.csv"
  renaming: "K:/TEU/UKB33952_Data/Data_Dictionary/Renaming_List_UPDATE_Sep2020_TEU.csv"
