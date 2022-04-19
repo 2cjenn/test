@@ -95,10 +95,6 @@ exclusions <- function(data){
   data <- data[!is.na(data$TEU_BlP_SBP.avg),]
   data <- data[!is.na(data$TEU_BlP_DBP.avg),]
   
-  # or missing answers to BP questions on touchscreen questionnaire
-  # data <- data[data$TEU_HMH_prevHTN != "Unanswered",]
-  # data <- data[data$TEU_HMH_Meds_BP != "Unanswered",]
-  
   # Exclude participants who only had BP measured once
   data <- data[data$TEU_BlP_nSBP == 2 & data$TEU_BlP_nDBP == 2,]
   
