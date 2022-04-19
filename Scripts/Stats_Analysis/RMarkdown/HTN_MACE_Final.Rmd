@@ -542,7 +542,7 @@ cox_a_b <- function(varlist_a, varlist_b, status, label,
   tab <- rbind(c("Variable", "HR", "95% CI", "p", "HR", "95% CI", "p"),
                 as.matrix(tab))
   
-  outputs <- list(rmodel_a=rmodel_a, rmodel_b=rmodel_b, tab=tab)
+  outputs <- list(rmodel_a=rmodel_a, rmodel_b=rmodel_b, formula_a=formula_a, formula_b=formula_b, tab=tab)
   return(outputs)
 }
 
@@ -750,11 +750,11 @@ vifs<-list() #save multicollinearity results
 
 for (i in 1:comp_long1$m) {
   ## 1. PHA
-  pha_plots[[i]]<-ggcoxzph(cox.zph(rmodel_a$analyses[[i]]))
+  pha_plots[[i]]<-ggcoxzph(cox.zph(mace$rmodel_a$analyses[[i]]))
   
   ## 2. Multicollinearity
   
-  vifs[[i]]<-rms::vif(cph(as.formula(formula_a),data=complete(comp_long1,i)))
+  vifs[[i]]<-rms::vif(cph(as.formula(mace$formula_a),data=complete(comp_long1,i)))
   cat("Imputation",i,", Any VIF above>10:",any(vifs[[i]]>10),'\n')
   
 }
@@ -789,11 +789,11 @@ vifs2<-list() #save multicollinearity results
 
 for (i in 1:comp_long1$m) {
   ## 1. PHA
-  pha_plots2[[i]]<-ggcoxzph(cox.zph(rmodel_b$analyses[[i]]))
+  pha_plots2[[i]]<-ggcoxzph(cox.zph(mace$rmodel_b$analyses[[i]]))
   
   ## 2. Multicollinearity
   
-  vifs2[[i]]<-rms::vif(cph(as.formula(formula_b),data=complete(comp_long1,i)))
+  vifs2[[i]]<-rms::vif(cph(as.formula(mace$formula_b),data=complete(comp_long1,i)))
   cat("Imputation",i,", Any VIF above>10:",any(vifs2[[i]]>10),'\n')
   
 }
