@@ -161,9 +161,12 @@ DBfunc$make_dict <- function(data, objects, na.rm=TRUE) {
     vartype <- class(data[[i]])
     
     if(vartype %in% c("factor", "logical", "character")) {
-      tab <- data.frame(table(data[i], useNA = ifelse(na.rm==TRUE, "no", "ifany")))
+      if(vartype=="factor"){
+        data[[i]] <- droplevels(data[[i]])
+      }
+      tab <- data.frame(table(data[i], useNA = "ifany"))
       var_opt <- c("", as.character(tab[,1]))
-      n <- c(length(data[i][!is.na(data[i])]), tab[,2])
+      n <- c(length(data[[i]]), tab[,2])
     } else if (vartype %in% c("integer", "numeric")) {
       var_opt <- paste(range(data[i], na.rm = na.rm), sep = "", collapse = " to ")
       n <- length(data[i][!is.na(data[i])])

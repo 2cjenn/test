@@ -152,9 +152,9 @@ data <-
     derive_variables(
       database = "K:/TEU/UKB33952_Data/Data_Downloads/V3_database_duckdb0.2.1/ukb_v3.db",
       field_definitions = TEU_SPECS$HTN_control_MACE,
-      exclusions = exclusions
-  )
-
+        exclusions = exclusions,
+        dictionary = file.path(config$data$dictionary, paste0("Data_", format(Sys.time(), '%d%B%Y'), ".html"))
+    )
 pretty_func <- pretty_switch(field_definitions=TEU_SPECS$HTN_control_MACE, return_type = "function")
 pretty_names <- pretty_switch(field_definitions=TEU_SPECS$HTN_control_MACE, return_type = "list")
 
