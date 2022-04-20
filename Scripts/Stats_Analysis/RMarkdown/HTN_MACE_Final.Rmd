@@ -151,7 +151,8 @@ if(live){
         database = "K:/TEU/UKB33952_Data/Data_Downloads/V3_database_duckdb0.2.1/ukb_v3.db",
         field_definitions = TEU_SPECS$HTN_control_MACE,
         exclusions = exclusions,
-        dictionary = file.path(config$data$dictionary, paste0("Data_", format(Sys.time(), '%d%B%Y'), ".html"))
+        dictionary = file.path(config$data$dictionary, paste0("Data_", format(Sys.time(), '%d%B%Y'), ".html")),
+        print_derivation = TRUE
     )
   
   saveRDS(data, file=file.path(config$data$derived, paste0("Data_", format(Sys.time(), '%d%B%Y'), ".rds")))

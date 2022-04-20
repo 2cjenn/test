@@ -26,10 +26,27 @@ source(file.path(config$scripts$cleaning, "DuckDB.R"), local=DBfunc)
 # This means stuff in the modules *can't* see and interact with stuff in global env
 # Better practice
 
+write_fn <- function(file, fn, name) {
+  fn.text <- c(capture.output(print(fn)), "\n")
+  fn.text[1] <- glue("{name} <- {fn.text[1]}")
+  fn.text <- Filter(function(x) !any(grepl("<bytecode: |<environment: ", x)), fn.text)
+  writeLines(fn.text, con=file)
+}
 
-derive_variables <- function(database, field_definitions, exclusions=function(x){x}, dictionary=NULL,
+write_fns <- function(file, objects)
+
+
+derive_variables <- function(database, field_definitions, exclusions=function(x){x}, 
+                             dictionary = file.path(config$data$dictionary, paste0("Data_", format(Sys.time(), '%d%B%Y'), ".html")),
                              name_map = config$cleaning$renaming,
-                             withdrawals = config$cleaning$withdrawals){
+                             withdrawals = config$cleaning$withdrawals,
+                             print_derivation = FALSE){
+  
+  con <- NULL
+  if(print_derivation){
+    con <- file(file=file.path(config$data$dictionary, paste0("DataDerivation_", format(Sys.time(), '%d%B%Y'), ".R")), "w")
+    on.exit(close(con))
+  }
   
   # Extract the lists from the list of functions
   objects <- Map(function(p) {if(is.function(p)) {p()} else {p}}, field_definitions)
@@ -51,7 +68,7 @@ derive_variables <- function(database, field_definitions, exclusions=function(x)
   before <- objects[sapply(objects, function(x) x$post_exclusion==FALSE)]
   after <- objects[sapply(objects, function(x) x$post_exclusion==TRUE)]
   
-  data <- DBfunc$source_rotation(data, field_definitions = before)
+  data <- DBfunc$source_rotation(data, field_definitions = before, derivation_file=con)
   
   data <- exclusions(data)
   # Note - future update
@@ -59,7 +76,7 @@ derive_variables <- function(database, field_definitions, exclusions=function(x)
   # Then the derive_variables() function can handle the row counts
   # And can write individual documentation for each exclusion criterion to be output nicely
   
-  data <- DBfunc$source_rotation(data, field_definitions = after)
+  data <- DBfunc$source_rotation(data, field_definitions = after, derivation_file=con)
   
   # Return only requested columns
   data <- data[,outcols[outcols %in% colnames(data)]]
@@ -84,7 +101,7 @@ derive_variables <- function(database, field_definitions, exclusions=function(x)
 
 
 # Derive variables whose sources are available in the data first
-DBfunc$source_rotation <- function(data, field_definitions) {
+DBfunc$source_rotation <- function(data, field_definitions, derivation_file=NULL) {
   
   data_cols <- colnames(data)
   
@@ -99,7 +116,12 @@ DBfunc$source_rotation <- function(data, field_definitions) {
         
         # If all required source columns are available, derive them
         tryCatch(
-          data <- DBfunc$derive_fn(data, field_definition = defn),
+          {
+            data <- DBfunc$derive_fn(data, field_definition = defn)
+            if(!is.null(derivation_file)){
+              write_fn(file=derivation_file, fn=defn$mapper, name=defn$name)
+            }
+          },
           error=function(cond) {
             message(paste(defn$name, "threw the following error: "))
             message(cond)
