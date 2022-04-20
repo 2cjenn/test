@@ -33,9 +33,6 @@ write_fn <- function(file, fn, name) {
   writeLines(fn.text, con=file)
 }
 
-write_fns <- function(file, objects)
-
-
 derive_variables <- function(database, field_definitions, exclusions=function(x){x}, 
                              dictionary = file.path(config$data$dictionary, paste0("Data_", format(Sys.time(), '%d%B%Y'), ".html")),
                              name_map = config$cleaning$renaming,
@@ -44,7 +41,12 @@ derive_variables <- function(database, field_definitions, exclusions=function(x)
   
   con <- NULL
   if(print_derivation){
-    con <- file(file=file.path(config$data$dictionary, paste0("DataDerivation_", format(Sys.time(), '%d%B%Y'), ".R")), "w")
+    con <- file(file.path(config$data$dictionary, paste0("DataDerivation_", format(Sys.time(), '%d%B%Y'), ".R")), "w")
+    header.txt <- c("# This file has been automatically generated during the data derivation process.", 
+                    "# It contains the functions used to derive each data field, and should be viewed in conjunction with the data dictionary html.",
+                    "# It will not run on its own.",
+                    "\n")
+    writeLines(header.txt, con=con)
     on.exit(close(con))
   }
   
