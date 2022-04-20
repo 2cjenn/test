@@ -37,7 +37,8 @@ derive_variables <- function(database, field_definitions, exclusions=function(x)
                              dictionary = file.path(config$data$dictionary, paste0("Data_", format(Sys.time(), '%d%B%Y'), ".html")),
                              name_map = config$cleaning$renaming,
                              withdrawals = config$cleaning$withdrawals,
-                             print_derivation = FALSE){
+                             print_derivation = FALSE,
+                             hide_n = FALSE){
   
   con <- NULL
   if(print_derivation){
@@ -84,12 +85,18 @@ derive_variables <- function(database, field_definitions, exclusions=function(x)
   data <- data[,outcols[outcols %in% colnames(data)]]
   
   if(!is.null(dictionary)) {
-    kable(DBfunc$make_dict(data, objects), "html", escape = FALSE) %>%
+    dict <- DBfunc$make_dict(data, objects)
+    if(hide_n) {
+      dict <- dict %>% select(-n)
+    }
+    kable(dict, "html", escape = FALSE) %>%
       kable_styling(bootstrap_options = c("hover", "condensed"), fixed_thead = T,
                     html_font = "arial", font_size = 12) %>%
       column_spec(3, width="20em") %>%
-      column_spec(5, width="50em") %>%
-      collapse_rows(columns = c(1, 2, 5, 6), target = 1, valign = "top") %>%
+      column_spec(if(hide_n){4} else{5}, 
+                  width="50em") %>%
+      collapse_rows(columns = if(hide_n){c(1, 2, 4, 5)} else{c(1, 2, 5, 6)},
+                    target = 1, valign = "top") %>%
       cat("<link rel=\"stylesheet\" href=\"https://cdn.jsdelivr.net/npm/bootstrap@4.5.3/dist/css/bootstrap.min.css\">", 
           paste0("<head><title>", str_remove(dictionary, ".html"), "</title></head>"),
           paste0("<h1>", str_remove(dictionary, ".html"), "</h1>"),

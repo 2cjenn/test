@@ -152,7 +152,8 @@ if(live){
         field_definitions = TEU_SPECS$HTN_control_MACE,
         exclusions = exclusions,
         dictionary = file.path(config$data$dictionary, paste0("Data_", format(Sys.time(), '%d%B%Y'), ".html")),
-        print_derivation = TRUE
+        print_derivation = TRUE,
+        hide_n = TRUE
     )
   
   saveRDS(data, file=file.path(config$data$derived, paste0("Data_", format(Sys.time(), '%d%B%Y'), ".rds")))
