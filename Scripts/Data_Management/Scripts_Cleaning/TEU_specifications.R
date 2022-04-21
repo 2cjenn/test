@@ -118,18 +118,26 @@ specs <- function() {
     TEUvars_BP,
     TEU_VeI_HTN_prevalent(),
     list(
+      # Outcome
       TEU_HTN_dur,
       TEU_selfrepHTN_dx,
       TEU_VeI_HTNmeds_rubric,
       TEU_selfrepHTN_meds,
-      VeI_PregnantNow,
-      TEU_BaC_AgeCat,
       TEU_BlP_measuredHTN,
       TEU_evidenceHTN,
       TEU_awareHTN,
       TEU_treatedHTN,
       TEU_controlledHTN,
       TEU_uncontrolledHTN,
+      TEU_HMH_Meds_BP,
+      TEU_SBP_PRS,
+      TEU_DBP_PRS,
+      TEU_BP_PRS,
+      TEU_BP_PRS_quintiles,
+      # Exclusions
+      VeI_PregnantNow,
+      # Covariates
+      TEU_BaC_AgeCat,
       TEU_HMH_BowelCancerScreen,
       TEU_Edu_HighestQual,
       TEU_Edu_ISCED,
@@ -144,7 +152,6 @@ specs <- function() {
       TownsendDepInd,
       TEU_TownsendDepInd_Quint,
       TEU_CountryIncome,
-      TEU_HMH_Meds_BP,
       TEU_Smo_Status,
       TEU_Alc_Status,
       TEU_Alc_WeeklyAlcUnits,
@@ -156,10 +163,7 @@ specs <- function() {
       BSM_BMI,
       TEU_BSM_BMIcat,
       TEU_BSM_WaistCircCat,
-      TEU_SBP_PRS,
-      TEU_DBP_PRS,
-      TEU_BP_PRS,
-      TEU_BP_PRS_quintiles,
+      # Comorbidities
       TEU_HMH_VascCond,
       TEU_HMH_prevHTN,
       TEU_HMH_prevstroke,
@@ -170,7 +174,7 @@ specs <- function() {
       TEU_BlP_HTNseverity,
       TEU_VeI_seriouscomb,
       TEU_VeI_cancer,
-      HTN_comorb_num,
+      # Medications
       TEU_VeI_numHTNmeds,
       TEU_VeI_numHTNmedscat
       
@@ -180,20 +184,22 @@ specs <- function() {
   HTN_control_MACE <- c(
     HTN_control,
     HTN_control_comorb,
-    Prosp_comorb_num,
-    Prosp_comorb_numcat,
     UKB_genetic,
     MACE_recordlevel,
-    BBC_LDL_Result,
-    TEU_LDL_Quintiles,
-    TEU_LDLctrl_v1,
-    TEU_Emp_JobCode_v2, # When using v3 data until we grab emp_jobcode.0.0
-    TEU_MACE_MI,
-    TEU_MACE_Stroke,
-    TEU_MACE_HaemStroke,
-    TEU_BlP_SBP_quintiles,
-    TEU_SBP_PRS_quintiles,
-    GeP_Array
+    list(
+      Prosp_comorb_num,
+      Prosp_comorb_numcat,
+      BBC_LDL_Result,
+      TEU_LDL_Quintiles,
+      TEU_LDLctrl_v1,
+      TEU_Emp_JobCode_v2, # When using v3 data until we grab emp_jobcode.0.0
+      TEU_MACE_MI,
+      TEU_MACE_Stroke,
+      TEU_MACE_HaemStroke,
+      TEU_BlP_SBP_quintiles,
+      TEU_SBP_PRS_quintiles,
+      GeP_Array
+    )
   )
   
   Cholstrl_control<-c(

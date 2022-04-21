@@ -429,55 +429,6 @@
    
   </tr>
   <tr>
-   <td style="text-align:left;vertical-align: top !important;" rowspan="3"> VeI_PregnantNow </td>
-   <td style="text-align:left;vertical-align: top !important;" rowspan="3"> character </td>
-   <td style="text-align:left;width: 20em; ">  </td>
-   <td style="text-align:left;width: 50em; vertical-align: top !important;" rowspan="3"> Was the participant pregnant at baseline </td>
-   <td style="text-align:left;vertical-align: top !important;" rowspan="3"> <a href="http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=3140" style="     ">f.3140.0.0</a> </td>
-  </tr>
-  <tr>
-   
-   
-   <td style="text-align:left;width: 20em; "> No </td>
-   
-   
-  </tr>
-  <tr>
-   
-   
-   <td style="text-align:left;width: 20em; ">  </td>
-   
-   
-  </tr>
-  <tr>
-   <td style="text-align:left;vertical-align: top !important;" rowspan="4"> TEU_BaC_AgeCat </td>
-   <td style="text-align:left;vertical-align: top !important;" rowspan="4"> factor </td>
-   <td style="text-align:left;width: 20em; ">  </td>
-   <td style="text-align:left;width: 50em; vertical-align: top !important;" rowspan="4"> Categorised age in years </td>
-   <td style="text-align:left;vertical-align: top !important;" rowspan="4"> TEU_BaC_AgeAtRec </td>
-  </tr>
-  <tr>
-   
-   
-   <td style="text-align:left;width: 20em; "> 40-49 </td>
-   
-   
-  </tr>
-  <tr>
-   
-   
-   <td style="text-align:left;width: 20em; "> 50-59 </td>
-   
-   
-  </tr>
-  <tr>
-   
-   
-   <td style="text-align:left;width: 20em; "> 60-69 </td>
-   
-   
-  </tr>
-  <tr>
    <td style="text-align:left;vertical-align: top !important;" rowspan="3"> TEU_BlP_measuredHTN </td>
    <td style="text-align:left;vertical-align: top !important;" rowspan="3"> logical </td>
    <td style="text-align:left;width: 20em; ">  </td>
@@ -579,6 +530,146 @@
    
    
    <td style="text-align:left;width: 20em; "> TRUE </td>
+   
+   
+  </tr>
+  <tr>
+   <td style="text-align:left;vertical-align: top !important;" rowspan="4"> TEU_HMH_Meds_BP </td>
+   <td style="text-align:left;vertical-align: top !important;" rowspan="4"> factor </td>
+   <td style="text-align:left;width: 20em; ">  </td>
+   <td style="text-align:left;width: 50em; vertical-align: top !important;" rowspan="4"> Participant self-reported taking BP medication in the touchscreen questionnaire </td>
+   <td style="text-align:left;vertical-align: top !important;" rowspan="4"> <a href="http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=6153" style="     ">f.6153.0.0</a>, <a href="http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=6153" style="     ">f.6153.0.1</a>, <a href="http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=6153" style="     ">f.6153.0.2</a>, <a href="http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=6153" style="     ">f.6153.0.3</a>, <a href="http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=6177" style="     ">f.6177.0.0</a>, <a href="http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=6177" style="     ">f.6177.0.1</a>, <a href="http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=6177" style="     ">f.6177.0.2</a> </td>
+  </tr>
+  <tr>
+   
+   
+   <td style="text-align:left;width: 20em; "> Self-reported BP meds </td>
+   
+   
+  </tr>
+  <tr>
+   
+   
+   <td style="text-align:left;width: 20em; "> Did not report BP meds </td>
+   
+   
+  </tr>
+  <tr>
+   
+   
+   <td style="text-align:left;width: 20em; "> Unanswered </td>
+   
+   
+  </tr>
+  <tr>
+   <td style="text-align:left;"> TEU_SBP_PRS </td>
+   <td style="text-align:left;"> numeric </td>
+   <td style="text-align:left;width: 20em; "> -0.00847239 to 0.00948062 </td>
+   <td style="text-align:left;width: 50em; "> SBP polygenic risk score from Evangelou 2018 paper </td>
+   <td style="text-align:left;"> <a href="http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=eid" style="     ">f.eid</a> </td>
+  </tr>
+  <tr>
+   <td style="text-align:left;"> TEU_DBP_PRS </td>
+   <td style="text-align:left;"> numeric </td>
+   <td style="text-align:left;width: 20em; "> -0.00722611 to 0.00401707 </td>
+   <td style="text-align:left;width: 50em; "> DBP polygenic risk score from Evangelou 2018 paper </td>
+   <td style="text-align:left;"> <a href="http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=eid" style="     ">f.eid</a> </td>
+  </tr>
+  <tr>
+   <td style="text-align:left;"> TEU_BP_PRS </td>
+   <td style="text-align:left;"> numeric </td>
+   <td style="text-align:left;width: 20em; "> -0.00749649 to 0.00593726 </td>
+   <td style="text-align:left;width: 50em; "> Average of SBP and DBP PRS scores </td>
+   <td style="text-align:left;"> TEU_DBP_PRS, TEU_SBP_PRS </td>
+  </tr>
+  <tr>
+   <td style="text-align:left;vertical-align: top !important;" rowspan="6"> TEU_BP_PRS_quintiles </td>
+   <td style="text-align:left;vertical-align: top !important;" rowspan="6"> factor </td>
+   <td style="text-align:left;width: 20em; ">  </td>
+   <td style="text-align:left;width: 50em; vertical-align: top !important;" rowspan="6"> Quintiles of the BP PRS score </td>
+   <td style="text-align:left;vertical-align: top !important;" rowspan="6"> TEU_BP_PRS </td>
+  </tr>
+  <tr>
+   
+   
+   <td style="text-align:left;width: 20em; "> Q1: Lowest score </td>
+   
+   
+  </tr>
+  <tr>
+   
+   
+   <td style="text-align:left;width: 20em; "> Q2 </td>
+   
+   
+  </tr>
+  <tr>
+   
+   
+   <td style="text-align:left;width: 20em; "> Q3 </td>
+   
+   
+  </tr>
+  <tr>
+   
+   
+   <td style="text-align:left;width: 20em; "> Q4 </td>
+   
+   
+  </tr>
+  <tr>
+   
+   
+   <td style="text-align:left;width: 20em; "> Q5: Highest score </td>
+   
+   
+  </tr>
+  <tr>
+   <td style="text-align:left;vertical-align: top !important;" rowspan="3"> VeI_PregnantNow </td>
+   <td style="text-align:left;vertical-align: top !important;" rowspan="3"> character </td>
+   <td style="text-align:left;width: 20em; ">  </td>
+   <td style="text-align:left;width: 50em; vertical-align: top !important;" rowspan="3"> Was the participant pregnant at baseline </td>
+   <td style="text-align:left;vertical-align: top !important;" rowspan="3"> <a href="http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=3140" style="     ">f.3140.0.0</a> </td>
+  </tr>
+  <tr>
+   
+   
+   <td style="text-align:left;width: 20em; "> No </td>
+   
+   
+  </tr>
+  <tr>
+   
+   
+   <td style="text-align:left;width: 20em; ">  </td>
+   
+   
+  </tr>
+  <tr>
+   <td style="text-align:left;vertical-align: top !important;" rowspan="4"> TEU_BaC_AgeCat </td>
+   <td style="text-align:left;vertical-align: top !important;" rowspan="4"> factor </td>
+   <td style="text-align:left;width: 20em; ">  </td>
+   <td style="text-align:left;width: 50em; vertical-align: top !important;" rowspan="4"> Categorised age in years </td>
+   <td style="text-align:left;vertical-align: top !important;" rowspan="4"> TEU_BaC_AgeAtRec </td>
+  </tr>
+  <tr>
+   
+   
+   <td style="text-align:left;width: 20em; "> 40-49 </td>
+   
+   
+  </tr>
+  <tr>
+   
+   
+   <td style="text-align:left;width: 20em; "> 50-59 </td>
+   
+   
+  </tr>
+  <tr>
+   
+   
+   <td style="text-align:left;width: 20em; "> 60-69 </td>
    
    
   </tr>
@@ -1073,34 +1164,6 @@
    
   </tr>
   <tr>
-   <td style="text-align:left;vertical-align: top !important;" rowspan="4"> TEU_HMH_Meds_BP </td>
-   <td style="text-align:left;vertical-align: top !important;" rowspan="4"> factor </td>
-   <td style="text-align:left;width: 20em; ">  </td>
-   <td style="text-align:left;width: 50em; vertical-align: top !important;" rowspan="4"> Participant self-reported taking BP medication in the touchscreen questionnaire </td>
-   <td style="text-align:left;vertical-align: top !important;" rowspan="4"> <a href="http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=6153" style="     ">f.6153.0.0</a>, <a href="http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=6153" style="     ">f.6153.0.1</a>, <a href="http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=6153" style="     ">f.6153.0.2</a>, <a href="http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=6153" style="     ">f.6153.0.3</a>, <a href="http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=6177" style="     ">f.6177.0.0</a>, <a href="http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=6177" style="     ">f.6177.0.1</a>, <a href="http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=6177" style="     ">f.6177.0.2</a> </td>
-  </tr>
-  <tr>
-   
-   
-   <td style="text-align:left;width: 20em; "> Self-reported BP meds </td>
-   
-   
-  </tr>
-  <tr>
-   
-   
-   <td style="text-align:left;width: 20em; "> Did not report BP meds </td>
-   
-   
-  </tr>
-  <tr>
-   
-   
-   <td style="text-align:left;width: 20em; "> Unanswered </td>
-   
-   
-  </tr>
-  <tr>
    <td style="text-align:left;vertical-align: top !important;" rowspan="5"> TEU_Smo_Status </td>
    <td style="text-align:left;vertical-align: top !important;" rowspan="5"> factor </td>
    <td style="text-align:left;width: 20em; ">  </td>
@@ -1390,69 +1453,6 @@ Males with a waist circumference between 94 and 102cm were considered overweight
    
   </tr>
   <tr>
-   <td style="text-align:left;"> TEU_SBP_PRS </td>
-   <td style="text-align:left;"> numeric </td>
-   <td style="text-align:left;width: 20em; "> -0.00847239 to 0.00948062 </td>
-   <td style="text-align:left;width: 50em; "> SBP polygenic risk score from Evangelou 2018 paper </td>
-   <td style="text-align:left;"> <a href="http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=eid" style="     ">f.eid</a> </td>
-  </tr>
-  <tr>
-   <td style="text-align:left;"> TEU_DBP_PRS </td>
-   <td style="text-align:left;"> numeric </td>
-   <td style="text-align:left;width: 20em; "> -0.00722611 to 0.00401707 </td>
-   <td style="text-align:left;width: 50em; "> DBP polygenic risk score from Evangelou 2018 paper </td>
-   <td style="text-align:left;"> <a href="http://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=eid" style="     ">f.eid</a> </td>
-  </tr>
-  <tr>
-   <td style="text-align:left;"> TEU_BP_PRS </td>
-   <td style="text-align:left;"> numeric </td>
-   <td style="text-align:left;width: 20em; "> -0.00749649 to 0.00593726 </td>
-   <td style="text-align:left;width: 50em; "> Average of SBP and DBP PRS scores </td>
-   <td style="text-align:left;"> TEU_DBP_PRS, TEU_SBP_PRS </td>
-  </tr>
-  <tr>
-   <td style="text-align:left;vertical-align: top !important;" rowspan="6"> TEU_BP_PRS_quintiles </td>
-   <td style="text-align:left;vertical-align: top !important;" rowspan="6"> factor </td>
-   <td style="text-align:left;width: 20em; ">  </td>
-   <td style="text-align:left;width: 50em; vertical-align: top !important;" rowspan="6"> Quintiles of the BP PRS score </td>
-   <td style="text-align:left;vertical-align: top !important;" rowspan="6"> TEU_BP_PRS </td>
-  </tr>
-  <tr>
-   
-   
-   <td style="text-align:left;width: 20em; "> Q1: Lowest score </td>
-   
-   
-  </tr>
-  <tr>
-   
-   
-   <td style="text-align:left;width: 20em; "> Q2 </td>
-   
-   
-  </tr>
-  <tr>
-   
-   
-   <td style="text-align:left;width: 20em; "> Q3 </td>
-   
-   
-  </tr>
-  <tr>
-   
-   
-   <td style="text-align:left;width: 20em; "> Q4 </td>
-   
-   
-  </tr>
-  <tr>
-   
-   
-   <td style="text-align:left;width: 20em; "> Q5: Highest score </td>
-   
-   
-  </tr>
-  <tr>
    <td style="text-align:left;vertical-align: top !important;" rowspan="4"> TEU_HMH_VascCond </td>
    <td style="text-align:left;vertical-align: top !important;" rowspan="4"> factor </td>
    <td style="text-align:left;width: 20em; ">  </td>
@@ -1696,13 +1696,6 @@ Males with a waist circumference between 94 and 102cm were considered overweight
    <td style="text-align:left;width: 20em; ">  </td>
    
    
-  </tr>
-  <tr>
-   <td style="text-align:left;"> HTN_comorb_num </td>
-   <td style="text-align:left;"> numeric </td>
-   <td style="text-align:left;width: 20em; "> 0 to 6 </td>
-   <td style="text-align:left;width: 50em; "> Number of comorbidities self-reported at baseline </td>
-   <td style="text-align:left;"> TEU_VeI_CVD, TEU_VeI_diab, TEU_VeI_arrhy, TEU_VeI_asthCOPD, TEU_VeI_mig, TEU_VeI_epil, TEU_VeI_anx, TEU_VeI_dep, TEU_VeI_osteo, TEU_VeI_joint </td>
   </tr>
   <tr>
    <td style="text-align:left;"> TEU_VeI_numHTNmeds </td>
@@ -1953,48 +1946,6 @@ Males with a waist circumference between 94 and 102cm were considered overweight
    
    
    <td style="text-align:left;width: 20em; "> Yes </td>
-   
-   
-  </tr>
-  <tr>
-   <td style="text-align:left;"> Prosp_comorb_num </td>
-   <td style="text-align:left;"> numeric </td>
-   <td style="text-align:left;width: 20em; "> 0 to 5 </td>
-   <td style="text-align:left;width: 50em; "> Number of comorbidities self-reported at baseline (CVD not included as comorbidity) </td>
-   <td style="text-align:left;"> TEU_VeI_diab, TEU_VeI_arrhy, TEU_VeI_asthCOPD, TEU_VeI_mig, TEU_VeI_epil, TEU_VeI_anx, TEU_VeI_dep, TEU_VeI_osteo, TEU_VeI_joint </td>
-  </tr>
-  <tr>
-   <td style="text-align:left;vertical-align: top !important;" rowspan="5"> Prosp_comorb_numcat </td>
-   <td style="text-align:left;vertical-align: top !important;" rowspan="5"> factor </td>
-   <td style="text-align:left;width: 20em; ">  </td>
-   <td style="text-align:left;width: 50em; vertical-align: top !important;" rowspan="5"> Number of comorbidities participants self-reported at baseline (CVD not included as comorbidity) </td>
-   <td style="text-align:left;vertical-align: top !important;" rowspan="5"> Prosp_comorb_num </td>
-  </tr>
-  <tr>
-   
-   
-   <td style="text-align:left;width: 20em; "> 0 </td>
-   
-   
-  </tr>
-  <tr>
-   
-   
-   <td style="text-align:left;width: 20em; "> 1 </td>
-   
-   
-  </tr>
-  <tr>
-   
-   
-   <td style="text-align:left;width: 20em; "> 2 </td>
-   
-   
-  </tr>
-  <tr>
-   
-   
-   <td style="text-align:left;width: 20em; "> &gt;=3 </td>
    
    
   </tr>
@@ -3228,6 +3179,48 @@ Males with a waist circumference between 94 and 102cm were considered overweight
    
    
    <td style="text-align:left;width: 20em; "> Stroke - Type unspecified </td>
+   
+   
+  </tr>
+  <tr>
+   <td style="text-align:left;"> Prosp_comorb_num </td>
+   <td style="text-align:left;"> numeric </td>
+   <td style="text-align:left;width: 20em; "> 0 to 5 </td>
+   <td style="text-align:left;width: 50em; "> Number of comorbidities self-reported at baseline (CVD not included as comorbidity) </td>
+   <td style="text-align:left;"> TEU_VeI_diab, TEU_VeI_arrhy, TEU_VeI_asthCOPD, TEU_VeI_mig, TEU_VeI_epil, TEU_VeI_anx, TEU_VeI_dep, TEU_VeI_osteo, TEU_VeI_joint </td>
+  </tr>
+  <tr>
+   <td style="text-align:left;vertical-align: top !important;" rowspan="5"> Prosp_comorb_numcat </td>
+   <td style="text-align:left;vertical-align: top !important;" rowspan="5"> factor </td>
+   <td style="text-align:left;width: 20em; ">  </td>
+   <td style="text-align:left;width: 50em; vertical-align: top !important;" rowspan="5"> Number of comorbidities participants self-reported at baseline (CVD not included as comorbidity) </td>
+   <td style="text-align:left;vertical-align: top !important;" rowspan="5"> Prosp_comorb_num </td>
+  </tr>
+  <tr>
+   
+   
+   <td style="text-align:left;width: 20em; "> 0 </td>
+   
+   
+  </tr>
+  <tr>
+   
+   
+   <td style="text-align:left;width: 20em; "> 1 </td>
+   
+   
+  </tr>
+  <tr>
+   
+   
+   <td style="text-align:left;width: 20em; "> 2 </td>
+   
+   
+  </tr>
+  <tr>
+   
+   
+   <td style="text-align:left;width: 20em; "> &gt;=3 </td>
    
    
   </tr>

@@ -221,18 +221,69 @@ TEU_VeI_HTNmeds_rubric <- function(x) {
     }
 
 
+TEU_BlP_measuredHTN <- function(data) {
+      data[["TEU_BlP_SBP.avg"]] >= SBPthreshold |
+        data[["TEU_BlP_DBP.avg"]] >= DBPthreshold
+    }
+
+
+TEU_HMH_Meds_BP <- function(data){
+    x <- FN_HMHmeds_any(data)
+    if(anyNA(x)){
+      stop("Unexpected value in source data for self-reported medication.")
+    }
+    
+    # Now check for the requested medication across the columns
+    y <- apply(data[,c(grep("HMH_MedCholBPDiab.0.", colnames(data), fixed=TRUE),
+                       grep("HMH_MedCholBPDiabHorm.0.", colnames(data), fixed=TRUE))], 1, function(x) any(x==medtype))
+    # And incorporate the info on whether this participant is taking any other medication
+    y[x %in% c("Prefer not to answer", "Do not know", "Unanswered")] <- "Unanswered"
+    y[is.na(y)] <- "FALSE"
+    y <- factor(y, levels=c("TRUE", "FALSE", "Unanswered"), 
+                labels=c(paste0("Self-reported ", string), paste0("Did not report ", string), "Unanswered"))
+    return(y)
+  }
+
+
+TEU_SBP_PRS <- function(x) {
+    if(file_ext(filepath)=="rds"){
+      prs <- readRDS(filepath)
+    } else if(file_ext(filepath)=="sscore"){
+      prs <- read.delim(filepath, header=TRUE) %>%
+        rename(ID = IID)
+    } else {
+      warning("Unidentified file type for PRS")
+    }
+    y <- prs[[colname]][match(x, prs$ID)]
+    return(y)
+  }
+
+
+TEU_DBP_PRS <- function(x) {
+    if(file_ext(filepath)=="rds"){
+      prs <- readRDS(filepath)
+    } else if(file_ext(filepath)=="sscore"){
+      prs <- read.delim(filepath, header=TRUE) %>%
+        rename(ID = IID)
+    } else {
+      warning("Unidentified file type for PRS")
+    }
+    y <- prs[[colname]][match(x, prs$ID)]
+    return(y)
+  }
+
+
+TEU_BP_PRS <- function(data){
+    rowMeans(data[,colnames], na.rm)
+  }
+
+
 VeI_PregnantNow <- function(x){x}
 
 
 TEU_BaC_AgeCat <- function(x){
     cut(x, breaks=breaks, labels=labels, right=right)
   }
-
-
-TEU_BlP_measuredHTN <- function(data) {
-      data[["TEU_BlP_SBP.avg"]] >= SBPthreshold |
-        data[["TEU_BlP_DBP.avg"]] >= DBPthreshold
-    }
 
 
 TEU_HMH_BowelCancerScreen <- function(x) {
@@ -441,24 +492,6 @@ TEU_CountryIncome <- function(data){
     }
 
 
-TEU_HMH_Meds_BP <- function(data){
-    x <- FN_HMHmeds_any(data)
-    if(anyNA(x)){
-      stop("Unexpected value in source data for self-reported medication.")
-    }
-    
-    # Now check for the requested medication across the columns
-    y <- apply(data[,c(grep("HMH_MedCholBPDiab.0.", colnames(data), fixed=TRUE),
-                       grep("HMH_MedCholBPDiabHorm.0.", colnames(data), fixed=TRUE))], 1, function(x) any(x==medtype))
-    # And incorporate the info on whether this participant is taking any other medication
-    y[x %in% c("Prefer not to answer", "Do not know", "Unanswered")] <- "Unanswered"
-    y[is.na(y)] <- "FALSE"
-    y <- factor(y, levels=c("TRUE", "FALSE", "Unanswered"), 
-                labels=c(paste0("Self-reported ", string), paste0("Did not report ", string), "Unanswered"))
-    return(y)
-  }
-
-
 TEU_Smo_Status <- function(x) {
       y <- FN_MissingCategory(missingvals = c("Prefer not to answer"), categ_name = "Unanswered")(x)
       y <- FN_factor(levelorder = c("Never", "Previous", "Current", "Unanswered"))(y)
@@ -588,39 +621,6 @@ TEU_BSM_WaistCircCat <- function(data) {
         factor(y, levels = c("Normal", "Overweight", "Obese", "Unknown"))
       return(y)
     }
-
-
-TEU_SBP_PRS <- function(x) {
-    if(file_ext(filepath)=="rds"){
-      prs <- readRDS(filepath)
-    } else if(file_ext(filepath)=="sscore"){
-      prs <- read.delim(filepath, header=TRUE) %>%
-        rename(ID = IID)
-    } else {
-      warning("Unidentified file type for PRS")
-    }
-    y <- prs[[colname]][match(x, prs$ID)]
-    return(y)
-  }
-
-
-TEU_DBP_PRS <- function(x) {
-    if(file_ext(filepath)=="rds"){
-      prs <- readRDS(filepath)
-    } else if(file_ext(filepath)=="sscore"){
-      prs <- read.delim(filepath, header=TRUE) %>%
-        rename(ID = IID)
-    } else {
-      warning("Unidentified file type for PRS")
-    }
-    y <- prs[[colname]][match(x, prs$ID)]
-    return(y)
-  }
-
-
-TEU_BP_PRS <- function(data){
-    rowMeans(data[,colnames], na.rm)
-  }
 
 
 TEU_HMH_VascCond <- function(data) {
@@ -927,16 +927,6 @@ TEU_VeI_asthCOPD <- function(data){
     y<- factor(ifelse(is.na(y), 0, 1), levels = c(0,1), labels = c('No','Yes'))
     return(y)
   }
-
-
-Prosp_comorb_num <- function(data){
-      rowSums(sapply(select(data,everything()),function(x) grepl("Yes",x)))
-    }
-
-
-Prosp_comorb_numcat <- function(x){
-      factor(ifelse(x>=3,'>=3',x),levels = c('0','1','2','>=3'),ordered = FALSE)
-    }
 
 
 GeP_UsedInPCA <- function(x){x}
@@ -1364,6 +1354,16 @@ TEU_Dth_MACE_dthtype <- function(data){
     }
 
 
+Prosp_comorb_num <- function(data){
+      rowSums(sapply(select(data,everything()),function(x) grepl("Yes",x)))
+    }
+
+
+Prosp_comorb_numcat <- function(x){
+      factor(ifelse(x>=3,'>=3',x),levels = c('0','1','2','>=3'),ordered = FALSE)
+    }
+
+
 BBC_LDL_Result <- function(x){x}
 
 
@@ -1477,15 +1477,7 @@ TEU_uncontrolledHTN <- function(data) {
     }
 
 
-HTN_comorb_num <- function(data){
-      rowSums(sapply(select(data,everything()),function(x) grepl("Yes",x)))
-    }
-
-
-TownsendDepInd <- function(x){x}
-
-
-TEU_TownsendDepInd_Quint <- function(x){
+TEU_BP_PRS_quintiles <- function(x){
     # if(anyNA(x)){warning("This vector contains NA values")}
     quantiles <- quantile(x, probs=seq(0, 1, 1/quant), na.rm=na.rm)
     if(is.null(labels)){
@@ -1500,7 +1492,10 @@ TEU_TownsendDepInd_Quint <- function(x){
   }
 
 
-TEU_BP_PRS_quintiles <- function(x){
+TownsendDepInd <- function(x){x}
+
+
+TEU_TownsendDepInd_Quint <- function(x){
     # if(anyNA(x)){warning("This vector contains NA values")}
     quantiles <- quantile(x, probs=seq(0, 1, 1/quant), na.rm=na.rm)
     if(is.null(labels)){
