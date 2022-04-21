@@ -157,12 +157,22 @@ if(live){
   
   excl <- list(initial=0)
   
+  html_header <- paste0( 
+    paste0("<head><title>", "(Tapela, Neo M et al. 2021)", "</title></head>"),
+    paste0("<h1>", "Hypertension Data Dictionary", "</h1>"),
+    paste0("<p>This data dictionary accompanies our paper: <i> Are polygenic risk scores for systolic blood pressure and LDL-cholesterol associated with treatment effectiveness, and clinical outcomes among those on treatment? ",  
+           text_spec("(Tapela, Neo M et al. 2021)", link = "https://doi.org/10.1093/eurjpc/zwab192"), 
+           "</i></p>"), 
+    paste0("<p>Please also see our ", text_spec("GitHub repository", link = "https://github.com/2cjenn/test"), ".</p>")
+    )
+  
   data <-
       derive_variables(
         database = "K:/TEU/UKB33952_Data/Data_Downloads/V3_database_duckdb0.2.1/ukb_v3.db",
         field_definitions = TEU_SPECS$HTN_control_MACE,
         exclusions = exclusions,
         dictionary = file.path(config$data$dictionary, "index.html"),
+        html_header = html_header,
         print_derivation = TRUE,
         hide_n = TRUE
     )

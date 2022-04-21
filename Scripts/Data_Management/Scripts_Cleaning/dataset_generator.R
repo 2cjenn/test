@@ -44,6 +44,7 @@ write_fn <- function(write_file, fn, name) {
 
 derive_variables <- function(database, field_definitions, exclusions=function(x){x}, 
                              dictionary = file.path(config$data$dictionary, paste0("Data_", format(Sys.time(), '%d%B%Y'), ".html")),
+                             html_header = "<head><title>Data Dictionary</head></title><h1>Data Dictionary</h1>",
                              name_map = config$cleaning$renaming,
                              withdrawals = config$cleaning$withdrawals,
                              print_derivation = FALSE,
@@ -98,12 +99,10 @@ derive_variables <- function(database, field_definitions, exclusions=function(x)
       column_spec(3, width="20em") %>%
       column_spec(if(hide_n){4} else{5}, 
                   width="50em") %>%
-      collapse_rows(columns = if(hide_n){c(1, 2, 4, 5, 6)} else{c(1, 2, 5, 6, 7)},
+      collapse_rows(columns = if(hide_n){c(1, 2, 4, 5)} else{c(1, 2, 5, 6)},
                     target = 1, valign = "top") %>%
       cat("<link rel=\"stylesheet\" href=\"https://cdn.jsdelivr.net/npm/bootstrap@4.5.3/dist/css/bootstrap.min.css\">", 
-          paste0("<head><title>", str_remove(dictionary, ".html"), "</title></head>"),
-          paste0("<h1>", str_remove(dictionary, ".html"), "</h1>"),
-          paste0("<h2>", format(Sys.time(), '%d %B %Y'), "</h2>"),
+          html_header,
           ., 
           file = dictionary)
   }
@@ -229,11 +228,11 @@ DBfunc$make_dict <- function(data, objects, na.rm=TRUE) {
   # Extract variable descriptions from the derivation objects
   linker <- data.frame(variable_name = sapply(objects, function(x) x$name),
                        variable_description = sapply(objects, function(x) x$description),
-                       source_vars = sapply(objects, function(x) paste(DBfunc$name_to_fdot(x$source, link=TRUE), collapse=", ")),
-                       derivation_code = sapply(objects, function(x) text_spec(x$name, link = paste0(config$github_pages, x$name, ".html")))
+                       source_vars = sapply(objects, function(x) paste(DBfunc$name_to_fdot(x$source, link=TRUE), collapse=", "))
                        )
   
   dict_df <- inner_join(dict, linker, by="variable_name")
+  dict_df$variable_name <- text_spec(dict_df$variable_name, link = paste0(config$github_pages, dict_df$variable_name, ".html"))
   
   dictdf <- dict_df 
   # Before using kableExtra collapse_rows, had to remove duplicated var names and descriptions
