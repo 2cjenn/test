@@ -26,11 +26,20 @@ source(file.path(config$scripts$cleaning, "DuckDB.R"), local=DBfunc)
 # This means stuff in the modules *can't* see and interact with stuff in global env
 # Better practice
 
-write_fn <- function(file, fn, name) {
-  fn.text <- c(capture.output(print(fn)), "\n")
-  fn.text[1] <- glue("{name} <- {fn.text[1]}")
-  fn.text <- Filter(function(x) !any(grepl("<bytecode: |<environment: ", x)), fn.text)
-  writeLines(fn.text, con=file)
+write_fn <- function(write_file, fn, name) {
+  con <- file(write_file, "w")
+  on.exit(close(con))
+  
+  header.txt <- c("# This file has been automatically generated during the data derivation process.", 
+                  "# It contains the functions used to derive each data field, and should be viewed in conjunction with the data dictionary html.",
+                  "# It will not run on its own.",
+                  "\n")
+  writeLines(header.txt, con=con)
+  
+  fn.txt <- c(capture.output(print(fn)), "\n")
+  fn.txt[1] <- glue("{name} <- {fn.txt[1]}")
+  fn.txt <- Filter(function(x) !any(grepl("<bytecode: |<environment: ", x)), fn.txt)
+  writeLines(fn.txt, con=con)
 }
 
 derive_variables <- function(database, field_definitions, exclusions=function(x){x}, 
@@ -40,15 +49,9 @@ derive_variables <- function(database, field_definitions, exclusions=function(x)
                              print_derivation = FALSE,
                              hide_n = FALSE){
   
-  con <- NULL
+  derivation_filepath <- NULL
   if(print_derivation){
-    con <- file(file.path(config$data$dictionary, paste0("DataDerivation_", format(Sys.time(), '%d%B%Y'), ".R")), "w")
-    header.txt <- c("# This file has been automatically generated during the data derivation process.", 
-                    "# It contains the functions used to derive each data field, and should be viewed in conjunction with the data dictionary html.",
-                    "# It will not run on its own.",
-                    "\n")
-    writeLines(header.txt, con=con)
-    on.exit(close(con))
+    derivation_filepath <- file.path(config$data$dictionary, "functions")
   }
   
   # Extract the lists from the list of functions
@@ -71,7 +74,7 @@ derive_variables <- function(database, field_definitions, exclusions=function(x)
   before <- objects[sapply(objects, function(x) x$post_exclusion==FALSE)]
   after <- objects[sapply(objects, function(x) x$post_exclusion==TRUE)]
   
-  data <- DBfunc$source_rotation(data, field_definitions = before, derivation_file=con)
+  data <- DBfunc$source_rotation(data, field_definitions = before, derivation_filepath=derivation_filepath)
   
   data <- exclusions(data)
   # Note - future update
@@ -79,7 +82,7 @@ derive_variables <- function(database, field_definitions, exclusions=function(x)
   # Then the derive_variables() function can handle the row counts
   # And can write individual documentation for each exclusion criterion to be output nicely
   
-  data <- DBfunc$source_rotation(data, field_definitions = after, derivation_file=con)
+  data <- DBfunc$source_rotation(data, field_definitions = after, derivation_filepath=derivation_filepath)
   
   # Return only requested columns
   data <- data[,outcols[outcols %in% colnames(data)]]
@@ -110,7 +113,7 @@ derive_variables <- function(database, field_definitions, exclusions=function(x)
 
 
 # Derive variables whose sources are available in the data first
-DBfunc$source_rotation <- function(data, field_definitions, derivation_file=NULL) {
+DBfunc$source_rotation <- function(data, field_definitions, derivation_filepath=NULL) {
   
   data_cols <- colnames(data)
   
@@ -127,8 +130,10 @@ DBfunc$source_rotation <- function(data, field_definitions, derivation_file=NULL
         tryCatch(
           {
             data <- DBfunc$derive_fn(data, field_definition = defn)
-            if(!is.null(derivation_file)){
-              write_fn(file=derivation_file, fn=defn$mapper, name=defn$name)
+            
+            if(!is.null(derivation_filepath)){
+              write_to <- file.path(derivation_filepath, glue("{defn$name}.R"))
+              write_fn(write_file=write_to, fn=defn$mapper, name=defn$name)
             }
           },
           error=function(cond) {
