@@ -230,7 +230,7 @@ DBfunc$make_dict <- function(data, objects, na.rm=TRUE) {
   linker <- data.frame(variable_name = sapply(objects, function(x) x$name),
                        variable_description = sapply(objects, function(x) x$description),
                        source_vars = sapply(objects, function(x) paste(DBfunc$name_to_fdot(x$source, link=TRUE), collapse=", ")),
-                       derivation_code = sapply(objects, function(x) text_spec(x$name, link = paste0(config$github_pages, x$name, ".md")))
+                       derivation_code = sapply(objects, function(x) text_spec(x$name, link = paste0(config$github_pages, x$name, ".html")))
                        )
   
   dict_df <- inner_join(dict, linker, by="variable_name")
