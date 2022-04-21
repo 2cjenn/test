@@ -30,14 +30,14 @@ write_fn <- function(write_file, fn, name) {
   con <- file(write_file, "w")
   on.exit(close(con))
   
-  header.txt <- c("# This file has been automatically generated during the data derivation process.", 
-                  "# It contains the functions used to derive each data field, and should be viewed in conjunction with the data dictionary html.",
-                  "# It will not run on its own.",
+  header.txt <- c("This file has been automatically generated during the data derivation process.", 
+                  "It contains the function used to derive the selected data field, and should be viewed in conjunction with the data dictionary html.",
+                  "It will not run on its own.",
                   "\n")
   writeLines(header.txt, con=con)
   
-  fn.txt <- c(capture.output(print(fn)), "\n")
-  fn.txt[1] <- glue("{name} <- {fn.txt[1]}")
+  fn.txt <- c("```", capture.output(print(fn)), "```", "\n")
+  fn.txt[2] <- glue("{name} <- {fn.txt[2]}")
   fn.txt <- Filter(function(x) !any(grepl("<bytecode: |<environment: ", x)), fn.txt)
   writeLines(fn.txt, con=con)
 }
@@ -98,7 +98,7 @@ derive_variables <- function(database, field_definitions, exclusions=function(x)
       column_spec(3, width="20em") %>%
       column_spec(if(hide_n){4} else{5}, 
                   width="50em") %>%
-      collapse_rows(columns = if(hide_n){c(1, 2, 4, 5)} else{c(1, 2, 5, 6)},
+      collapse_rows(columns = if(hide_n){c(1, 2, 4, 5, 6)} else{c(1, 2, 5, 6, 7)},
                     target = 1, valign = "top") %>%
       cat("<link rel=\"stylesheet\" href=\"https://cdn.jsdelivr.net/npm/bootstrap@4.5.3/dist/css/bootstrap.min.css\">", 
           paste0("<head><title>", str_remove(dictionary, ".html"), "</title></head>"),
@@ -132,7 +132,7 @@ DBfunc$source_rotation <- function(data, field_definitions, derivation_filepath=
             data <- DBfunc$derive_fn(data, field_definition = defn)
             
             if(!is.null(derivation_filepath)){
-              write_to <- file.path(derivation_filepath, glue("{defn$name}.R"))
+              write_to <- file.path(derivation_filepath, glue("{defn$name}.md"))
               write_fn(write_file=write_to, fn=defn$mapper, name=defn$name)
             }
           },
@@ -229,7 +229,9 @@ DBfunc$make_dict <- function(data, objects, na.rm=TRUE) {
   # Extract variable descriptions from the derivation objects
   linker <- data.frame(variable_name = sapply(objects, function(x) x$name),
                        variable_description = sapply(objects, function(x) x$description),
-                       source_vars = sapply(objects, function(x) paste(DBfunc$name_to_fdot(x$source, link=TRUE), collapse=", ")))
+                       source_vars = sapply(objects, function(x) paste(DBfunc$name_to_fdot(x$source, link=TRUE), collapse=", ")),
+                       derivation_code = sapply(objects, function(x) text_spec(x$name, link = paste0(config$github_pages, x$name, ".md")))
+                       )
   
   dict_df <- inner_join(dict, linker, by="variable_name")
   
