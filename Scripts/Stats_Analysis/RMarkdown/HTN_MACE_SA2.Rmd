@@ -1,0 +1,395 @@
+---
+title: "HTN PRS MACE SA2"
+author:  "Jennifer Collister"
+date: "`r format(Sys.time(), '%d %B %Y')`"
+output: 
+  word_document:
+      reference_docx: "K:/TEU/TEU_Guides/TEU_DocStyle_Rmd_2020.dotx"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(include=TRUE, echo=FALSE)
+
+library(kableExtra)
+library(knitr)
+library(yaml)
+library(here)
+library(glue)
+library(DiagrammeR)
+library(DiagrammeRsvg)
+library(svglite)
+library(rsvg)
+library(png)
+library(dplyr)
+library(ggplot2)
+library(survival)
+library(survminer)
+library(rms)
+library(shiny)
+library(rcompanion)
+library(Publish)
+library(gridExtra)
+library(ResourceSelection)
+library(naniar)
+library(mice)
+library(gtools)
+library(epitools)
+library(tools)
+library(readr)
+library(tibble)
+library(survey)
+
+# Specify the markdown format for knitr tables, otherwise they're not compatible with kableExtra
+options(knitr.kable.NA='', knitr.table.format = "markdown")
+options(kableExtra.auto_format = FALSE)
+# Set the root directory to the project directory (otherwise knitr works in the directory of the Rmd file by default)
+knitr::opts_knit$set(root.dir = here::here())
+knitr::opts_chunk$set(include=TRUE, echo=FALSE)
+
+# Load the project config file for filepaths etc
+config = yaml.load_file(here::here("./config.yml"))
+source(here::here(config$functions$JC))
+
+#-------------------------------------------------------------------------------------------------------------------
+# Setup
+
+figure <- 1
+table <- 1
+suppfig <- 1
+footnote_no <- 1
+
+# Check if the session is being knitted or run interactively
+# When we're knitting the documentation, we don't want to include the diagnostic checks
+live <- interactive()
+
+```
+
+```{r data-derivation, include=FALSE, cache=TRUE}
+
+source(file.path(config$scripts$cleaning, "dataset_generator.R"))
+ 
+exclusions <- function(data){
+  
+  excl$initial <<- nrow(data)
+    
+  # Exclude those outside the 40-70 age range
+  data <- data[data$TEU_BaC_AgeAtRec >= 40 & data$TEU_BaC_AgeAtRec < 70,]
+  
+  excl$agerange <<- nrow(data)
+  
+  # Only keep those with genetic data
+  data <- data[!is.na(data$GeP_Array),]
+  
+  excl$genetic <<- nrow(data)
+  
+  # Restrict to genetically white British
+  data <- data[!is.na(data$GeP_ethnic),]
+  
+  excl$whiteBrit <<- nrow(data)
+
+  # Exclude individuals with missing BP data
+  data <- data[!is.na(data$TEU_BlP_SBP.avg),]
+  data <- data[!is.na(data$TEU_BlP_DBP.avg),]
+  
+  # or missing answers to BP questions on touchscreen questionnaire
+  # data <- data[data$TEU_HMH_prevHTN != "Unanswered",]
+  # data <- data[data$TEU_HMH_Meds_BP != "Unanswered",]
+  
+  # Exclude participants who only had BP measured once
+  data <- data[data$TEU_BlP_nSBP == 2 & data$TEU_BlP_nDBP == 2,]
+  
+  excl$BPmiss <<- nrow(data)
+
+  # Exclude individuals with implausible BP data
+  data <- data[data$TEU_BlP_SBP.avg >= 70 & data$TEU_BlP_SBP.avg <= 270,]
+  data <- data[data$TEU_BlP_DBP.avg >= 50 & data$TEU_BlP_DBP.avg <= 150,]
+  
+  excl$BPimp <<- nrow(data)
+  
+  # Only keep those who met genetic QC and were included in PRS
+  data <- data[!is.na(data$TEU_SBP_PRS),]
+  
+  excl$PRSmiss <<- nrow(data)
+
+  # Exclude pregnant women ("Yes" or "Unsure")
+  data <- data[is.na(data$VeI_PregnantNow) | data$VeI_PregnantNow == "No",]
+  
+  excl$pregnant <<- nrow(data)
+
+  # Exclude individuals who have serious health conditions
+  data <- data[is.na(data$TEU_VeI_seriouscomb),]
+
+  # And individuals with cancer (except for skin cancer?)
+  data <- data[is.na(data$TEU_VeI_cancer),]
+  
+  excl$seriouscomorb <<- nrow(data)
+  
+  # Exclude MACE at baseline
+  data <- data[!data$TEU_MACE_prev=="Yes",]
+  
+  excl$MACE <<- nrow(data)
+  
+  # Exclude those who were not hypertensive
+  data <- data[data$TEU_evidenceHTN == TRUE & !is.na(data$TEU_evidenceHTN),]
+  
+  excl$evidenceHTN <<- nrow(data)
+  
+  # Exclude those who were not aware
+  data <- data[data$TEU_awareHTN == TRUE & !is.na(data$TEU_awareHTN),]
+  
+  excl$aware <<- nrow(data)
+  
+  # Only interested in treated hypertensives
+  data <- data[data$TEU_treatedHTN == TRUE & !is.na(data$TEU_treatedHTN),]
+  
+  excl$treated <<- nrow(data)
+  
+  return(data) 
+}
+
+excl <- list(initial=0)
+
+data <-
+  evalWithMemoization(
+    derive_variables(
+      database = "K:/TEU/UKB33952_Data/Data_Downloads/V3_database_duckdb0.2.1/ukb_v3.db",
+      field_definitions = TEU_SPECS$HTN_control_MACE,
+      exclusions = exclusions
+    ),
+    key = c(TEU_SPECS$HTN_control_MACE, exclusions)
+  )
+
+pretty_func <- pretty_switch(field_definitions=TEU_SPECS$HTN_control_MACE, return_type = "function")
+pretty_names <- pretty_switch(field_definitions=TEU_SPECS$HTN_control_MACE, return_type = "list")
+
+
+```
+
+```{r}
+label1 <- paste0('UKB participants\\nn = ', excl$initial)
+label2 <- paste0('Genetically White British participants\\nwith genotyping data, aged between 40 and 70\\nn = ', excl$whiteBrit)
+label3 <- paste0('Complete information on core variables\\nn = ', excl$PRSmiss)
+label4 <- paste0('Without serious comorbidities\\nn = ', excl$seriouscomorb)
+label5 <- paste0('No prior MACE events at baseline\\nn = ', excl$MACE)
+label6 <- paste0('Study population: antihypertensive\nmedication users at baseline\\nn = ', excl$treated)
+
+label7 <- paste0(excl$initial-excl$agerange,' outside the age range of [40,70) years\\l ', excl$agerange-excl$genetic, ' missing genotyping data\\l', excl$genetic-excl$whiteBrit, ' not of genetically White British ancestry\\l')
+label8 <- paste0(excl$whiteBrit-excl$BPmiss,' missing BP data from baseline assessment\\l', excl$BPmiss-excl$BPimp, ' implausible BP data from baseline assessment\\l', excl$BPimp-excl$PRSmiss, ' excluded in genetic quality control\\l')
+label9 <- paste0(excl$PRSmiss-excl$pregnant, ' possibly pregnant at baseline\\l', excl$pregnant-excl$seriouscomorb,' serious comorbidities, including cancer\\l(except skin cancer)\\l')
+label10 <- paste0(excl$seriouscomorb-excl$MACE, ' prevalent MACE at baseline\\l')
+label11 <- paste0(excl$MACE-excl$evidenceHTN, ' no evidence of hypertension\\l', excl$evidenceHTN-excl$aware, ' unaware hypertensives\\l', excl$aware-excl$treated, ' untreated hypertensives\\l')
+
+gv <- read_file(here::here(file.path(config$outputs$flowcharts, "HTN_PRS_MACE.gv")))
+
+export_svg(DiagrammeR::grViz(glue(gv))
+           ) %>% charToRaw %>% rsvg %>%
+  png::writePNG(here::here(file.path(config$outputs$figures, "HTN_PRS_MACE.png")))
+```
+
+
+
+```{r}
+
+MI_data=data%>%
+  select(ID,TEU_MACE_status,TEU_MACE_time_yrs, TEU_MACE_MI, TEU_MACE_Stroke,
+         TEU_BaC_AgeAtRec,
+         BaC_Sex,
+         TEU_SBP_PRS,
+         BSM_BMI,
+         TEU_Smo_Status,
+         TEU_Alc_WeeklyCat, TEU_Alc_WeeklyAlcUnits,
+         PhA_METsWkAllAct,
+         TEU_FaH_CVD,
+         Prosp_comorb_numcat,
+         TEU_VeI_numHTNmeds,
+         TEU_BlP_SBP.avg, TEU_BlP_DBP.avg,  
+         BBC_LDL_Result,
+         TownsendDepInd, TEU_HouseholdIncome,TEU_Emp_category,TEU_Edu_ISCED,
+         TEU_Rec_Country,
+         paste0('GeP_PC_',1:4), GeP_Array
+         )%>%
+  # Change missing categories to NA
+  mutate_if(is.factor, list(~na_if(., "Unanswered")))%>%
+  mutate_if(is.factor, list(~na_if(., "Prefer not to answer")))%>%
+  mutate(TEU_SBP_PRS=1762*TEU_SBP_PRS) %>% 
+  droplevels()
+            
+# Because PRS is scaled by number of non-missing SNPs it takes values between 0.09 and 0.1 - we're guessing that since this is on a much smaller scale to the other variables in the dataset, the MI treats it as a constant and removes it from the imputation.    
+# We therefore scale it up by the number of SNPs in the score x the ploidy = 870 * 2 = 1740
+# This is ok here because in all our analyses, we use quintiles of PRS, which don't change when the underlying values are scaled by a constant.
+
+```
+
+```{r}
+
+# Create Imputations (iter=10, M=10)
+iter <- 10
+M <- 10
+
+# Using default imputation method based on variable type
+
+if(live) {
+  ini <- mice(MI_data,maxit = 0,print=FALSE)
+  pred <- ini$predictorMatrix
+  
+  # Remove predictors: ID; TEU_MACE_MI; TEU_MACE_Stroke; TEU_Alc_WeeklyCat (want to use alc continuous variables instead)
+  pred[,c("ID","TEU_MACE_MI","TEU_MACE_Stroke")] <- 0
+  
+  
+  imp1<-mice(MI_data,pred=pred, m = M, maxit = iter,seed = 100)
+  
+  saveRDS(imp1,file=file.path(config$data$derived, paste0("imputation", format(Sys.time(), '%d%B%Y'), "_noCallRateHWE.rds")))
+} else {
+  imp1 <- readRDS(file.path(config$data$derived, "imputation19July2021_noCallRateHWE.rds"))
+}
+```
+
+```{r}
+
+# Post processing: Change continuous covariates to categorical for further analysis 
+
+long1 <- complete(imp1,"long",include = TRUE) 
+
+comp_long1<-long1%>%
+  mutate(
+    TEU_BaC_AgeCat=cut(TEU_BaC_AgeAtRec,
+                       breaks = c(40, 50, 60, 70),
+                       labels = c("40-49", "50-59", "60-69"),
+                       right = FALSE
+    ),
+    
+    TEU_BSM_BMIcat=factor(cut(BSM_BMI,
+                       breaks = c(0, 18.5, 25, 30, 200),
+                       c("Underweight", "Normal", "Overweight", "Obese"),
+                       right = FALSE
+    ),levels = c('Normal','Underweight','Overweight','Obese')),
+    
+    TEU_LDLctrl_v1=factor(ifelse(BBC_LDL_Result<3,1,0),levels=c(0,1), 
+                          labels=c("Not controlled", "Controlled")),
+    
+    TEU_uncontrolledHTN=factor(ifelse(TEU_BlP_SBP.avg >= 140 | TEU_BlP_DBP.avg >= 90, 1, 0), 
+                               levels=c(0, 1), labels=c("Controlled", "Uncontrolled")),
+    
+    TEU_Smo_Status=factor(TEU_Smo_Status,levels = c('Never','Previous','Current')),
+    
+    TEU_Pha_METsover1200 = factor(ifelse(PhA_METsWkAllAct<=1200,"Low (MET minutes <= 1200)",
+                                         "High (MET minutes > 1200)"),
+                                  levels = c("Low (MET minutes <= 1200)", "High (MET minutes > 1200)")),
+    
+    TEU_VeI_numHTNmedscat = factor( dplyr::case_when(
+        is.na(TEU_VeI_numHTNmeds) ~ "None reported",
+        TEU_VeI_numHTNmeds == 0 ~ "None reported",
+        TEU_VeI_numHTNmeds == 1 ~ "1",
+        TEU_VeI_numHTNmeds == 2 ~ "2",
+        TEU_VeI_numHTNmeds >= 3 ~ "3 or more",
+        TRUE ~ as.character(TEU_VeI_numHTNmeds)
+      ), levels=c("None reported", "1", "2", "3 or more"))
+      )%>%
+  
+  group_by(.imp)%>%
+  mutate(TEU_SBP_PRS_quintiles= quantcut(TEU_SBP_PRS,q=5,labels = c('Q1: Lowest score','Q2','Q3','Q4','Q5: Highest score')),
+         TEU_TownsendDepInd_Quint= quantcut(TownsendDepInd,q=5,labels = c('Q1: least deprived','Q2','Q3','Q4','Q5: most deprived')),
+         TEU_BlP_SBP_quintiles=quantcut(TEU_BlP_SBP.avg,q=5,labels=c('Q1: lowest','Q2','Q3','Q4','Q5: highest')),
+         TEU_LDL_Quintiles=quantcut(BBC_LDL_Result,q=5,labels=c('Q1: lowest','Q2','Q3','Q4','Q5: highest')),
+         GeP_Array=factor(GeP_Array, levels=c("Axiom", "BiLEVE")))
+
+comp_long1<-as.mids(comp_long1)
+
+
+```
+
+# Cross-sectional analyses with continuous outcomes
+
+## Table `r table`. Sex-adjusted SBP by systolic BP PRS quintiles (N = `r nrow(data)`).
+`r table <- table + 1`
+
+```{r sex-adj, include=TRUE, echo=FALSE}
+
+rmodel <-  with(comp_long1, lm(TEU_BlP_SBP.avg ~ BaC_Sex + TEU_SBP_PRS_quintiles))
+modeloutput <- summary(pool(rmodel))
+
+routput <- printMIresults(df=comp_long1$data, varlist=c("BaC_Sex", "TEU_SBP_PRS_quintiles"), modeloutput=modeloutput,
+                            expon=FALSE, pretty_names=pretty_names, onecol=TRUE, IDcol=FALSE)
+
+rownames(routput) <- NULL
+
+colnames(routput) <- c("Variable", "Beta", "95% CI", "p")
+
+# Output the resulting table
+kable(routput, caption="Linear regression of gender and SBP PRS Quintiles against continuous SBP outcome.")
+
+
+# Sex-adjusted mean SBP per PRS Quintile, with standard errors
+# https://stats.stackexchange.com/questions/260814/using-standardisation-to-adjust-means
+
+popsex <- as.numeric(table(data$BaC_Sex))
+design <- svydesign(ids = ~1, strata = ~BaC_Sex, 
+                    data = data %>% 
+                      select(TEU_BlP_SBP.avg, BaC_Sex, TEU_SBP_PRS_quintiles)
+                    )
+stdes <- svystandardize(design, by = ~BaC_Sex, over = ~TEU_SBP_PRS_quintiles, population = popsex)
+adj_plot <- svyby(~TEU_BlP_SBP.avg, ~TEU_SBP_PRS_quintiles, svymean, design = stdes)
+adj_plot$lower <- adj_plot$TEU_BlP_SBP.avg - adj_plot$se
+adj_plot$upper <- adj_plot$TEU_BlP_SBP.avg + adj_plot$se
+adj_plot$type <- "SBP"
+
+ggplot(data=adj_plot,aes(x=TEU_SBP_PRS_quintiles,y=TEU_BlP_SBP.avg, group=type))+
+  geom_line(aes(color=type)) + geom_point(aes(color=type))+ theme_classic()+
+  geom_errorbar(aes(ymin=lower,ymax=upper,color=type),width=.2) +
+  labs(x="SBP PRS Quintiles", y="Sex-standardised mean SBP (mmHg)", title="Sex-standardised mean SBP by SBP PRS quintile")+
+  theme(legend.position = "top",legend.title = element_blank())
+
+```
+
+
+
+## Table `r table`: Multivariable linear regression exploring association of systolic BP PRS with systolic BP at baseline (N =`r nrow(data)` among which mean SBP was `r pretty_dp(mean(data$TEU_BlP_SBP.avg),2)` mmHg)
+`r table <- table + 1`
+
+```{r fully-adj, include=TRUE, echo=FALSE}
+
+varlist=c("TEU_BaC_AgeCat", "BaC_Sex", "TEU_SBP_PRS_quintiles",
+          "TEU_BSM_BMIcat", "TEU_Smo_Status", "TEU_Alc_WeeklyCat", "TEU_Pha_METsover1200",
+          "TEU_FaH_CVD", "Prosp_comorb_numcat", "TEU_LDL_Quintiles", "TEU_VeI_numHTNmedscat", 
+          "TEU_TownsendDepInd_Quint", "TEU_HouseholdIncome", "TEU_Emp_category", "TEU_Edu_ISCED", "TEU_Rec_Country",
+          "GeP_PC_1", "GeP_PC_2", "GeP_PC_3", "GeP_PC_4", "GeP_Array"
+          )
+
+# Hide rows with socioeconomic variables from table to save space
+hidelist <- c(
+  "TEU_TownsendDepInd_Quint", "TEU_HouseholdIncome", "TEU_Emp_category", "TEU_Edu_ISCED", "TEU_Rec_Country",
+  "GeP_PC_1", "GeP_PC_2", "GeP_PC_3", "GeP_PC_4", "GeP_Array"
+)
+
+formula <- paste0("TEU_BlP_SBP.avg  ~ ", paste(varlist, collapse="+"))
+rmodel <-  with(comp_long1, lm(as.formula(formula)))
+modeloutput <- summary(pool(rmodel))
+
+routput <- printMIresults(df=comp_long1$data, varlist=varlist[!(varlist %in% hidelist)], modeloutput=modeloutput,
+                            expon=FALSE, pretty_names=pretty_names, onecol=TRUE, IDcol=FALSE)
+
+rownames(routput) <- NULL
+
+colnames(routput) <- c("Variable", "Beta", "95% CI", "p")
+
+# Output the resulting table
+kable(routput, caption=paste0("Multivariable model included ", paste(pretty_names[varlist], collapse=", "), ". Socioeconomic variables are not displayed in this table."))
+
+# And produce figure of SBP by PRS quintile for a reference individual
+adj_est <- modeloutput[str_starts(modeloutput$term, "TEU_SBP_PRS_quintiles"),] %>%
+  select(term, estimate) %>%
+  mutate(term = str_remove(as.character(term), "TEU_SBP_PRS_quintiles"))
+
+adj_plot <- rbind(c("Q1: Lowest score", 0), adj_est) %>%
+  mutate(estimate = as.numeric(estimate) + modeloutput$estimate[modeloutput$term=="(Intercept)"],
+         type="SBP")
+
+ggplot(data=adj_plot,aes(x=term,y=estimate, group=type))+
+  geom_line(aes(color=type)) + geom_point(aes(color=type))+ theme_classic()+
+  labs(x="SBP PRS Quintiles", y="SBP (mmHg)", 
+       title="SBP for a reference individual by SBP PRS quintile")+
+  theme(legend.position = "top",legend.title = element_blank())
+
+```
+
+
