@@ -49,15 +49,6 @@ library(survival)
 library(epitools)
 library(ResourceSelection)
 
-# Don't seem to be needed, possibly from code that has since been removed?
-# Consider removing
-#
-# library(rcompanion)
-# library(Publish)
-# library(gridExtra)
-# library(tools)
-# library(readr)
-
 # Specify the markdown format for knitr tables, otherwise they're not compatible with kableExtra
 options(knitr.kable.NA='', knitr.table.format = "markdown")
 options(kableExtra.auto_format = FALSE)
