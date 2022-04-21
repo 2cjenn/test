@@ -10,33 +10,53 @@ output:
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(include=TRUE, echo=FALSE)
 
+# Packages for R Markdown
 library(kableExtra)
 library(knitr)
+library(rmarkdown)
+library(xfun)
+
+# Config and setup
 library(yaml)
 library(here)
+
+# Utility
 library(glue)
+library(dplyr)
+library(ggplot2)
+library(gtools)
+library(tibble)
+
+# Imputation
+library(mice)
+library(naniar)
+library(Rcpp)
+library(latticeExtra)
+library(mitml)
+library(rms)
+library(shiny)
+
+# Flowchart
 library(DiagrammeR)
 library(DiagrammeRsvg)
 library(svglite)
 library(rsvg)
 library(png)
-library(dplyr)
-library(ggplot2)
-library(survival)
+
+# Survival
 library(survminer)
-library(rms)
-library(shiny)
-library(rcompanion)
-library(Publish)
-library(gridExtra)
-library(ResourceSelection)
-library(naniar)
-library(mice)
-library(gtools)
+library(survival)
 library(epitools)
-library(tools)
-library(readr)
-library(tibble)
+library(ResourceSelection)
+
+# Don't seem to be needed, possibly from code that has since been removed?
+# Consider removing
+#
+# library(rcompanion)
+# library(Publish)
+# library(gridExtra)
+# library(tools)
+# library(readr)
 
 # Specify the markdown format for knitr tables, otherwise they're not compatible with kableExtra
 options(knitr.kable.NA='', knitr.table.format = "markdown")
