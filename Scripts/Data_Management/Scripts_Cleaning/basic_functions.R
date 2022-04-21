@@ -177,29 +177,6 @@ FN_HMHmeds_any <- function(data){
   return(y)
 }
 
-# XL add: 17/11/2020
-FN_HMHmeds_any_raw <- function(data){
-  # Combine the first medication field across males and females
-  medcombine <- coalesce(data[["HMH_MedCholBPDiabHorm.0.0"]], data[["HMH_MedCholBPDiab.0.0"]])
-  # Create a new medication variable: yes/no/do not know/prefer not to answer/NA
-  medlist <- c("Cholesterol lowering medication",
-               "Blood pressure medication",
-               "Oral contraceptive pill or minipill",
-               "Hormone replacement therapy",
-               "Insulin"
-  )
-  y <- dplyr::case_when(
-    is.na(medcombine) ~ NA_character_,
-    medcombine == "None of the above" ~ "No",
-    medcombine == "Do not know" ~ "Do not know",
-    medcombine == "Prefer not to answer" ~ "Prefer not to answer",
-    medcombine %in% medlist ~ "Yes",
-    TRUE ~ "Unexpected answer"
-  )
-  y <- factor(y, levels = c("Yes", "No", "Do not know", "Prefer not to answer"))
-  return(y)
-}
-
 
 FN_HMHmeds_type <- function(medtype, string){
   function(data){

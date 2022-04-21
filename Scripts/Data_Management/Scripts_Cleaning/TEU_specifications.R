@@ -60,27 +60,8 @@ specs <- function() {
     TEU_VeI_anx,
     TEU_VeI_dep,
     TEU_VeI_asthCOPD
-    
-    
   )
- 
-  # TEUvars_raw added by XL 
-  # This block of variables are for exploring how we handle categories such as 'Prefer not to answer' and 'Do not know'
-  TEUvars_raw <-list(
-    ID,
-    Eth_Ethnicity,
-    Edu_HighestQual,
-    Alc_Status,
-    Smo_Status,
-    TEU_HoH_PreTaxInc,
-    HMH_BowelSc,
-    HMH_Diabetes,
-    HMH_IllDisab,
-    HMH_VascCond,
-    HMH_Meds_any,
-    HMH_HTNAge
-  )
-  
+
   UKB_genetic <- list(
     ID,
     GeP_UsedInPCA, # Identifies participants which met UKB QC for inclusion in PCA
@@ -102,33 +83,6 @@ specs <- function() {
     GeP_PC(pc=10), # Genetic Principal Components of ancestry
     GeP_Sex, # Used to check for sex discordance
     BaC_Sex # Used to check for sex discordance
-  )
-
-  MACE_summary <- c(
-    TEUvars_common,
-    list(
-      # MACE at baseline
-      TEU_HES_MACE_prev(record_level=FALSE),
-      TEU_VeI_MACE_nonc,
-      TEU_VeI_MACE_op,
-      TEU_HMH_MACE_prev,
-      TEU_MACE_prev,
-      # MACE outcome
-      TEU_HES_MACE_fudate(record_level=FALSE),
-      TEU_Dth_MACE_dthdate(record_level=FALSE),
-      TEU_MACE_eventdate,
-      TEU_Dth_NotMACE_dthdate(record_level=FALSE),
-      Admin_CensorDate(record_level=FALSE),
-      BaC_LostFUDate,
-      TEU_MACE_censordate,
-      TEU_MACE_status,
-      TEU_MACE_time,
-      TEU_MACE_time_yrs,
-      # MACE subtypes 
-      TEU_HES_MACE_fucomp(record_level=FALSE),
-      TEU_MACE_fucomp
-    )
-    
   )
   
   MACE_recordlevel <- c(
@@ -221,23 +175,6 @@ specs <- function() {
       TEU_VeI_numHTNmedscat
       
     )
-  )
-  
-  test2 <- list(
-    ID,
-    Rec_DateAssess,
-    TEU_HES_MACE_fudate(record_level=FALSE)
-  )
-  
-  test <- list(
-    ID,
-    Rec_DateAssess,
-    TEU_Dth_MACE_dthdate(record_level=TRUE)
-  )
-  
-  HTN_control_PRS <- c(
-    UKB_genetic,
-    HTN_control
   )
 
   HTN_control_MACE <- c(

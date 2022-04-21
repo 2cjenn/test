@@ -29,17 +29,6 @@ ID <- function() {
   )
 }
 
-PsF_VisitFreq <- function(instance = visits$baseline) {
-  list(
-    name = glue("PsF_VisitFreq.{instance[1]}.0"),
-    source = glue("PsF_VisitFreq.{instance[1]}.0"),
-    mapper = FN_id,
-    post_exclusion = FALSE,
-    display_name = glue("Family/friend visit frequency at {instance[2]}"),
-    description = glue("Frequency of family/friend visits (recorded at {instance[2]})")
-  )
-}
-
 BaC_Sex <- function() {
   list(
     name = "BaC_Sex",
@@ -59,53 +48,6 @@ Rec_DateAssess <- function() {
     post_exclusion = FALSE,
     display_name = "Date of baseline assessment",
     description = "Date of baseline assessment"
-  )
-}
-
-Eth_Ethnicity <- function() {
-  list(
-    name = "Eth_Ethnicity",
-    source = "Eth_Ethnicity.0.0",
-    mapper = FN_factor(
-      levelorder = c(
-        "White",
-        "British",
-        "Irish",
-        "Any other white background",
-        "Mixed",
-        "White and Black Caribbean",
-        "White and Black African",
-        "White and Asian",
-        "Any other mixed background",
-        "Asian or Asian British",
-        "Indian",
-        "Pakistani",
-        "Bangladeshi",
-        "Any other Asian background",
-        "Black or Black British",
-        "Caribbean",
-        "African",
-        "Any other Black background",
-        "Chinese",
-        "Other ethnic group",
-        "Do not know",
-        "Prefer not to answer"
-      )
-    ),
-    post_exclusion = FALSE,
-    display_name = "Ethnic group",
-    description = "The participant's self-reported ethnicity (raw UKB categories)"
-  )
-}
-
-BaC_RsnLostFU <- function() {
-  list(
-    name = "BaC_RsnLostFU.0.0",
-    source = "BaC_RsnLostFU.0.0",
-    mapper = FN_unorder,
-    post_exclusion = FALSE,
-    display_name = "Reason lost to follow-up",
-    description = "The reported reason for loss to follow-up"
   )
 }
 
@@ -274,32 +216,6 @@ TEU_BlP_measuredHTN <- function(SBPthreshold = 140, DBPthreshold = 90) {
   )
 }
 
-Alc_Status <- function() {
-  list(
-    name = "Alc_Status",
-    source = "Alc_Status.0.0",
-    mapper = FN_factor(
-      levelorder = c("Never", "Previous", "Current", "Prefer not to answer")
-    ),
-    post_exclusion = FALSE,
-    display_name = "Alcohol status",
-    description = "Self-reported alcohol status"
-  )
-}
-
-Smo_Status <- function() {
-  list(
-    name = "Smo_Status",
-    source = "Smo_Status.0.0",
-    mapper = FN_factor(
-      levelorder = c("Never", "Previous", "Current", "Prefer not to answer")
-    ),
-    post_exclusion = FALSE,
-    display_name = "Smoking status",
-    description = "Self-reported smoking status"
-  )
-}
-
 TEU_HoH_PreTaxInc <- function() {
   list(
     name = "TEU_HoH_PreTaxInc",
@@ -339,6 +255,7 @@ TEU_HoH_PreTaxInc <- function() {
   )
 }
 
+
 TEU_HouseholdIncome <- function() {
   list(
     name = "TEU_HouseholdIncome", 
@@ -347,17 +264,6 @@ TEU_HouseholdIncome <- function() {
     post_exclusion = FALSE,
     display_name = "Household Income, GBP",
     description = "Participant's pre-tax houshold income, self-reported. The 'do not know' and 'prefer not to answer' categories have been combined with NAs into 'unanswered'"
-  )
-}
-
-Sle_Duration <- function() {
-  list(
-    name = "Sle_Duration",
-    source = "Sle_Duration.0.0",
-    mapper = FN_id,
-    post_exclusion = FALSE,
-    display_name = "Sleep Duration, hours",
-    description = "Participant's self-reported average sleep duration in hours"
   )
 }
 
@@ -431,51 +337,6 @@ PhA_METsWkAllAct <- function() {
   )
 }
 
-CoF_RTTTimeID <- function() {
-  list(
-    name = "CoF_RTTTimeID",
-    source = "CoF_RTTTimeID.0.0",
-    mapper = FN_id,
-    post_exclusion = FALSE,
-    display_name = "Reaction Time, s",
-    description = "Reaction time in a game of snap, in seconds"
-  )
-}
-
-# XL add: 17/11/2020
-Edu_HighestQual<-function(){
-  list(
-    name = "Edu_HighestQual",
-    source = c(paste0("Edu_Qualif.0.", seq(0, 5, by=1)),
-               paste0("Edu_Qualif_p.0.", seq(0, 4, by=1))),
-    mapper = function(data){
-      qual_list <- c(
-        "College or University degree",
-        "NVQ or HND or HNC or equivalent",
-        "Other professional qualifications eg: nursing, teaching",
-        "A levels/AS levels or equivalent",
-        "O levels/GCSEs or equivalent",
-        "CSEs or equivalent",
-        "None of the above",
-        "Prefer not to answer"
-      )
-      for(i in seq(length(qual_list), 1, by=-1)) {
-        data[data == qual_list[i]] <- as.character(i)
-      }
-      y <- do.call(pmax, c(data, list(na.rm=TRUE)))
-      #y[is.na(y)] <- 1
-      y <- factor(y,
-                  levels = seq(1, length(qual_list), by=1),
-                  labels = qual_list
-      )
-      return(y)
-    },
-    post_exclusion = FALSE,
-    display_name = 'Highest Qualification',
-    description = "Highest of a participant's self-reported educational qualidications"
-  )
-}
-
 TEU_Edu_HighestQual <- function() {
   list(
     name = "TEU_Edu_HighestQual",
@@ -506,17 +367,6 @@ TEU_Edu_HighestQual <- function() {
     post_exclusion = FALSE,
     display_name = "Highest Qualification",
     description = "Highest of a participant's self-reported educational qualifications"
-  )
-}
-
-GAC_AideMem <- function() {
-  list(
-    name = "GAC_AideMem",
-    source = "GAC_AideMem.0.0",
-    mapper = FN_unorder,
-    post_exclusion = FALSE,
-    display_name = "AideMemoir",
-    description = "Did the participant bring the requested aide-memoir with a note of their medications and previous operations?"
   )
 }
 
@@ -627,22 +477,6 @@ TEU_BaC_AgeCat <- function() {
   )
 }
 
-# XL add: 17/11/2020
-HMH_Meds_any <- function() {
-  list(
-    name = "HMH_Meds_any",
-    source = c(paste0("HMH_MedCholBPDiabHorm.0.", c(0:3)),
-               paste0("HMH_MedCholBPDiab.0.", c(0:2))
-    ),
-    mapper = FN_HMHmeds_any_raw,
-    post_exclusion = FALSE,
-    display_name = "HMH_Meds",
-    description = "Did the participant self-report taking medication for cholesterol, blood pressure, diabetes or HRT?"
-  )
-}
-
-
-
 TEU_HMH_Meds_any <- function() {
   list(
     name = "TEU_HMH_Meds_any",
@@ -679,19 +513,6 @@ TEU_HMH_Meds_Chol <- function() {
     post_exclusion = FALSE,
     display_name = "Cholmeds",
     description = "Participant self-reported taking cholesterol lowering medication in the touchscreen questionnaire"
-  )
-}
-
-TEU_HMH_Meds_Diab <- function() {
-  list(
-    name = "TEU_HMH_Meds_Diab",
-    source = c(paste0("HMH_MedCholBPDiabHorm.0.", c(0:3)),
-               paste0("HMH_MedCholBPDiab.0.", c(0:2))
-    ),
-    mapper = FN_HMHmeds_type(medtype = "Insulin", string = "Insulin"),
-    post_exclusion = FALSE,
-    display_name = "Self-reported insulin (TQ)",
-    description = "Participant self-reported taking insulin medication in the touchscreen questionnaire"
   )
 }
 
@@ -737,54 +558,6 @@ TEU_ethnicgrp <- function() {
     },
     post_exclusion = FALSE,
     display_name = "Ethnic group",
-    description = "The participant's self-reported ethnicity, condensed into categories.\n'White', 'British', 'Irish' and 'Any other white background' were coded as 'White'.\n'Indian', 'Pakinstani' and 'Bangladeshi' were coded as 'S. Asian'.\n'Black or Black British', 'Carribean', 'African' and 'Any other Black background' were coded as 'Black'.\n'Mixed', 'White and Black Caribbean', 'White and Black African', 'White and Asian' and 'Any other mixed background' were coded as 'Mixed'.\n'Other ethnic group', 'Asian or Asian British', 'Any other Asian background' and 'Chinese' were coded as 'Other'"
-  )
-}
-
-# XL add: Same as above except leave 'Do not know' 'Prefer not to answer' and NA as it is 
-Eth_ethnicgrp<-function() {
-  list(
-    name = "Eth_ethnicgrp",
-    source = "Eth_Ethnicity.0.0",
-    mapper = function(x) {
-      y <- dplyr::case_when(
-        x %in% c("White", "British", "Irish", "Any other white background") ~ "White",
-        x %in% c(
-          "Mixed",
-          "White and Black Caribbean",
-          "White and Black African",
-          "White and Asian",
-          "Any other mixed background"
-        ) ~ "Mixed",
-        x %in% c("Indian", "Pakistani", "Bangladeshi") ~ "S. Asian",
-        x %in% c(
-          "Black or Black British",
-          "Caribbean",
-          "African",
-          "Any other Black background"
-        ) ~ "Black",
-        x %in% c(
-          "Other ethnic group",
-          "Asian or Asian British",
-          "Any other Asian background",
-          "Chinese"
-        ) ~ "Other",
-        x == 'Do not know' ~ 'Do not know',
-        x == 'Prefer not to answer' ~ 'Prefer not to answer',
-        is.na(x) ~ NA_character_,
-        TRUE ~ "Error"
-      )
-      y <-
-        factor(
-          y,
-          ordered = FALSE,
-          levels = c("White", "Black", "S. Asian", "Mixed",
-                     "Other", "Do not know", "Prefer not to answer")
-        )
-      return(y)
-    },
-    post_exclusion = FALSE,
-    display_name = "ethnic_group",
     description = "The participant's self-reported ethnicity, condensed into categories.\n'White', 'British', 'Irish' and 'Any other white background' were coded as 'White'.\n'Indian', 'Pakinstani' and 'Bangladeshi' were coded as 'S. Asian'.\n'Black or Black British', 'Carribean', 'African' and 'Any other Black background' were coded as 'Black'.\n'Mixed', 'White and Black Caribbean', 'White and Black African', 'White and Asian' and 'Any other mixed background' were coded as 'Mixed'.\n'Other ethnic group', 'Asian or Asian British', 'Any other Asian background' and 'Chinese' were coded as 'Other'"
   )
 }
