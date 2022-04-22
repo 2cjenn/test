@@ -89,10 +89,8 @@ derive_variables <- function(database, field_definitions, exclusions=function(x)
   data <- data[,outcols[outcols %in% colnames(data)]]
   
   if(!is.null(dictionary)) {
-    dict <- DBfunc$make_dict(data, objects)
-    if(hide_n) {
-      dict <- dict %>% select(-n)
-    }
+    dict <- DBfunc$make_dict(data=data, objects=objects, hide_n=hide_n)
+    
     kable(dict, "html", escape = FALSE) %>%
       kable_styling(bootstrap_options = c("hover", "condensed"), fixed_thead = T,
                     html_font = "arial", font_size = 12) %>%
@@ -187,7 +185,7 @@ DBfunc$derive_fn <- function(data, field_definition) {
 }
 
 # Generate the data dictionary
-DBfunc$make_dict <- function(data, objects, na.rm=TRUE) {
+DBfunc$make_dict <- function(data, objects, hide_n = FALSE, na.rm=TRUE) {
   # Implementation ideas from https://github.com/dmrodz/dataMeta
   
   # Extract descriptive properties of the data, one variable at a time
@@ -200,8 +198,13 @@ DBfunc$make_dict <- function(data, objects, na.rm=TRUE) {
         data[[i]] <- droplevels(data[[i]])
       }
       tab <- data.frame(table(data[i], useNA = "ifany"))
-      var_opt <- c("", as.character(tab[,1]))
-      n <- c(length(data[[i]]), tab[,2])
+      if(hide_n) {
+        var_opt <- as.character(tab[,1])
+        n <- tab[,2]
+      } else {
+        var_opt <- c("", as.character(tab[,1]))
+        n <- c(length(data[[i]]), tab[,2])
+      }
     } else if (vartype %in% c("integer", "numeric")) {
       var_opt <- paste(range(data[i], na.rm = na.rm), sep = "", collapse = " to ")
       n <- length(data[i][!is.na(data[i])])
@@ -245,6 +248,10 @@ DBfunc$make_dict <- function(data, objects, na.rm=TRUE) {
     #   )
   
   dictdf <- as.data.frame(dictdf)
+  
+  if(hide_n) {
+    dictdf <- dictdf %>% select(-n)
+  }
   
   return(dictdf)
 }
